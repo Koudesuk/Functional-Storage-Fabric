@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=east,locked=false": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 90
+    },
+    "facing=east,locked=true": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 90
+    },
+    "facing=north,locked=false": {
+      "model": "functionalstorage:block/bamboo_drawer_4"
+    },
+    "facing=north,locked=true": {
+      "model": "functionalstorage:block/bamboo_drawer_4"
+    },
+    "facing=south,locked=false": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 180
+    },
+    "facing=south,locked=true": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 180
+    },
+    "facing=west,locked=false": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 270
+    },
+    "facing=west,locked=true": {
+      "model": "functionalstorage:block/bamboo_drawer_4",
+      "y": 270
+    }
+  }
+}

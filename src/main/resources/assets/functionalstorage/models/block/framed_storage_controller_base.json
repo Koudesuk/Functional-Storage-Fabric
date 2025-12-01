@@ -1,0 +1,12 @@
+{
+  "parent": "functionalstorage:block/storage_controller",
+  "textures": {
+    "particle": "functionalstorage:block/framed_side",
+    "north": "functionalstorage:block/framed_controller_front",
+    "east": "functionalstorage:block/framed_side",
+    "south": "functionalstorage:block/framed_side",
+    "west": "functionalstorage:block/framed_side",
+    "up": "functionalstorage:block/framed_side",
+    "down": "functionalstorage:block/framed_side"
+  }
+}

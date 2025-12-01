@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:redstone"
+    },
+    "D": {
+      "tag": "functionalstorage:drawer"
+    },
+    "I": {
+      "item": "minecraft:stone"
+    },
+    "R": {
+      "item": "minecraft:hopper"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "IDI",
+    "IRI"
+  ],
+  "result": {
+    "item": "functionalstorage:pusher_upgrade"
+  },
+  "show_notification": true
+}

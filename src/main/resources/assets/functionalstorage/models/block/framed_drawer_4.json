@@ -1,0 +1,9 @@
+{
+    "loader": "functionalstorage:framed_drawer",
+    "parent": "functionalstorage:block/framed_drawer_4_base",
+    "textures": {
+        "particle": "functionalstorage:block/framed_front_4",
+        "front": "functionalstorage:block/framed_front_4",
+        "side": "functionalstorage:block/framed_side"
+    }
+}

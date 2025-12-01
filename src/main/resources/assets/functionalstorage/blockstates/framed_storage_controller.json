@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "functionalstorage:block/framed_storage_controller"
+    },
+    "facing=east": {
+      "model": "functionalstorage:block/framed_storage_controller",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "functionalstorage:block/framed_storage_controller",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "functionalstorage:block/framed_storage_controller",
+      "y": 270
+    }
+  }
+}

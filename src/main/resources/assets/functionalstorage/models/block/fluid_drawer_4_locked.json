@@ -1,0 +1,6 @@
+{
+  "parent": "functionalstorage:block/fluid_drawer_4",
+  "textures": {
+    "lock_icon": "functionalstorage:block/lock"
+  }
+}

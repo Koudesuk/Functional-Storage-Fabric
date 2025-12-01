@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "D": {
+      "tag": "functionalstorage:drawer"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "minecraft:stone"
+    }
+  },
+  "pattern": [
+    "SRS",
+    "CDC",
+    "SRS"
+  ],
+  "result": {
+    "item": "functionalstorage:storage_controller"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,7 @@
+{
+    "loader": "functionalstorage:framedblock",
+    "parent": "functionalstorage:block/framed_storage_controller_base",
+    "textures": {
+        "particle": "functionalstorage:block/framed_side"
+    }
+}

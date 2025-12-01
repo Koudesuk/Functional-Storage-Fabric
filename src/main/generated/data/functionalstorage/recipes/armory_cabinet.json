@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "C": {
+      "tag": "functionalstorage:drawer"
+    },
+    "D": {
+      "item": "minecraft:comparator"
+    },
+    "I": {
+      "item": "minecraft:stone"
+    }
+  },
+  "pattern": [
+    "ICI",
+    "CDC",
+    "IBI"
+  ],
+  "result": {
+    "item": "functionalstorage:armory_cabinet"
+  },
+  "show_notification": true
+}

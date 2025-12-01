@@ -1,0 +1,4 @@
+{
+    "loader": "functionalstorage:framed_drawer",
+    "parent": "functionalstorage:block/framed_drawer_4_locked_base"
+}

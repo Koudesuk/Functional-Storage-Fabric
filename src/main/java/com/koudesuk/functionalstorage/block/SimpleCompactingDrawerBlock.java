@@ -1,0 +1,157 @@
+package com.koudesuk.functionalstorage.block;
+
+import com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
+import com.koudesuk.functionalstorage.item.LinkingToolItem;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+
+public class SimpleCompactingDrawerBlock extends Block implements EntityBlock {
+
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
+
+    public SimpleCompactingDrawerBlock(Properties properties) {
+        super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LOCKED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING, LOCKED);
+    }
+
+    @Nullable
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new SimpleCompactingDrawerTile(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level,
+            BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> blockEntityType) {
+        return (level1, pos, state1, blockEntity) -> {
+            if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile tile) {
+                com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile.tick(level1, pos, state1, tile);
+            }
+        };
+    }
+
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+            BlockHitResult hit) {
+        if (level.isClientSide)
+            return InteractionResult.SUCCESS;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof SimpleCompactingDrawerTile tile) {
+            return tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x, hit.getLocation().y,
+                    hit.getLocation().z, getHit(state, pos, hit));
+        }
+        return InteractionResult.PASS;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof SimpleCompactingDrawerTile tile) {
+                if (tile.getControllerPos() != null) {
+                    BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
+                    if (controller instanceof StorageControllerTile controllerTile) {
+                        controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
+                    }
+                }
+            }
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
+        Direction facing = state.getValue(FACING);
+        Direction hitFace = blockHitResult.getDirection();
+
+        // Only process hits on the front face
+        if (hitFace != facing) {
+            return -1;
+        }
+
+        Vec3 hit = blockHitResult.getLocation().subtract(pos.getX(), pos.getY(), pos.getZ());
+        double hitX = 0;
+        double hitY = hit.y;
+
+        // Calculate hitX based on facing direction
+        if (facing == Direction.NORTH) {
+            hitX = 1 - hit.x;
+        } else if (facing == Direction.SOUTH) {
+            hitX = hit.x;
+        } else if (facing == Direction.EAST) {
+            hitX = 1 - hit.z;
+        } else if (facing == Direction.WEST) {
+            hitX = hit.z;
+        }
+
+        // Margin for edges/dividers (1/16th of a block)
+        double margin = 0.0625;
+
+        // Check if clicking on edges
+        if (hitX < margin || hitX > 1 - margin || hitY < margin || hitY > 1 - margin) {
+            return -1; // Edge click - open GUI
+        }
+
+        // Simple compacting drawer has 2 slots arranged vertically
+        // Check horizontal divider at y=0.5
+        if (hitY > 0.5 - margin && hitY < 0.5 + margin) {
+            return -1; // Clicking on divider - open GUI
+        }
+
+        if (hitY > 0.5) {
+            return 0; // Top slot
+        } else {
+            return 1; // Bottom slot
+        }
+    }
+
+    @Override
+    public java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
+            net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
+        net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> stacks = net.minecraft.core.NonNullList
+                .create();
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
+        BlockEntity drawerTile = builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+        if (drawerTile instanceof SimpleCompactingDrawerTile tile) {
+            if (!tile.isEverythingEmpty()) {
+                stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
+            }
+            if (tile.isLocked()) {
+                stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
+            }
+        }
+        stacks.add(stack);
+        return stacks;
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "functionalstorage:block/bamboo_drawer_2",
+    "textures": {
+        "lock_icon": "functionalstorage:block/lock"
+    }
+}

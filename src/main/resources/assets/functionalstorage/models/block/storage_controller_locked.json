@@ -1,0 +1,6 @@
+{
+  "parent": "functionalstorage:block/storage_controller",
+  "textures": {
+    "lock_icon": "functionalstorage:block/lock"
+  }
+}

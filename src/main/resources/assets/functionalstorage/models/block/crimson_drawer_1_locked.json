@@ -1,0 +1,6 @@
+{
+  "parent": "functionalstorage:block/crimson_drawer_1",
+  "textures": {
+    "lock_icon": "functionalstorage:block/lock"
+  }
+}

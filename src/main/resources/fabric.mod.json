@@ -1,0 +1,49 @@
+{
+	"schemaVersion": 1,
+	"id": "functionalstorage",
+	"version": "${version}",
+	"name": "Functional Storage",
+	"description": "Functional Storage for Fabric",
+	"authors": [
+		"Buuz135",
+		"Rid",
+		"Koudesuk"
+	],
+	"contact": {
+		"homepage": "https://github.com/Koudesuk/Functional-Storage-Fabric",
+		"sources": "https://github.com/Koudesuk/Functional-Storage-Fabric"
+	},
+	"license": "MIT",
+	"icon": "assets/functionalstorage/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.koudesuk.functionalstorage.FunctionalStorage"
+		],
+		"client": [
+			"com.koudesuk.functionalstorage.client.FunctionalStorageClient"
+		],
+		"fabric-datagen": [
+			"com.koudesuk.functionalstorage.FunctionalStorageFabricDataGenerator"
+		],
+		"fabric-model-loading": [
+			"com.koudesuk.functionalstorage.client.model.FramedDrawerModelLoader"
+		]
+	},
+	"mixins": [
+		"functionalstorage.mixins.json",
+		{
+			"config": "functionalstorage.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
