@@ -59,14 +59,11 @@ public class FunctionalStorageClient implements ClientModInitializer {
                 BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER,
                                 ctx -> new ControllerRenderer<>());
 
-                // TODO: Fix controller renderer type issues - StorageControllerTile vs
-                // FramedDrawerControllerTile
-                // The ControllerRenderer needs to be made generic or separate renderers created
-                // BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.STORAGE_CONTROLLER,
-                // ctx -> new ControllerRenderer());
-                // BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_CONTROLLER,
-                // ctx -> new ControllerRenderer());
-
                 FramedColors.register();
+
+                // NOTE: Dynamic item texture rendering for framed drawers is handled by
+                // FramedDrawerBakedModel.emitItemQuads() when the model uses the custom loader.
+                // The item models inherit from block models which use the custom loader,
+                // so NBT-based textures should work when the baked model is properly resolved.
         }
 }

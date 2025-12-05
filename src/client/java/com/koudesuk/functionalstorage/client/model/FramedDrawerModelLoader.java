@@ -33,13 +33,14 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
         pluginContext.resolveModel().register(context -> {
             // Get the model identifier
             ResourceLocation id = context.id();
-            
-            if (!id.getNamespace().equals(FunctionalStorage.MOD_ID)) return null;
+
+            if (!id.getNamespace().equals(FunctionalStorage.MOD_ID))
+                return null;
 
             // Try to load the JSON directly to check the loader field
             // Model paths are usually models/ID.json
             ResourceLocation jsonId = new ResourceLocation(id.getNamespace(), "models/" + id.getPath() + ".json");
-            
+
             try {
                 Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(jsonId);
                 if (resource.isPresent()) {

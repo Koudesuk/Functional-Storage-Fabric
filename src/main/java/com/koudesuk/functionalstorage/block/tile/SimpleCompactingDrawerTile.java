@@ -117,7 +117,7 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
 
     @Override
     public int getStorageSlotAmount() {
-        return 4; // Must match DrawerMenu's storage upgrade container size
+        return 3; // Match original Forge implementation for simple compacting drawers
     }
 
     @Override
