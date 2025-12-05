@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_planks": {
+    "has_bucket": {
       "conditions": {
         "items": [
           {
             "items": [
-              "minecraft:oak_planks"
+              "minecraft:bucket"
             ]
           }
         ]
@@ -22,7 +22,7 @@
   },
   "requirements": [
     [
-      "has_planks",
+      "has_bucket",
       "has_the_recipe"
     ]
   ],

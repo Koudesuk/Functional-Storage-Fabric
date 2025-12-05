@@ -228,6 +228,31 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                         }
                 }
 
+                // Fluid Drawers (not in DRAWER_TYPES, need explicit recipes)
+                ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks.FLUID_DRAWER_1)
+                                .pattern("PPP").pattern("PBP").pattern("PPP")
+                                .define('P', ItemTags.PLANKS)
+                                .define('B', Items.BUCKET)
+                                .unlockedBy("has_bucket", has(Items.BUCKET))
+                                .save(exporter);
+
+                ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks.FLUID_DRAWER_2, 2)
+                                .pattern("PBP").pattern("PPP").pattern("PBP")
+                                .define('P', ItemTags.PLANKS)
+                                .define('B', Items.BUCKET)
+                                .unlockedBy("has_bucket", has(Items.BUCKET))
+                                .save(exporter);
+
+                ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS,
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks.FLUID_DRAWER_4, 4)
+                                .pattern("BPB").pattern("PPP").pattern("BPB")
+                                .define('P', ItemTags.PLANKS)
+                                .define('B', Items.BUCKET)
+                                .unlockedBy("has_bucket", has(Items.BUCKET))
+                                .save(exporter);
+
                 // Framed Drawers
                 for (net.minecraft.world.level.block.Block block : com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks.FRAMED_DRAWER) {
                         if (block instanceof com.koudesuk.functionalstorage.block.FramedDrawerBlock framedDrawerBlock) {

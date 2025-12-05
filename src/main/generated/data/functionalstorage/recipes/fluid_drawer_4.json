@@ -2,17 +2,17 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": {
-      "item": "minecraft:chest"
+    "B": {
+      "item": "minecraft:bucket"
     },
     "P": {
-      "item": "minecraft:oak_planks"
+      "tag": "minecraft:planks"
     }
   },
   "pattern": [
-    "CPC",
+    "BPB",
     "PPP",
-    "CPC"
+    "BPB"
   ],
   "result": {
     "count": 4,

@@ -53,26 +53,42 @@ public class FunctionalStorage implements ModInitializer {
                                 (drawer, direction) -> drawer.getStorage(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_SIMPLE_COMPACTING_DRAWER);
 
-                net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-                        net.minecraft.world.level.block.state.BlockState state = world.getBlockState(pos);
-                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
-                                net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-                                if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-                                        if (blockHitResult.getBlockPos().equals(pos)) {
-                                                int hit = drawerBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-                                                                        drawerTile.onClicked(player, hit);
+                // Register FluidStorage for Fluid Drawers
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_1);
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_2);
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_4);
+
+                net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT
+                                .register((player, world, hand, pos, direction) -> {
+                                        net.minecraft.world.level.block.state.BlockState state = world
+                                                        .getBlockState(pos);
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
+                                                net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+                                                if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
+                                                        if (blockHitResult.getBlockPos().equals(pos)) {
+                                                                int hit = drawerBlock.getHit(state, pos,
+                                                                                blockHitResult);
+                                                                if (hit != -1) {
+                                                                        if (!world.isClientSide()) {
+                                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                                .getBlockEntity(pos);
+                                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
+                                                                                        drawerTile.onClicked(player,
+                                                                                                        hit);
+                                                                                }
+                                                                        }
+                                                                        return net.minecraft.world.InteractionResult.SUCCESS;
                                                                 }
                                                         }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
                                                 }
                                         }
-                                }
-                        }
-                        return net.minecraft.world.InteractionResult.PASS;
-                });
+                                        return net.minecraft.world.InteractionResult.PASS;
+                                });
         }
 }

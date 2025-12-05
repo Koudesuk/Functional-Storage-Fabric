@@ -38,8 +38,10 @@ public class FunctionalStorageGroup {
                                                         entries.accept(FunctionalStorageBlocks.ENDER_DRAWER);
                                                         entries.accept(FunctionalStorageBlocks.CONTROLLER_EXTENSION);
 
-                                                        // NOTE: Fluid drawers are already in DRAWER_TYPES, don't add
-                                                        // them again
+                                                        // Add Fluid Drawers explicitly (not in DRAWER_TYPES)
+                                                        entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_1);
+                                                        entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_2);
+                                                        entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_4);
 
                                                         // Add tools
                                                         entries.accept(FunctionalStorageItems.LINKING_TOOL);

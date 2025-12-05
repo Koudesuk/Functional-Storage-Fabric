@@ -222,11 +222,6 @@ public class FunctionalStorageBlocks {
                                         new ResourceLocation(FunctionalStorage.MOD_ID,
                                                         "fluid_drawer_" + type.getSlots()),
                                         new BlockItem(block, new Item.Properties()));
-                        // Add to DRAWER_TYPES or similar if needed for creative tab, but DRAWER_TYPES
-                        // is <DrawerType, List<Block>>.
-                        // Maybe we should add them there too?
-                        // The Creative Tab logic iterates DRAWER_TYPES.
-                        DRAWER_TYPES.get(type).add(block);
                 }
         }
 }

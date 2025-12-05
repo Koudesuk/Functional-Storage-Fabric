@@ -111,15 +111,14 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         }
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            // Fluid interaction
+            // Right-click: Insert fluid from hand to drawer ONLY
             Storage<FluidVariant> handStorage = ContainerItemContext.ofPlayerHand(player, hand).find(FluidStorage.ITEM);
             if (handStorage != null) {
                 try (Transaction transaction = Transaction.openOuter()) {
                     // Try to insert from hand to drawer
-                    long inserted = 0;
                     for (StorageView<FluidVariant> view : handStorage) {
                         if (!view.isResourceBlank()) {
-                            inserted = handler.insert(view.getResource(), view.getAmount(), transaction);
+                            long inserted = handler.insert(view.getResource(), view.getAmount(), transaction);
                             if (inserted > 0) {
                                 handStorage.extract(view.getResource(), inserted, transaction);
                                 transaction.commit();
@@ -127,22 +126,10 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
                             }
                         }
                     }
-
-                    // If nothing inserted, try to extract from drawer to hand
-                    // But we need to know which slot was clicked.
-                    // The slot index is passed.
-                    FluidVariant resource = handler.getResource(slot);
-                    if (!resource.isBlank()) {
-                        long extracted = handStorage.insert(resource, Long.MAX_VALUE, transaction);
-                        if (extracted > 0) {
-                            handler.extract(resource, extracted, transaction);
-                            transaction.commit();
-                            return InteractionResult.SUCCESS;
-                        }
-                    }
                 }
             }
-            return InteractionResult.SUCCESS; // Consume click even if no fluid transfer happened?
+            // Note: Extraction is done via left-click (onClicked method)
+            return InteractionResult.SUCCESS;
         } else if (slot == -1 || player.isShiftKeyDown()) {
             if (!level.isClientSide) {
                 player.openMenu(this);
@@ -150,6 +137,27 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
+    }
+
+    public void onClicked(Player player, int slot) {
+        if (slot != -1) {
+            // Left-click: Extract fluid from drawer to hand container (bucket)
+            Storage<FluidVariant> handStorage = ContainerItemContext.ofPlayerHand(player, InteractionHand.MAIN_HAND)
+                    .find(FluidStorage.ITEM);
+            if (handStorage != null) {
+                try (Transaction transaction = Transaction.openOuter()) {
+                    // Try to fill the container from the drawer
+                    FluidVariant resource = handler.getResource(slot);
+                    if (!resource.isBlank()) {
+                        long inserted = handStorage.insert(resource, Long.MAX_VALUE, transaction);
+                        if (inserted > 0) {
+                            handler.extract(resource, inserted, transaction);
+                            transaction.commit();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public FluidInventoryHandler getHandler() {

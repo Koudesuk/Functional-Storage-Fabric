@@ -97,12 +97,14 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
     }
 
     public long getSlotLimit(int slot) {
-        long baseBuckets = type.getSlotAmount();
+        // Forge formula: (slotAmount / 64) * 1000 mB per bucket
+        // Fabric uses droplets: 81000 droplets per bucket
+        long baseBuckets = type.getSlotAmount() / 64; // X_1: 8192/64 = 128 buckets
         if (hasDowngrade())
-            baseBuckets = 64;
+            baseBuckets = 1; // 1 bucket when downgraded
 
         long totalBuckets = baseBuckets * getMultiplier();
-        return totalBuckets * 81000; // 81000 is Fabric's bucket constant
+        return totalBuckets * 81000; // droplets per bucket
     }
 
     public CompoundTag serializeNBT() {

@@ -14,7 +14,6 @@ public enum DrawerWoodType implements IWoodType {
     WARPED(Blocks.WARPED_PLANKS, "warped"),
     MANGROVE(Blocks.MANGROVE_PLANKS, "mangrove"),
     CHERRY(Blocks.CHERRY_PLANKS, "cherry"),
-    BAMBOO(Blocks.BAMBOO_PLANKS, "bamboo"),
     FRAMED(Blocks.AIR, "framed");
 
     private final Block planks;
