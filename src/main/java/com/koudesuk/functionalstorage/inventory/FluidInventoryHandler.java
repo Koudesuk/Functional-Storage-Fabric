@@ -57,6 +57,18 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
         return (Iterator<StorageView<FluidVariant>>) (Iterator<?>) slots.iterator();
     }
 
+    /**
+     * Get the storage for a specific slot. Used for targeted fluid operations.
+     * 
+     * @param slot The slot index
+     * @return The storage for the slot, or null if invalid
+     */
+    public Storage<FluidVariant> getSlotStorage(int slot) {
+        if (slot < 0 || slot >= slots.size())
+            return null;
+        return slots.get(slot);
+    }
+
     public class FluidStackStorage
             extends net.fabricmc.fabric.api.transfer.v1.storage.base.SingleVariantStorage<FluidVariant> {
         private final int slotIndex;

@@ -4,10 +4,18 @@ import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.DrawerType;
+import net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Inventory;
@@ -105,22 +113,27 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         }
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            // Right-click: INSERT ONLY - empty player's fluid container INTO drawer
-            // Matches Forge's FluidUtil.tryEmptyContainerAndStow behavior
-            net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext ctx = net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext
-                    .ofPlayerHand(player, hand);
-            net.fabricmc.fabric.api.transfer.v1.storage.Storage<net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant> itemStorage = ctx
-                    .find(net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM);
+            // Right-click: INSERT ONLY - empty bucket INTO drawer
+            if (!stack.isEmpty()) {
+                ContainerItemContext ctx = ContainerItemContext.ofPlayerHand(player, hand);
+                Storage<FluidVariant> itemStorage = ctx.find(FluidStorage.ITEM);
+                Storage<FluidVariant> slotStorage = handler.getSlotStorage(slot);
 
-            if (itemStorage != null) {
-                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction tx = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                        .openOuter()) {
-                    // Move fluid FROM item (bucket) TO drawer - insert only
-                    long moved = net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil.move(
-                            itemStorage, handler, variant -> true, Long.MAX_VALUE, tx);
-                    if (moved > 0) {
-                        tx.commit();
-                        return InteractionResult.SUCCESS;
+                if (itemStorage != null && slotStorage != null) {
+                    try (Transaction tx = Transaction.openOuter()) {
+                        // Move fluid FROM bucket TO drawer only
+                        long moved = StorageUtil.move(itemStorage, slotStorage, v -> true, Long.MAX_VALUE, tx);
+                        if (moved > 0) {
+                            tx.commit();
+                            // Play empty sound for the fluid that was moved
+                            FluidVariant movedVariant = StorageUtil.findStoredResource(slotStorage);
+                            if (movedVariant != null && !movedVariant.isBlank()) {
+                                level.playSound(null, worldPosition,
+                                        FluidVariantAttributes.getEmptySound(movedVariant), SoundSource.BLOCKS, 1.0F,
+                                        1.0F);
+                            }
+                            return InteractionResult.SUCCESS;
+                        }
                     }
                 }
             }
@@ -136,21 +149,29 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
 
     public void onClicked(Player player, int slot) {
         if (slot != -1) {
-            // Left-click: EXTRACT ONLY - fill player's fluid container FROM drawer
-            // Matches Forge's FluidUtil.tryFillContainerAndStow behavior
-            net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext ctx = net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext
-                    .ofPlayerHand(player, InteractionHand.MAIN_HAND);
-            net.fabricmc.fabric.api.transfer.v1.storage.Storage<net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant> itemStorage = ctx
-                    .find(net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM);
+            ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+            // Left-click: EXTRACT ONLY - fill bucket FROM drawer
+            if (!stack.isEmpty()) {
+                ContainerItemContext ctx = ContainerItemContext.ofPlayerHand(player, InteractionHand.MAIN_HAND);
+                Storage<FluidVariant> itemStorage = ctx.find(FluidStorage.ITEM);
+                Storage<FluidVariant> slotStorage = handler.getSlotStorage(slot);
 
-            if (itemStorage != null) {
-                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction tx = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                        .openOuter()) {
-                    // Move fluid FROM drawer TO item (bucket) - extract only
-                    long moved = net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil.move(
-                            handler, itemStorage, variant -> true, Long.MAX_VALUE, tx);
-                    if (moved > 0) {
-                        tx.commit();
+                if (itemStorage != null && slotStorage != null) {
+                    // Get the fluid in the drawer before extraction
+                    FluidVariant storedFluid = StorageUtil.findStoredResource(slotStorage);
+
+                    try (Transaction tx = Transaction.openOuter()) {
+                        // Move fluid FROM drawer TO bucket only
+                        long moved = StorageUtil.move(slotStorage, itemStorage, v -> true, Long.MAX_VALUE, tx);
+                        if (moved > 0) {
+                            tx.commit();
+                            // Play fill sound for the fluid that was extracted
+                            if (storedFluid != null && !storedFluid.isBlank()) {
+                                level.playSound(null, worldPosition,
+                                        FluidVariantAttributes.getFillSound(storedFluid), SoundSource.BLOCKS, 1.0F,
+                                        1.0F);
+                            }
+                        }
                     }
                 }
             }
