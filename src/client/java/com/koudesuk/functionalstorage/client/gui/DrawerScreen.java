@@ -2,16 +2,21 @@ package com.koudesuk.functionalstorage.client.gui;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.block.tile.DrawerTile;
+import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
+import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.util.NumberUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -37,23 +42,14 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         int j = (this.height - this.imageHeight) / 2;
 
         // Draw background using dispenser.png but extended
-        // Top part (0-83)
         guiGraphics.blit(TEXTURE, i, j, 0, 0, 176, 83);
-        // Middle part filler (using a slice of the texture or just grey)
-        // We need to fill from 83 to 100 (17 pixels).
-        // We can repeat a slice from the middle of dispenser.png
-        guiGraphics.blit(TEXTURE, i, j + 83, 0, 83, 176, 17); // Just stretch or copy?
-        // Actually dispenser.png is 166 high. 83 is middle.
-        // Let's just draw the bottom part at y=100 (where player inv starts)
-        // Player inv in dispenser starts at y=84.
-        // So we draw the bottom part (84 to 166) at j + 100.
-        guiGraphics.blit(TEXTURE, i, j + 100, 0, 83, 176, 83); // 166-83 = 83.
+        guiGraphics.blit(TEXTURE, i, j + 83, 0, 83, 176, 17);
+        guiGraphics.blit(TEXTURE, i, j + 100, 0, 83, 176, 83);
 
         // Fill the gap (83 to 100) with a grey rectangle
         guiGraphics.fill(i, j + 83, i + 176, j + 100, 0xFFC6C6C6);
 
         // Cover the dispenser slots (3x3 grid) with grey background
-        // Dispenser slots start at 61, 16. 3*18 = 54 width/height.
         guiGraphics.fill(i + 61, j + 16, i + 61 + 54, j + 16 + 54, 0xFFC6C6C6);
 
         // Draw Drawer Face Background
@@ -61,17 +57,22 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
             ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID, "textures/block/"
                     + tile.getWoodType().getName() + "_front_" + tile.getDrawerType().getSlots() + ".png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
+        } else if (this.menu.getTile() instanceof FluidDrawerTile fluidTile) {
+            // Draw Fluid Drawer Face Background
+            String slotSuffix = fluidTile.getDrawerType().getSlots() == 1 ? ""
+                    : "_" + fluidTile.getDrawerType().getSlots();
+            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+                    "textures/block/fluid_front" + slotSuffix + ".png");
+            guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         }
 
-        // Draw Slot Backgrounds for Upgrades (since we moved them)
-        // Storage: 10, 70 - use dynamic count from menu
+        // Draw Slot Backgrounds for Upgrades
         int storageSlotCount = this.menu.getStorageSlotCount();
         for (int k = 0; k < storageSlotCount; k++) {
             drawSlotBackground(guiGraphics, i + 10 + k * 18, j + 70);
         }
 
-        // Utility: 114, 70 (only for regular drawers, not Storage Controller)
-        // Use dynamic count from menu
+        // Utility slots (only for regular drawers, not Storage Controller)
         if (!(this.menu.getTile() instanceof StorageControllerTile)) {
             int utilitySlotCount = this.menu.getUtilitySlotCount();
             for (int k = 0; k < utilitySlotCount; k++) {
@@ -81,34 +82,18 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
     }
 
     private void drawSlotBackground(GuiGraphics guiGraphics, int x, int y) {
-        // Draw a standard slot box. We can use a part of dispenser.png
-        // Slot is usually 18x18.
-        // In dispenser.png, a slot is at 7, 83? No.
-        // Let's just draw a dark box.
-        guiGraphics.fill(x, y, x + 18, y + 18, 0xFF8B8B8B); // Border
-        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF373737); // Inner
-        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF8B8B8B); // Highlight?
-        // Actually, let's try to blit a slot from the texture.
-        // Dispenser slots are at (61, 16) etc.
-        // We can grab a slot sprite.
-        // Slot sprite is usually at 7, 83 in container textures?
-        // Let's guess: 7, 83 is a slot in dispenser.png?
-        // Dispenser has 3x3 grid.
-        // Top left slot at 62, 17.
+        guiGraphics.fill(x, y, x + 18, y + 18, 0xFF8B8B8B);
+        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF373737);
+        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF8B8B8B);
         guiGraphics.blit(TEXTURE, x - 1, y - 1, 61, 16, 18, 18);
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Don't call super to avoid default labels
-
-        // Check if this is a Storage Controller
         if (this.menu.getTile() instanceof StorageControllerTile) {
-            // Storage Controller: Show "Range" label only
             guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.storage_range"), 10, 59,
                     ChatFormatting.DARK_GRAY.getColor(), false);
         } else {
-            // Regular Drawer: Show "Storage" and "Utility" labels
             guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.storage"), 10, 59,
                     ChatFormatting.DARK_GRAY.getColor(), false);
 
@@ -116,7 +101,6 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                     ChatFormatting.DARK_GRAY.getColor(), false);
         }
 
-        // Inventory Label (always show)
         guiGraphics.drawString(this.font, Component.translatable("key.categories.inventory"), 8, 92,
                 ChatFormatting.DARK_GRAY.getColor(), false);
     }
@@ -126,42 +110,96 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         this.renderBackground(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        // Render Drawer Contents
+        // Render Item Drawer Contents
         if (this.menu.getTile() instanceof DrawerTile tile) {
-            int i = (this.width - this.imageWidth) / 2;
-            int j = (this.height - this.imageHeight) / 2;
-            int x = i + 64;
-            int y = j + 16;
-
-            DrawerType type = tile.getDrawerType();
-            BigInventoryHandler handler = tile.getHandler();
-
-            for (int k = 0; k < type.getSlots(); k++) {
-                BigInventoryHandler.BigStack stack = handler.getStoredStacks().get(k);
-                if (!stack.getStack().isEmpty()) {
-                    Pair<Integer, Integer> pos = type.getSlotPosition().apply(k);
-                    int itemX = x + pos.getLeft();
-                    int itemY = y + pos.getRight();
-
-                    guiGraphics.renderItem(stack.getStack(), itemX, itemY);
-                    guiGraphics.renderItemDecorations(this.font, stack.getStack(), itemX, itemY, null);
-
-                    // Render Amount
-                    String amount = NumberUtils.getFormatedBigNumber(stack.getAmount()) + "/"
-                            + NumberUtils.getFormatedBigNumber(handler.getSlotLimit(k));
-                    float scale = 0.5f;
-                    guiGraphics.pose().pushPose();
-                    guiGraphics.pose().translate(itemX + 8, itemY + 12, 200); // Center text?
-                    guiGraphics.pose().scale(scale, scale, scale);
-
-                    int textWidth = this.font.width(amount);
-                    guiGraphics.drawString(this.font, amount, -textWidth / 2, 0, 0xFFFFFF, true);
-
-                    guiGraphics.pose().popPose();
-                }
-            }
+            renderItemDrawerContents(guiGraphics, tile);
+        }
+        // Render Fluid Drawer Contents
+        else if (this.menu.getTile() instanceof FluidDrawerTile fluidTile) {
+            renderFluidDrawerContents(guiGraphics, fluidTile);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    private void renderItemDrawerContents(GuiGraphics guiGraphics, DrawerTile tile) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int x = i + 64;
+        int y = j + 16;
+
+        DrawerType type = tile.getDrawerType();
+        BigInventoryHandler handler = tile.getHandler();
+
+        for (int k = 0; k < type.getSlots(); k++) {
+            BigInventoryHandler.BigStack stack = handler.getStoredStacks().get(k);
+            if (!stack.getStack().isEmpty()) {
+                Pair<Integer, Integer> pos = type.getSlotPosition().apply(k);
+                int itemX = x + pos.getLeft();
+                int itemY = y + pos.getRight();
+
+                guiGraphics.renderItem(stack.getStack(), itemX, itemY);
+                guiGraphics.renderItemDecorations(this.font, stack.getStack(), itemX, itemY, null);
+
+                // Render Amount
+                String amount = NumberUtils.getFormatedBigNumber(stack.getAmount()) + "/"
+                        + NumberUtils.getFormatedBigNumber(handler.getSlotLimit(k));
+                renderAmountText(guiGraphics, itemX + 8, itemY + 12, amount);
+            }
+        }
+    }
+
+    private void renderFluidDrawerContents(GuiGraphics guiGraphics, FluidDrawerTile tile) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int x = i + 64;
+        int y = j + 16;
+
+        DrawerType type = tile.getDrawerType();
+        FluidInventoryHandler handler = tile.getHandler();
+
+        for (int k = 0; k < type.getSlots(); k++) {
+            FluidVariant resource = handler.getResource(k);
+            long amount = handler.getAmount(k);
+            long capacity = handler.getSlotLimit(k);
+
+            if (!resource.isBlank()) {
+                Pair<Integer, Integer> pos = type.getSlotPosition().apply(k);
+                int itemX = x + pos.getLeft();
+                int itemY = y + pos.getRight();
+
+                // Render fluid sprite
+                TextureAtlasSprite sprite = FluidVariantRendering.getSprite(resource);
+                if (sprite != null) {
+                    int color = FluidVariantRendering.getColor(resource);
+                    float red = ((color >> 16) & 0xFF) / 255f;
+                    float green = ((color >> 8) & 0xFF) / 255f;
+                    float blue = (color & 0xFF) / 255f;
+
+                    RenderSystem.setShaderColor(red, green, blue, 1.0f);
+                    RenderSystem.enableBlend();
+                    guiGraphics.blit(itemX, itemY, 0, 16, 16, sprite);
+                    RenderSystem.disableBlend();
+                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                }
+
+                // Render Amount
+                String amountStr = NumberUtils.getFormatedFluidBigNumber(amount) + "/"
+                        + NumberUtils.getFormatedFluidBigNumber(capacity);
+                renderAmountText(guiGraphics, itemX + 8, itemY + 12, amountStr);
+            }
+        }
+    }
+
+    private void renderAmountText(GuiGraphics guiGraphics, int x, int y, String amount) {
+        float scale = 0.5f;
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(x, y, 200);
+        guiGraphics.pose().scale(scale, scale, scale);
+
+        int textWidth = this.font.width(amount);
+        guiGraphics.drawString(this.font, amount, -textWidth / 2, 0, 0xFFFFFF, true);
+
+        guiGraphics.pose().popPose();
     }
 }

@@ -42,8 +42,9 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
             @Override
             public ItemStack removeItem(int slot, int amount) {
                 ItemStack removedStack = getItem(slot);
-                // Only check capacity for Drawers (which have limited storage), not Controllers (which use upgrades for radius)
-                if (!removedStack.isEmpty() 
+                // Only check capacity for Drawers (which have limited storage), not Controllers
+                // (which use upgrades for radius)
+                if (!removedStack.isEmpty()
                         && removedStack.getItem() instanceof StorageUpgradeItem
                         && !(ControllableDrawerTile.this instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile)) {
                     // Calculate what the new capacity would be after removing this upgrade
@@ -52,12 +53,13 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
 
                         // Temporarily remove the upgrade to calculate new limits
                         ItemStack temp = super.removeItem(slot, amount);
-                        
-                        // KEY FIX: Invalidate cache immediately so getStorageMultiplier calculates the NEW limit
+
+                        // KEY FIX: Invalidate cache immediately so getStorageMultiplier calculates the
+                        // NEW limit
                         ControllableDrawerTile.this.setNeedsUpgradeCache(true);
-                        
+
                         int baseSize = drawerTile.getBaseSize(0);
-                        long newLimit = (long) baseSize * ControllableDrawerTile.this.getStorageMultiplier(); 
+                        long newLimit = (long) baseSize * ControllableDrawerTile.this.getStorageMultiplier();
 
                         // Check if any slot exceeds new limit
                         boolean canRemove = true;
@@ -75,7 +77,7 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
                             ControllableDrawerTile.this.setNeedsUpgradeCache(true);
                             return ItemStack.EMPTY;
                         }
-                        
+
                         // Trigger GUI update
                         this.setChanged();
                         return temp;
@@ -466,5 +468,15 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
     public void clearControllerPos() {
         this.controllerPos = null;
         this.setChanged();
+    }
+
+    public Direction getFacingDirection() {
+        BlockState state = getBlockState();
+        if (state
+                .hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+            return state
+                    .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
+        }
+        return Direction.NORTH;
     }
 }

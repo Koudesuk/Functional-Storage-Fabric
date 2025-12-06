@@ -155,4 +155,10 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
             return FluidVariant.blank();
         return slots.get(slot).getResource();
     }
+
+    public long getAmount(int slot) {
+        if (slot < 0 || slot >= slots.size())
+            return 0;
+        return slots.get(slot).getAmount();
+    }
 }

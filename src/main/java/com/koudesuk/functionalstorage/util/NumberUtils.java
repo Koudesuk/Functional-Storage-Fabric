@@ -43,4 +43,14 @@ public class NumberUtils {
         }
         return String.valueOf(number) + " B";
     }
+
+    /**
+     * Formats fluid amount from droplets to millibuckets for display.
+     * Fabric uses 81000 droplets per bucket (1000 mB per bucket).
+     */
+    public static String getFormatedFluidBigNumber(long droplets) {
+        // Convert droplets to millibuckets (81 droplets = 1 mB)
+        long mB = droplets / 81;
+        return getFormatedFluidBigNumber((int) Math.min(mB, Integer.MAX_VALUE));
+    }
 }

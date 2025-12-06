@@ -35,6 +35,14 @@ public class FunctionalStorageClient implements ClientModInitializer {
                 BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_COMPACTING_DRAWER,
                                 ctx -> new CompactingDrawerRenderer());
 
+                // Fluid drawer renderers
+                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_1,
+                                ctx -> new FluidDrawerRenderer());
+                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_2,
+                                ctx -> new FluidDrawerRenderer());
+                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_4,
+                                ctx -> new FluidDrawerRenderer());
+
                 // Block render layers
                 FunctionalStorageBlocks.DRAWER_TYPES.values().forEach(blocks -> blocks
                                 .forEach(block -> BlockRenderLayerMap.INSTANCE.putBlock(block, RenderType.cutout())));
@@ -52,6 +60,11 @@ public class FunctionalStorageClient implements ClientModInitializer {
                 BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.CONTROLLER_EXTENSION,
                                 RenderType.cutout());
                 BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.ARMORY_CABINET, RenderType.cutout());
+
+                // Fluid drawer blocks - use translucent for fluid rendering
+                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_1, RenderType.translucent());
+                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_2, RenderType.translucent());
+                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_4, RenderType.translucent());
 
                 // Register controller renderer for linking tool visualization
                 BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.STORAGE_CONTROLLER,

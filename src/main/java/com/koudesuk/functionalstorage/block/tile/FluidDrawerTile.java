@@ -4,12 +4,6 @@ import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.DrawerType;
-import net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
-import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
-import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
-import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -111,24 +105,25 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         }
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            // Right-click: Insert fluid from hand to drawer ONLY
-            Storage<FluidVariant> handStorage = ContainerItemContext.ofPlayerHand(player, hand).find(FluidStorage.ITEM);
-            if (handStorage != null) {
-                try (Transaction transaction = Transaction.openOuter()) {
-                    // Try to insert from hand to drawer
-                    for (StorageView<FluidVariant> view : handStorage) {
-                        if (!view.isResourceBlank()) {
-                            long inserted = handler.insert(view.getResource(), view.getAmount(), transaction);
-                            if (inserted > 0) {
-                                handStorage.extract(view.getResource(), inserted, transaction);
-                                transaction.commit();
-                                return InteractionResult.SUCCESS;
-                            }
-                        }
+            // Right-click: INSERT ONLY - empty player's fluid container INTO drawer
+            // Matches Forge's FluidUtil.tryEmptyContainerAndStow behavior
+            net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext ctx = net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext
+                    .ofPlayerHand(player, hand);
+            net.fabricmc.fabric.api.transfer.v1.storage.Storage<net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant> itemStorage = ctx
+                    .find(net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM);
+
+            if (itemStorage != null) {
+                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction tx = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                        .openOuter()) {
+                    // Move fluid FROM item (bucket) TO drawer - insert only
+                    long moved = net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil.move(
+                            itemStorage, handler, variant -> true, Long.MAX_VALUE, tx);
+                    if (moved > 0) {
+                        tx.commit();
+                        return InteractionResult.SUCCESS;
                     }
                 }
             }
-            // Note: Extraction is done via left-click (onClicked method)
             return InteractionResult.SUCCESS;
         } else if (slot == -1 || player.isShiftKeyDown()) {
             if (!level.isClientSide) {
@@ -141,19 +136,21 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
 
     public void onClicked(Player player, int slot) {
         if (slot != -1) {
-            // Left-click: Extract fluid from drawer to hand container (bucket)
-            Storage<FluidVariant> handStorage = ContainerItemContext.ofPlayerHand(player, InteractionHand.MAIN_HAND)
-                    .find(FluidStorage.ITEM);
-            if (handStorage != null) {
-                try (Transaction transaction = Transaction.openOuter()) {
-                    // Try to fill the container from the drawer
-                    FluidVariant resource = handler.getResource(slot);
-                    if (!resource.isBlank()) {
-                        long inserted = handStorage.insert(resource, Long.MAX_VALUE, transaction);
-                        if (inserted > 0) {
-                            handler.extract(resource, inserted, transaction);
-                            transaction.commit();
-                        }
+            // Left-click: EXTRACT ONLY - fill player's fluid container FROM drawer
+            // Matches Forge's FluidUtil.tryFillContainerAndStow behavior
+            net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext ctx = net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext
+                    .ofPlayerHand(player, InteractionHand.MAIN_HAND);
+            net.fabricmc.fabric.api.transfer.v1.storage.Storage<net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant> itemStorage = ctx
+                    .find(net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM);
+
+            if (itemStorage != null) {
+                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction tx = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                        .openOuter()) {
+                    // Move fluid FROM drawer TO item (bucket) - extract only
+                    long moved = net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil.move(
+                            handler, itemStorage, variant -> true, Long.MAX_VALUE, tx);
+                    if (moved > 0) {
+                        tx.commit();
                     }
                 }
             }
