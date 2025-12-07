@@ -1,12 +1,16 @@
 package com.koudesuk.functionalstorage.client.gui;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
+import com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.DrawerTile;
 import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
+import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
+import com.koudesuk.functionalstorage.util.CompactingUtil;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.util.NumberUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -20,6 +24,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
@@ -63,6 +68,22 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                     : "_" + fluidTile.getDrawerType().getSlots();
             ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
                     "textures/block/fluid_front" + slotSuffix + ".png");
+            guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
+        } else if (this.menu.getTile() instanceof CompactingDrawerTile) {
+            // Draw Compacting Drawer Face Background (3-slot)
+            boolean isFramed = this.menu
+                    .getTile() instanceof com.koudesuk.functionalstorage.block.tile.FramedCompactingDrawerTile;
+            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+                    isFramed ? "textures/block/framed_front_compacting.png"
+                            : "textures/block/compacting_drawer_front.png");
+            guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
+        } else if (this.menu.getTile() instanceof SimpleCompactingDrawerTile) {
+            // Draw Simple Compacting Drawer Face Background (2-slot)
+            boolean isFramed = this.menu
+                    .getTile() instanceof com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile;
+            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+                    isFramed ? "textures/block/framed_front_simple_compacting.png"
+                            : "textures/block/simple_compacting_drawer_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         }
 
@@ -117,6 +138,14 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         // Render Fluid Drawer Contents
         else if (this.menu.getTile() instanceof FluidDrawerTile fluidTile) {
             renderFluidDrawerContents(guiGraphics, fluidTile);
+        }
+        // Render Compacting Drawer Contents (3-slot)
+        else if (this.menu.getTile() instanceof CompactingDrawerTile compactingTile) {
+            renderCompactingDrawerContents(guiGraphics, compactingTile);
+        }
+        // Render Simple Compacting Drawer Contents (2-slot)
+        else if (this.menu.getTile() instanceof SimpleCompactingDrawerTile simpleCompactingTile) {
+            renderSimpleCompactingDrawerContents(guiGraphics, simpleCompactingTile);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -201,5 +230,96 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         guiGraphics.drawString(this.font, amount, -textWidth / 2, 0, 0xFFFFFF, true);
 
         guiGraphics.pose().popPose();
+    }
+
+    /**
+     * Render Compacting Drawer contents (3-slot layout).
+     * Slot positions follow Forge's DrawerInfoGuiAddon:
+     * - Slot 0 (lowest tier, e.g., nuggets): (28, 28) - bottom-right
+     * - Slot 1 (middle tier, e.g., ingots): (4, 28) - bottom-left
+     * - Slot 2 (highest tier, e.g., blocks): (16, 4) - top-center
+     */
+    private void renderCompactingDrawerContents(GuiGraphics guiGraphics, CompactingDrawerTile tile) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int x = i + 64;
+        int y = j + 16;
+
+        CompactingInventoryHandler handler = tile.handler;
+
+        // Slot position mapping from Forge (based on 48x48 texture at 3x scale = 16x16
+        // item icons)
+        Pair<Integer, Integer>[] slotPositions = new Pair[] {
+                Pair.of(28, 28), // Slot 0: bottom-right (nuggets)
+                Pair.of(4, 28), // Slot 1: bottom-left (ingots)
+                Pair.of(16, 4) // Slot 2: top-center (blocks)
+        };
+
+        for (int slot = 0; slot < 3; slot++) {
+            ItemStack stack = handler.getStackInSlot(slot);
+            // Check if item type exists using resultList, not just stack count
+            java.util.List<CompactingUtil.Result> resultList = handler.getResultList();
+            if (slot < resultList.size() && !resultList.get(slot).getResult().isEmpty()) {
+                Pair<Integer, Integer> pos = slotPositions[slot];
+                int itemX = x + pos.getLeft();
+                int itemY = y + pos.getRight();
+
+                // Render item (use result item type, actual count from stack)
+                ItemStack displayStack = resultList.get(slot).getResult().copy();
+                displayStack.setCount(1); // Always show icon with count 1
+                guiGraphics.renderItem(displayStack, itemX, itemY);
+
+                // Render Amount text
+                int amount = stack.getCount();
+                int maxAmount = handler.getSlotLimit(slot);
+                String amountStr = NumberUtils.getFormatedBigNumber(amount) + "/"
+                        + NumberUtils.getFormatedBigNumber(maxAmount);
+                renderAmountText(guiGraphics, itemX + 8, itemY + 12, amountStr);
+            }
+        }
+    }
+
+    /**
+     * Render Simple Compacting Drawer contents (2-slot layout).
+     * Slot positions follow X_2 pattern:
+     * - Slot 0 (lower tier): (16, 28) - bottom
+     * - Slot 1 (higher tier): (16, 4) - top
+     */
+    private void renderSimpleCompactingDrawerContents(GuiGraphics guiGraphics, SimpleCompactingDrawerTile tile) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int x = i + 64;
+        int y = j + 16;
+
+        CompactingInventoryHandler handler = tile.handler;
+
+        // Slot position mapping (similar to X_2 drawer layout)
+        Pair<Integer, Integer>[] slotPositions = new Pair[] {
+                Pair.of(16, 28), // Slot 0: bottom (lower tier)
+                Pair.of(16, 4) // Slot 1: top (higher tier)
+        };
+
+        for (int slot = 0; slot < 2; slot++) {
+            ItemStack stack = handler.getStackInSlot(slot);
+            // Check if item type exists using resultList, not just stack count
+            java.util.List<CompactingUtil.Result> resultList = handler.getResultList();
+            if (slot < resultList.size() && !resultList.get(slot).getResult().isEmpty()) {
+                Pair<Integer, Integer> pos = slotPositions[slot];
+                int itemX = x + pos.getLeft();
+                int itemY = y + pos.getRight();
+
+                // Render item (use result item type, actual count from stack)
+                ItemStack displayStack = resultList.get(slot).getResult().copy();
+                displayStack.setCount(1); // Always show icon with count 1
+                guiGraphics.renderItem(displayStack, itemX, itemY);
+
+                // Render Amount text
+                int amount = stack.getCount();
+                int maxAmount = handler.getSlotLimit(slot);
+                String amountStr = NumberUtils.getFormatedBigNumber(amount) + "/"
+                        + NumberUtils.getFormatedBigNumber(maxAmount);
+                renderAmountText(guiGraphics, itemX + 8, itemY + 12, amountStr);
+            }
+        }
     }
 }
