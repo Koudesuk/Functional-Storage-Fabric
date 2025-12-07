@@ -208,6 +208,52 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
 
     public abstract boolean isLocked();
 
+    /**
+     * Get the ItemVariant stored in the specified slot.
+     * For compacting drawers, this returns the compacted item at that tier.
+     */
+    public ItemVariant getResource(int slot) {
+        if (slot < 0 || slot >= resultList.size())
+            return ItemVariant.blank();
+        ItemStack result = resultList.get(slot).getResult();
+        if (result.isEmpty())
+            return ItemVariant.blank();
+        return ItemVariant.of(result);
+    }
+
+    /**
+     * Check if the given item variant is valid for the specified slot.
+     * For compacting drawers, the item must match one of the compacting tiers.
+     */
+    public boolean isItemValid(int slot, ItemVariant resource) {
+        if (!isSetup())
+            return false;
+        if (slot < 0 || slot >= resultList.size())
+            return false;
+        CompactingUtil.Result result = resultList.get(slot);
+        if (result.getResult().isEmpty())
+            return false;
+        return resource.matches(result.getResult());
+    }
+
+    /**
+     * Insert into a specific slot. Required for slot-based UI interaction.
+     */
+    public long insertIntoSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        if (slot < 0 || slot >= storageSlots.size())
+            return 0;
+        return storageSlots.get(slot).insert(resource, maxAmount, transaction);
+    }
+
+    /**
+     * Extract from a specific slot. Required for slot-based UI interaction.
+     */
+    public long extractFromSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        if (slot < 0 || slot >= storageSlots.size())
+            return 0;
+        return storageSlots.get(slot).extract(resource, maxAmount, transaction);
+    }
+
     public class CompactingStackStorage implements StorageView<ItemVariant> {
         private final int slotIndex;
 
@@ -217,29 +263,42 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
 
         @Override
         public long extract(ItemVariant resource, long maxAmount, TransactionContext transaction) {
+            if (maxAmount == 0)
+                return 0;
             if (slotIndex >= resultList.size())
                 return 0;
             CompactingUtil.Result result = resultList.get(slotIndex);
             if (result.getResult().isEmpty() || !resource.matches(result.getResult()))
                 return 0;
 
-            long stackAmount = maxAmount * result.getNeeded();
-            if (!isCreative() && stackAmount > CompactingInventoryHandler.this.amount) {
-                stackAmount = (long) (Math.floor((double) CompactingInventoryHandler.this.amount / result.getNeeded())
-                        * result.getNeeded());
-            }
+            int needed = result.getNeeded();
+            int currentAmount = CompactingInventoryHandler.this.amount;
 
-            if (stackAmount > 0) {
+            // Calculate how much we want to extract in base units
+            long requestedBaseUnits = maxAmount * needed;
+
+            if (!isCreative() && requestedBaseUnits >= currentAmount) {
+                // Can't extract all requested, extract what we can
+                int extractableItems = currentAmount / needed;
+                if (extractableItems <= 0)
+                    return 0;
+
+                int actualBaseUnits = extractableItems * needed;
                 updateSnapshots(transaction);
-                if (!isCreative()) {
-                    CompactingInventoryHandler.this.amount -= stackAmount;
-                    if (CompactingInventoryHandler.this.amount == 0)
-                        reset();
-                }
+                CompactingInventoryHandler.this.amount -= actualBaseUnits;
+                if (CompactingInventoryHandler.this.amount == 0)
+                    reset();
                 onChange();
+                return extractableItems;
+            } else {
+                // Can extract the full requested amount
+                if (!isCreative()) {
+                    updateSnapshots(transaction);
+                    CompactingInventoryHandler.this.amount -= (int) requestedBaseUnits;
+                    onChange();
+                }
                 return maxAmount;
             }
-            return 0;
         }
 
         @Override

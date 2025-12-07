@@ -74,6 +74,19 @@ public class SimpleCompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        if (level.isClientSide)
+            return;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof SimpleCompactingDrawerTile tile) {
+            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+            if (result instanceof BlockHitResult blockHitResult) {
+                tile.onClicked(player, getHit(state, pos, blockHitResult));
+            }
+        }
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
@@ -88,6 +101,20 @@ public class SimpleCompactingDrawerBlock extends Block implements EntityBlock {
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+        if (result instanceof BlockHitResult blockHitResult) {
+            Direction facing = state.getValue(FACING);
+            if (blockHitResult.getDirection() == facing) {
+                return 0.0f; // Prevent breaking from front face
+            }
+        }
+        return super.getDestroyProgress(state, player, level, pos);
     }
 
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
@@ -122,16 +149,19 @@ public class SimpleCompactingDrawerBlock extends Block implements EntityBlock {
             return -1; // Edge click - open GUI
         }
 
-        // Simple compacting drawer has 2 slots arranged vertically
+        // Simple compacting drawer has 2 slots arranged vertically:
+        // Slot 0 = bottom (lower tier, e.g., ingots)
+        // Slot 1 = top (higher tier, e.g., blocks)
+
         // Check horizontal divider at y=0.5
         if (hitY > 0.5 - margin && hitY < 0.5 + margin) {
             return -1; // Clicking on divider - open GUI
         }
 
         if (hitY > 0.5) {
-            return 0; // Top slot
+            return 1; // Top slot (higher tier)
         } else {
-            return 1; // Bottom slot
+            return 0; // Bottom slot (lower tier)
         }
     }
 

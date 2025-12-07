@@ -118,35 +118,126 @@ public class FunctionalStorage implements ModInitializer {
                                 (drawer, direction) -> drawer.getHandler(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_4);
 
+                // Handle left-click (attack) on drawer blocks to extract items
                 net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT
                                 .register((player, world, hand, pos, direction) -> {
                                         net.minecraft.world.level.block.state.BlockState state = world
                                                         .getBlockState(pos);
+                                        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+                                        if (!(result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult)) {
+                                                return net.minecraft.world.InteractionResult.PASS;
+                                        }
+                                        if (!blockHitResult.getBlockPos().equals(pos)) {
+                                                return net.minecraft.world.InteractionResult.PASS;
+                                        }
+
+                                        // Handle DrawerBlock
                                         if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
-                                                net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-                                                if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-                                                        if (blockHitResult.getBlockPos().equals(pos)) {
-                                                                int hit = drawerBlock.getHit(state, pos,
-                                                                                blockHitResult);
-                                                                if (hit != -1) {
-                                                                        if (!world.isClientSide()) {
-                                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                                .getBlockEntity(pos);
-                                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-                                                                                        drawerTile.onClicked(player,
-                                                                                                        hit);
-                                                                                } else if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.FluidDrawerTile fluidDrawerTile) {
-                                                                                        fluidDrawerTile.onClicked(
-                                                                                                        player,
-                                                                                                        hit);
-                                                                                }
-                                                                        }
-                                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                int hit = drawerBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        if (!world.isClientSide()) {
+                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                .getBlockEntity(pos);
+                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
+                                                                        drawerTile.onClicked(player, hit);
                                                                 }
                                                         }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
                                                 }
                                         }
+
+                                        // Handle CompactingDrawerBlock (including framed)
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.CompactingDrawerBlock compactingBlock) {
+                                                int hit = compactingBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        if (!world.isClientSide()) {
+                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                .getBlockEntity(pos);
+                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile compactingTile) {
+                                                                        compactingTile.onClicked(player, hit);
+                                                                }
+                                                        }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                }
+                                        }
+
+                                        // Handle SimpleCompactingDrawerBlock (including framed)
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock simpleCompactingBlock) {
+                                                int hit = simpleCompactingBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        if (!world.isClientSide()) {
+                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                .getBlockEntity(pos);
+                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile simpleCompactingTile) {
+                                                                        simpleCompactingTile.onClicked(player, hit);
+                                                                }
+                                                        }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                }
+                                        }
+
+                                        // Handle FluidDrawerBlock
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FluidDrawerBlock fluidBlock) {
+                                                int hit = fluidBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        if (!world.isClientSide()) {
+                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                .getBlockEntity(pos);
+                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.FluidDrawerTile fluidTile) {
+                                                                        fluidTile.onClicked(player, hit);
+                                                                }
+                                                        }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                }
+                                        }
+
                                         return net.minecraft.world.InteractionResult.PASS;
+                                });
+
+                // Prevent block breaking when clicking on drawer front face (especially for
+                // creative mode)
+                net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE
+                                .register((world, player, pos, state, blockEntity) -> {
+                                        // Only check in creative mode - survival mode uses getDestroyProgress
+                                        if (!player.isCreative()) {
+                                                return true; // Allow normal breaking in survival
+                                        }
+
+                                        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+                                        if (!(result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult)) {
+                                                return true; // Allow breaking if no hit result
+                                        }
+                                        if (!blockHitResult.getBlockPos().equals(pos)) {
+                                                return true; // Allow breaking if hit result doesn't match
+                                        }
+
+                                        // Check each drawer type and cancel if hitting front face
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
+                                                int hit = drawerBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        return false; // Cancel breaking - front face was clicked
+                                                }
+                                        }
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.CompactingDrawerBlock compactingBlock) {
+                                                int hit = compactingBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        return false; // Cancel breaking - front face was clicked
+                                                }
+                                        }
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock simpleCompactingBlock) {
+                                                int hit = simpleCompactingBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        return false; // Cancel breaking - front face was clicked
+                                                }
+                                        }
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FluidDrawerBlock fluidBlock) {
+                                                int hit = fluidBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        return false; // Cancel breaking - front face was clicked
+                                                }
+                                        }
+
+                                        return true; // Allow breaking for all other cases
                                 });
         }
 }

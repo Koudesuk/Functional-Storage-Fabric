@@ -74,6 +74,19 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        if (level.isClientSide)
+            return;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof CompactingDrawerTile tile) {
+            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+            if (result instanceof BlockHitResult blockHitResult) {
+                tile.onClicked(player, getHit(state, pos, blockHitResult));
+            }
+        }
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
@@ -88,6 +101,19 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
+    public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level,
+            BlockPos pos) {
+        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+        if (result instanceof BlockHitResult blockHitResult) {
+            Direction facing = state.getValue(FACING);
+            if (blockHitResult.getDirection() == facing) {
+                return 0.0f; // Prevent breaking from front face
+            }
+        }
+        return super.getDestroyProgress(state, player, level, pos);
     }
 
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
@@ -122,27 +148,30 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
             return -1; // Edge click - open GUI
         }
 
-        // Compacting drawer has 3 slots arranged: bottom-left, bottom-right, top
+        // Compacting drawer has 3 slots: bottom-left(0), bottom-right(1), top(2)
+        // Strictly follow DrawerBlock X_4 pattern
+
         // Check horizontal divider at y=0.5
         if (hitY > 0.5 - margin && hitY < 0.5 + margin) {
             return -1; // Clicking on horizontal divider - open GUI
         }
 
         if (hitY > 0.5) {
-            // Top slot (slot 0)
-            return 0;
+            // Top slot (slot 2)
+            return 2;
         } else {
             // Bottom half - check for vertical divider at x=0.5
             if (hitX > 0.5 - margin && hitX < 0.5 + margin) {
                 return -1; // Clicking on vertical divider - open GUI
             }
 
-            if (hitX < 0.5) {
-                // Bottom-left (slot 1)
-                return 1;
+            // Match DrawerBlock X_4 exactly:
+            // hitX > 0.5 -> return 0
+            // hitX < 0.5 -> return 1
+            if (hitX > 0.5) {
+                return 0;
             } else {
-                // Bottom-right (slot 2)
-                return 2;
+                return 1;
             }
         }
     }

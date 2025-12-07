@@ -39,6 +39,20 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
     }
 
     @Override
+    public void attack(net.minecraft.world.level.block.state.BlockState state, Level level, BlockPos pos,
+            net.minecraft.world.entity.player.Player player) {
+        if (level.isClientSide)
+            return;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof FramedSimpleCompactingDrawerTile tile) {
+            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+            if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
+                tile.onClicked(player, getHit(state, pos, blockHitResult));
+            }
+        }
+    }
+
+    @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         NonNullList<ItemStack> stacks = NonNullList.create();
         ItemStack stack = new ItemStack(this);

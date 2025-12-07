@@ -46,6 +46,19 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        if (level.isClientSide)
+            return;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof FramedCompactingDrawerTile tile) {
+            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
+            if (result instanceof BlockHitResult blockHitResult) {
+                tile.onClicked(player, getHit(state, pos, blockHitResult));
+            }
+        }
+    }
+
+    @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
             ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);

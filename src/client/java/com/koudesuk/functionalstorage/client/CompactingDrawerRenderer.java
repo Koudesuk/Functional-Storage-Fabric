@@ -62,41 +62,66 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
         private void render3Slots(PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
                         int combinedOverlayIn, T tile) {
                 CompactingInventoryHandler inventoryHandler = tile.handler;
-                var stack0 = inventoryHandler.getStackInSlot(0);
-                if (!stack0.isEmpty()) {
-                        matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
-                                        .createTransformMatrix(new org.joml.Vector3f(0.25f, 0.25f, 0.0005f),
-                                                        new org.joml.Vector3f(0),
-                                                        new org.joml.Vector3f(.4f, .4f, 1.0f)));
-                        DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, stack0,
-                                        stack0.getCount(), inventoryHandler.getSlotLimit(0), 0.02f,
-                                        tile.getDrawerOptions(), tile.getLevel());
-                        matrixStack.popPose();
+                // Match Forge CompactingDrawerRenderer positions:
+                // Slot 0: X=0.75 (right), Y=0.27 (bottom) - lowest tier (e.g., nuggets)
+                // Slot 1: X=0.25 (left), Y=0.27 (bottom) - middle tier (e.g., ingots)
+                // Slot 2: X=0.5 (center), Y=0.77 (top) - highest tier (e.g., blocks)
+                // Use resultList.get(i).getResult() to check item type existence,
+                // so all three slots render even when count is 0
+                var resultList = inventoryHandler.getResultList();
+
+                // Slot 0 (bottom-right, lowest tier)
+                if (resultList.size() > 0) {
+                        net.minecraft.world.item.ItemStack itemType0 = resultList.get(0).getResult();
+                        if (!itemType0.isEmpty()) {
+                                int count0 = inventoryHandler.getStackInSlot(0).getCount();
+                                matrixStack.pushPose();
+                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                                .createTransformMatrix(new org.joml.Vector3f(0.75f, 0.27f, 0.0005f),
+                                                                new org.joml.Vector3f(0),
+                                                                new org.joml.Vector3f(.5f, .5f, 1.0f)));
+                                DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn,
+                                                itemType0,
+                                                count0, inventoryHandler.getSlotLimit(0), 0.02f,
+                                                tile.getDrawerOptions(), tile.getLevel());
+                                matrixStack.popPose();
+                        }
                 }
-                var stack1 = inventoryHandler.getStackInSlot(1);
-                if (!stack1.isEmpty()) {
-                        matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
-                                        .createTransformMatrix(new org.joml.Vector3f(0.75f, 0.25f, 0.0005f),
-                                                        new org.joml.Vector3f(0),
-                                                        new org.joml.Vector3f(.4f, .4f, 1.0f)));
-                        DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, stack1,
-                                        stack1.getCount(), inventoryHandler.getSlotLimit(1), 0.02f,
-                                        tile.getDrawerOptions(), tile.getLevel());
-                        matrixStack.popPose();
+
+                // Slot 1 (bottom-left, middle tier)
+                if (resultList.size() > 1) {
+                        net.minecraft.world.item.ItemStack itemType1 = resultList.get(1).getResult();
+                        if (!itemType1.isEmpty()) {
+                                int count1 = inventoryHandler.getStackInSlot(1).getCount();
+                                matrixStack.pushPose();
+                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                                .createTransformMatrix(new org.joml.Vector3f(0.25f, 0.27f, 0.0005f),
+                                                                new org.joml.Vector3f(0),
+                                                                new org.joml.Vector3f(.5f, .5f, 1.0f)));
+                                DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn,
+                                                itemType1,
+                                                count1, inventoryHandler.getSlotLimit(1), 0.02f,
+                                                tile.getDrawerOptions(), tile.getLevel());
+                                matrixStack.popPose();
+                        }
                 }
-                var stack2 = inventoryHandler.getStackInSlot(2);
-                if (!stack2.isEmpty()) {
-                        matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
-                                        .createTransformMatrix(new org.joml.Vector3f(0.5f, 0.75f, 0.0005f),
-                                                        new org.joml.Vector3f(0),
-                                                        new org.joml.Vector3f(.4f, .4f, 1.0f)));
-                        DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, stack2,
-                                        stack2.getCount(), inventoryHandler.getSlotLimit(2), 0.02f,
-                                        tile.getDrawerOptions(), tile.getLevel());
-                        matrixStack.popPose();
+
+                // Slot 2 (top-center, highest tier)
+                if (resultList.size() > 2) {
+                        net.minecraft.world.item.ItemStack itemType2 = resultList.get(2).getResult();
+                        if (!itemType2.isEmpty()) {
+                                int count2 = inventoryHandler.getStackInSlot(2).getCount();
+                                matrixStack.pushPose();
+                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                                .createTransformMatrix(new org.joml.Vector3f(0.5f, 0.77f, 0.0005f),
+                                                                new org.joml.Vector3f(0),
+                                                                new org.joml.Vector3f(.5f, .5f, 1.0f)));
+                                DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn,
+                                                itemType2,
+                                                count2, inventoryHandler.getSlotLimit(2), 0.02f,
+                                                tile.getDrawerOptions(), tile.getLevel());
+                                matrixStack.popPose();
+                        }
                 }
         }
 }
