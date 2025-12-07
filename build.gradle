@@ -104,6 +104,12 @@ java {
 	targetCompatibility = JavaVersion.VERSION_17
 }
 
+// Handle duplicate resources between src/main/resources and src/main/generated
+// EXCLUDE strategy ensures src/main/resources files (which have complete locked variants) take priority
+tasks.named('sourcesJar', Jar) {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
