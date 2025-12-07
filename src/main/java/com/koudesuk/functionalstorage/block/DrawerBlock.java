@@ -121,9 +121,10 @@ public class DrawerBlock extends Block implements EntityBlock {
                 // Divider at 0.5, check margin around it
                 if (hitY > 0.5 - margin && hitY < 0.5 + margin)
                     return -1;
+                // Match original Forge VoxelShape ordering: Bottom=0, Top=1
                 if (hitY > 0.5)
-                    return 0;
-                return 1;
+                    return 1; // Top slot
+                return 0; // Bottom slot
             }
 
             if (this.type == com.koudesuk.functionalstorage.util.DrawerType.X_4) {
@@ -133,13 +134,24 @@ public class DrawerBlock extends Block implements EntityBlock {
                 if (hitY > 0.5 - margin && hitY < 0.5 + margin)
                     return -1;
 
-                if (hitX < 0.5 && hitY > 0.5)
-                    return 0;
-                if (hitX > 0.5 && hitY > 0.5)
-                    return 1;
+                // Match original Forge VoxelShape ordering:
+                // Forge builds shapes in block coordinates, not visual coordinates.
+                // For NORTH-facing: low block X appears on player's RIGHT, high block X on
+                // LEFT.
+                // hitX is transformed so hitX < 0.5 = visual LEFT, hitX > 0.5 = visual RIGHT
+                //
+                // Forge VoxelShape index order:
+                // Index 0 = Bottom, low block X = visual RIGHT
+                // Index 1 = Bottom, high block X = visual LEFT
+                // Index 2 = Top, low block X = visual RIGHT
+                // Index 3 = Top, high block X = visual LEFT
+                if (hitX > 0.5 && hitY < 0.5)
+                    return 0; // visual RIGHT, BOTTOM
                 if (hitX < 0.5 && hitY < 0.5)
-                    return 2;
-                return 3;
+                    return 1; // visual LEFT, BOTTOM
+                if (hitX > 0.5 && hitY > 0.5)
+                    return 2; // visual RIGHT, TOP
+                return 3; // visual LEFT, TOP
             }
         }
         return -1;
@@ -213,7 +225,9 @@ public class DrawerBlock extends Block implements EntityBlock {
 
     @Nullable
     @Override
-    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> blockEntityType) {
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
+            net.minecraft.world.level.Level level, BlockState state,
+            net.minecraft.world.level.block.entity.BlockEntityType<T> blockEntityType) {
         return (level1, pos, state1, blockEntity) -> {
             if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile tile) {
                 com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile.tick(level1, pos, state1, tile);

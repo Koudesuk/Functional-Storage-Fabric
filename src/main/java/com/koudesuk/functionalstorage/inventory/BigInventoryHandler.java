@@ -215,6 +215,38 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
         return slots.get(slot).getResource();
     }
 
+    /**
+     * Insert into a specific slot. This is required for multi-slot drawers where
+     * the user clicks on a specific slot to insert items.
+     * 
+     * @param slot        The slot index to insert into
+     * @param resource    The item variant to insert
+     * @param maxAmount   The maximum amount to insert
+     * @param transaction The transaction context
+     * @return The amount actually inserted
+     */
+    public long insertIntoSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        if (slot < 0 || slot >= slots.size())
+            return 0;
+        return slots.get(slot).insert(resource, maxAmount, transaction);
+    }
+
+    /**
+     * Extract from a specific slot. This is required for multi-slot drawers where
+     * the user clicks on a specific slot to extract items.
+     * 
+     * @param slot        The slot index to extract from
+     * @param resource    The item variant to extract
+     * @param maxAmount   The maximum amount to extract
+     * @param transaction The transaction context
+     * @return The amount actually extracted
+     */
+    public long extractFromSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        if (slot < 0 || slot >= slots.size())
+            return 0;
+        return slots.get(slot).extract(resource, maxAmount, transaction);
+    }
+
     public boolean isEverythingEmpty() {
         for (BigStackStorage slot : slots) {
             if (slot.getAmount() > 0) {

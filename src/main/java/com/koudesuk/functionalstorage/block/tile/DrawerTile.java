@@ -149,7 +149,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
 
                         try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                                 .openOuter()) {
-                            long inserted = handler.insert(
+                            long inserted = handler.insertIntoSlot(slot,
                                     net.fabricmc.fabric.api.transfer.v1.item.ItemVariant.of(stack), amount,
                                     transaction);
                             if (inserted > 0) {
@@ -245,13 +245,13 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
 
     public void onClicked(net.minecraft.world.entity.player.Player player, int slot) {
         if (slot != -1) {
-            // Extract item
+            // Extract item from the specific slot
             try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                     .openOuter()) {
                 net.fabricmc.fabric.api.transfer.v1.item.ItemVariant resource = handler.getResource(slot);
                 if (!resource.isBlank()) {
                     int maxExtract = player.isShiftKeyDown() ? resource.getItem().getMaxStackSize() : 1;
-                    long extracted = handler.extract(resource, maxExtract, transaction);
+                    long extracted = handler.extractFromSlot(slot, resource, maxExtract, transaction);
                     if (extracted > 0) {
                         net.minecraft.world.item.ItemStack stack = resource.toStack((int) extracted);
                         player.getInventory().placeItemBackInInventory(stack);
