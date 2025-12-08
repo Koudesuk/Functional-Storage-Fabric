@@ -16,6 +16,7 @@ import com.koudesuk.functionalstorage.util.NumberUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -26,6 +27,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
 
@@ -134,18 +139,22 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         // Render Item Drawer Contents
         if (this.menu.getTile() instanceof DrawerTile tile) {
             renderItemDrawerContents(guiGraphics, tile);
+            renderItemDrawerTooltip(guiGraphics, tile, mouseX, mouseY);
         }
         // Render Fluid Drawer Contents
         else if (this.menu.getTile() instanceof FluidDrawerTile fluidTile) {
             renderFluidDrawerContents(guiGraphics, fluidTile);
+            renderFluidDrawerTooltip(guiGraphics, fluidTile, mouseX, mouseY);
         }
         // Render Compacting Drawer Contents (3-slot)
         else if (this.menu.getTile() instanceof CompactingDrawerTile compactingTile) {
             renderCompactingDrawerContents(guiGraphics, compactingTile);
+            renderCompactingDrawerTooltip(guiGraphics, compactingTile, mouseX, mouseY);
         }
         // Render Simple Compacting Drawer Contents (2-slot)
         else if (this.menu.getTile() instanceof SimpleCompactingDrawerTile simpleCompactingTile) {
             renderSimpleCompactingDrawerContents(guiGraphics, simpleCompactingTile);
+            renderSimpleCompactingDrawerTooltip(guiGraphics, simpleCompactingTile, mouseX, mouseY);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -319,6 +328,220 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                 String amountStr = NumberUtils.getFormatedBigNumber(amount) + "/"
                         + NumberUtils.getFormatedBigNumber(maxAmount);
                 renderAmountText(guiGraphics, itemX + 8, itemY + 12, amountStr);
+            }
+        }
+    }
+
+    /**
+     * Render tooltip when hovering over item drawer slots.
+     */
+    private void renderItemDrawerTooltip(GuiGraphics guiGraphics, DrawerTile tile, int mouseX, int mouseY) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int baseX = i + 64;
+        int baseY = j + 16;
+
+        DrawerType type = tile.getDrawerType();
+        BigInventoryHandler handler = tile.getHandler();
+
+        for (int slot = 0; slot < type.getSlots(); slot++) {
+            Pair<Integer, Integer> pos = type.getSlotPosition().apply(slot);
+            int slotX = baseX + pos.getLeft();
+            int slotY = baseY + pos.getRight();
+
+            // Check if mouse is hovering over this slot (18x18 area)
+            if (mouseX >= slotX && mouseX < slotX + 18 && mouseY >= slotY && mouseY < slotY + 18) {
+                // Render highlight
+                guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0x80FFFFFF);
+
+                // Build tooltip
+                List<Component> componentList = new ArrayList<>();
+                BigInventoryHandler.BigStack bigStack = handler.getStoredStacks().get(slot);
+
+                if (bigStack.getStack().isEmpty()) {
+                    componentList
+                            .add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                                    .append(Component.translatable("gui.functionalstorage.empty")
+                                            .withStyle(ChatFormatting.WHITE)));
+                } else {
+                    componentList
+                            .add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                                    .append(bigStack.getStack().getHoverName().copy().withStyle(ChatFormatting.WHITE)));
+                    String amount = NumberUtils.getFormatedBigNumber(bigStack.getAmount()) + "/"
+                            + NumberUtils.getFormatedBigNumber(handler.getSlotLimit(slot));
+                    componentList
+                            .add(Component.translatable("gui.functionalstorage.amount").withStyle(ChatFormatting.GOLD)
+                                    .append(Component.literal(amount).withStyle(ChatFormatting.WHITE)));
+                }
+                componentList.add(Component.translatable("gui.functionalstorage.slot").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(String.valueOf(slot)).withStyle(ChatFormatting.WHITE)));
+
+                guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
+                return; // Only show one tooltip
+            }
+        }
+    }
+
+    /**
+     * Render tooltip when hovering over fluid drawer slots.
+     */
+    private void renderFluidDrawerTooltip(GuiGraphics guiGraphics, FluidDrawerTile tile, int mouseX, int mouseY) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int baseX = i + 64;
+        int baseY = j + 16;
+
+        DrawerType type = tile.getDrawerType();
+        FluidInventoryHandler handler = tile.getHandler();
+
+        for (int slot = 0; slot < type.getSlots(); slot++) {
+            Pair<Integer, Integer> pos = type.getSlotPosition().apply(slot);
+            int slotX = baseX + pos.getLeft();
+            int slotY = baseY + pos.getRight();
+
+            // Check if mouse is hovering over this slot (18x18 area)
+            if (mouseX >= slotX && mouseX < slotX + 18 && mouseY >= slotY && mouseY < slotY + 18) {
+                // Render highlight
+                guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0x80FFFFFF);
+
+                // Build tooltip
+                List<Component> componentList = new ArrayList<>();
+                FluidVariant resource = handler.getResource(slot);
+                long amount = handler.getAmount(slot);
+                long capacity = handler.getSlotLimit(slot);
+
+                if (resource.isBlank()) {
+                    componentList
+                            .add(Component.translatable("gui.functionalstorage.fluid").withStyle(ChatFormatting.GOLD)
+                                    .append(Component.translatable("gui.functionalstorage.empty")
+                                            .withStyle(ChatFormatting.WHITE)));
+                } else {
+                    componentList.add(Component.translatable("gui.functionalstorage.fluid")
+                            .withStyle(ChatFormatting.GOLD)
+                            .append(FluidVariantAttributes.getName(resource).copy().withStyle(ChatFormatting.WHITE)));
+                    String amountStr = NumberUtils.getFormatedFluidBigNumber(amount) + "/"
+                            + NumberUtils.getFormatedFluidBigNumber(capacity);
+                    componentList
+                            .add(Component.translatable("gui.functionalstorage.amount").withStyle(ChatFormatting.GOLD)
+                                    .append(Component.literal(amountStr).withStyle(ChatFormatting.WHITE)));
+                }
+                componentList.add(Component.translatable("gui.functionalstorage.slot").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(String.valueOf(slot)).withStyle(ChatFormatting.WHITE)));
+
+                guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
+                return; // Only show one tooltip
+            }
+        }
+    }
+
+    /**
+     * Render tooltip when hovering over compacting drawer slots (3-slot layout).
+     */
+    private void renderCompactingDrawerTooltip(GuiGraphics guiGraphics, CompactingDrawerTile tile, int mouseX,
+            int mouseY) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int baseX = i + 64;
+        int baseY = j + 16;
+
+        CompactingInventoryHandler handler = tile.handler;
+
+        // Same slot positions as renderCompactingDrawerContents
+        Pair<Integer, Integer>[] slotPositions = new Pair[] {
+                Pair.of(28, 28), // Slot 0: bottom-right (nuggets)
+                Pair.of(4, 28), // Slot 1: bottom-left (ingots)
+                Pair.of(16, 4) // Slot 2: top-center (blocks)
+        };
+
+        List<CompactingUtil.Result> resultList = handler.getResultList();
+
+        for (int slot = 0; slot < 3; slot++) {
+            if (slot >= resultList.size() || resultList.get(slot).getResult().isEmpty()) {
+                continue;
+            }
+
+            Pair<Integer, Integer> pos = slotPositions[slot];
+            int slotX = baseX + pos.getLeft();
+            int slotY = baseY + pos.getRight();
+
+            // Check if mouse is hovering over this slot (18x18 area)
+            if (mouseX >= slotX && mouseX < slotX + 18 && mouseY >= slotY && mouseY < slotY + 18) {
+                // Render highlight
+                guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0x80FFFFFF);
+
+                // Build tooltip
+                List<Component> componentList = new ArrayList<>();
+                ItemStack displayStack = resultList.get(slot).getResult();
+                int amount = handler.getStackInSlot(slot).getCount();
+                int maxAmount = handler.getSlotLimit(slot);
+
+                componentList.add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                        .append(displayStack.getHoverName().copy().withStyle(ChatFormatting.WHITE)));
+                String amountStr = NumberUtils.getFormatedBigNumber(amount) + "/"
+                        + NumberUtils.getFormatedBigNumber(maxAmount);
+                componentList.add(Component.translatable("gui.functionalstorage.amount").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(amountStr).withStyle(ChatFormatting.WHITE)));
+                componentList.add(Component.translatable("gui.functionalstorage.slot").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(String.valueOf(slot)).withStyle(ChatFormatting.WHITE)));
+
+                guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
+                return; // Only show one tooltip
+            }
+        }
+    }
+
+    /**
+     * Render tooltip when hovering over simple compacting drawer slots (2-slot
+     * layout).
+     */
+    private void renderSimpleCompactingDrawerTooltip(GuiGraphics guiGraphics, SimpleCompactingDrawerTile tile,
+            int mouseX, int mouseY) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int baseX = i + 64;
+        int baseY = j + 16;
+
+        CompactingInventoryHandler handler = tile.handler;
+
+        // Same slot positions as renderSimpleCompactingDrawerContents
+        Pair<Integer, Integer>[] slotPositions = new Pair[] {
+                Pair.of(16, 28), // Slot 0: bottom (lower tier)
+                Pair.of(16, 4) // Slot 1: top (higher tier)
+        };
+
+        List<CompactingUtil.Result> resultList = handler.getResultList();
+
+        for (int slot = 0; slot < 2; slot++) {
+            if (slot >= resultList.size() || resultList.get(slot).getResult().isEmpty()) {
+                continue;
+            }
+
+            Pair<Integer, Integer> pos = slotPositions[slot];
+            int slotX = baseX + pos.getLeft();
+            int slotY = baseY + pos.getRight();
+
+            // Check if mouse is hovering over this slot (18x18 area)
+            if (mouseX >= slotX && mouseX < slotX + 18 && mouseY >= slotY && mouseY < slotY + 18) {
+                // Render highlight
+                guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0x80FFFFFF);
+
+                // Build tooltip
+                List<Component> componentList = new ArrayList<>();
+                ItemStack displayStack = resultList.get(slot).getResult();
+                int amount = handler.getStackInSlot(slot).getCount();
+                int maxAmount = handler.getSlotLimit(slot);
+
+                componentList.add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                        .append(displayStack.getHoverName().copy().withStyle(ChatFormatting.WHITE)));
+                String amountStr = NumberUtils.getFormatedBigNumber(amount) + "/"
+                        + NumberUtils.getFormatedBigNumber(maxAmount);
+                componentList.add(Component.translatable("gui.functionalstorage.amount").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(amountStr).withStyle(ChatFormatting.WHITE)));
+                componentList.add(Component.translatable("gui.functionalstorage.slot").withStyle(ChatFormatting.GOLD)
+                        .append(Component.literal(String.valueOf(slot)).withStyle(ChatFormatting.WHITE)));
+
+                guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
+                return; // Only show one tooltip
             }
         }
     }
