@@ -69,10 +69,18 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
                             for (Map.Entry<String, JsonElement> entry : childrenObj.entrySet()) {
                                 JsonElement value = entry.getValue();
                                 if (value.isJsonPrimitive()) {
+                                    // Simple string reference to a model
                                     children.put(entry.getKey(), new ResourceLocation(value.getAsString()));
+                                    itemPasses.add(entry.getKey());
+                                } else if (value.isJsonObject()) {
+                                    // Forge-style embedded BlockModel object with parent
+                                    JsonObject childModel = value.getAsJsonObject();
+                                    if (childModel.has("parent")) {
+                                        children.put(entry.getKey(),
+                                                new ResourceLocation(childModel.get("parent").getAsString()));
+                                        itemPasses.add(entry.getKey());
+                                    }
                                 }
-                                // If the value is an object (old Forge style), skip it here to avoid
-                                // crashes; those models should point to a parent instead.
                             }
                         }
 
