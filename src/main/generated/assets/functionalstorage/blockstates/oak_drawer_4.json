@@ -5,21 +5,21 @@
       "y": 90
     },
     "facing=east,locked=true": {
-      "model": "functionalstorage:block/oak_drawer_4",
+      "model": "functionalstorage:block/oak_drawer_4_locked",
       "y": 90
     },
     "facing=north,locked=false": {
       "model": "functionalstorage:block/oak_drawer_4"
     },
     "facing=north,locked=true": {
-      "model": "functionalstorage:block/oak_drawer_4"
+      "model": "functionalstorage:block/oak_drawer_4_locked"
     },
     "facing=south,locked=false": {
       "model": "functionalstorage:block/oak_drawer_4",
       "y": 180
     },
     "facing=south,locked=true": {
-      "model": "functionalstorage:block/oak_drawer_4",
+      "model": "functionalstorage:block/oak_drawer_4_locked",
       "y": 180
     },
     "facing=west,locked=false": {
@@ -27,7 +27,7 @@
       "y": 270
     },
     "facing=west,locked=true": {
-      "model": "functionalstorage:block/oak_drawer_4",
+      "model": "functionalstorage:block/oak_drawer_4_locked",
       "y": 270
     }
   }

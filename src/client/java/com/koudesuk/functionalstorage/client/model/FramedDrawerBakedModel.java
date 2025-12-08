@@ -54,13 +54,17 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
     }
 
     /**
-     * Creates a custom ItemOverrides that forces the model to re-render when the ItemStack's NBT changes.
-     * This is necessary because Fabric's FabricBakedModel.emitItemQuads() is called each frame,
+     * Creates a custom ItemOverrides that forces the model to re-render when the
+     * ItemStack's NBT changes.
+     * This is necessary because Fabric's FabricBakedModel.emitItemQuads() is called
+     * each frame,
      * but Minecraft caches the model based on ItemOverrides.resolve() result.
-     * By returning 'this' (the parent model) each time, we ensure emitItemQuads() is called
+     * By returning 'this' (the parent model) each time, we ensure emitItemQuads()
+     * is called
      * with the current ItemStack, allowing dynamic texture updates based on NBT.
      *
-     * Uses the public constructor ItemOverrides(ModelBaker, BlockModel, List<ItemOverride>)
+     * Uses the public constructor ItemOverrides(ModelBaker, BlockModel,
+     * List<ItemOverride>)
      * since the no-arg constructor is private.
      */
     private ItemOverrides createItemOverrides() {
@@ -68,8 +72,10 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
             @Override
             public BakedModel resolve(BakedModel model, ItemStack stack, @Nullable ClientLevel level,
                     @Nullable LivingEntity entity, int seed) {
-                // Always return the parent model to ensure emitItemQuads() is called with the current ItemStack
-                // The actual texture resolution happens in emitItemQuads() based on the NBT data
+                // Always return the parent model to ensure emitItemQuads() is called with the
+                // current ItemStack
+                // The actual texture resolution happens in emitItemQuads() based on the NBT
+                // data
                 return FramedDrawerBakedModel.this;
             }
         };

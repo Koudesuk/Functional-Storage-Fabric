@@ -82,7 +82,7 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
             boolean isFramed = this.menu
                     .getTile() instanceof com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile;
             ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
-                    isFramed ? "textures/block/framed_front_simple_compacting.png"
+                    isFramed ? "textures/block/framed_front_compacting.png"
                             : "textures/block/simple_compacting_drawer_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         }

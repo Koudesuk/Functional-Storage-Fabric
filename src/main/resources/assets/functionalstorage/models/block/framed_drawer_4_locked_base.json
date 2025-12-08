@@ -1,5 +1,5 @@
 {
-  "parent": "functionalstorage:block/framed_drawer_4",
+  "parent": "functionalstorage:block/framed_drawer_4_base",
   "textures": {
     "lock_icon": "functionalstorage:block/lock"
   }
