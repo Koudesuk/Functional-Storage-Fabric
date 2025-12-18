@@ -16,16 +16,20 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
     public static String BIG_FLUIDS = "BigFluids";
     public static String FLUID = "Fluid";
     public static String AMOUNT = "Amount";
+    public static String LOCKED = "Locked";
 
     private final DrawerType type;
     private final List<FluidStackStorage> slots;
+    private final FluidVariant[] filterStack;
 
     public FluidInventoryHandler(DrawerType type) {
         this.type = type;
 
         this.slots = new ArrayList<>();
+        this.filterStack = new FluidVariant[type.getSlots()];
         for (int i = 0; i < type.getSlots(); i++) {
             this.slots.add(new FluidStackStorage(i));
+            this.filterStack[i] = FluidVariant.blank();
         }
     }
 
@@ -95,15 +99,44 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
             return super.insert(resource, maxAmount, transaction);
         }
 
-        // Helper to check validity
+        // Helper to check validity - use filterStack when locked
         private boolean isResourceValid(FluidVariant resource) {
-            if (isLocked() && !getResource().isBlank() && !getResource().equals(resource))
+            if (isLocked()) {
+                FluidVariant filter = filterStack[slotIndex];
+                if (!filter.isBlank() && !filter.equals(resource)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Override canInsert to implement locking validation.
+         * This is called by SingleVariantStorage.insert() before inserting.
+         */
+        @Override
+        protected boolean canInsert(FluidVariant variant) {
+            // When locked, only allow the locked fluid type
+            if (isLocked()) {
+                FluidVariant filter = filterStack[slotIndex];
+                if (!filter.isBlank() && !filter.equals(variant)) {
+                    return false;
+                }
+            }
+            // Also check if slot already has a different fluid (same as base behavior)
+            if (!getResource().isBlank() && !getResource().equals(variant)) {
                 return false;
+            }
             return true;
         }
 
         @Override
         protected void onFinalCommit() {
+            // If locked and filterStack is blank but we now have fluid, lock in this fluid
+            // type
+            if (isLocked() && filterStack[slotIndex].isBlank() && !getResource().isBlank()) {
+                filterStack[slotIndex] = getResource();
+            }
             onChange();
         }
     }
@@ -126,6 +159,7 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
             CompoundTag bigStack = new CompoundTag();
             bigStack.put(FLUID, this.slots.get(i).getResource().toNbt());
             bigStack.putLong(AMOUNT, this.slots.get(i).getAmount());
+            bigStack.put(LOCKED, this.filterStack[i].toNbt());
             items.put(i + "", bigStack);
         }
         compoundTag.put(BIG_FLUIDS, items);
@@ -136,10 +170,14 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
         for (String allKey : nbt.getCompound(BIG_FLUIDS).getAllKeys()) {
             int i = Integer.parseInt(allKey);
             if (i < this.slots.size()) {
-                CompoundTag stackTag = nbt.getCompound(BIG_FLUIDS).getCompound(allKey).getCompound(FLUID);
-                long amount = nbt.getCompound(BIG_FLUIDS).getCompound(allKey).getLong(AMOUNT);
+                CompoundTag slotTag = nbt.getCompound(BIG_FLUIDS).getCompound(allKey);
+                CompoundTag stackTag = slotTag.getCompound(FLUID);
+                long amount = slotTag.getLong(AMOUNT);
                 this.slots.get(i).variant = FluidVariant.fromNbt(stackTag);
                 this.slots.get(i).amount = amount;
+                if (slotTag.contains(LOCKED)) {
+                    this.filterStack[i] = FluidVariant.fromNbt(slotTag.getCompound(LOCKED));
+                }
             }
         }
     }
@@ -172,5 +210,25 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
         if (slot < 0 || slot >= slots.size())
             return 0;
         return slots.get(slot).getAmount();
+    }
+
+    /**
+     * Lock the handler by copying current fluids to filterStack.
+     * Matching Forge BigFluidHandler.lockHandler() implementation.
+     */
+    public void lockHandler() {
+        for (int i = 0; i < this.slots.size(); i++) {
+            FluidVariant current = this.slots.get(i).getResource();
+            this.filterStack[i] = current.isBlank() ? FluidVariant.blank() : current;
+        }
+    }
+
+    /**
+     * Get the filter stack for a slot (used for rendering locked empty slots).
+     */
+    public FluidVariant getFilterStack(int slot) {
+        if (slot < 0 || slot >= filterStack.length)
+            return FluidVariant.blank();
+        return filterStack[slot];
     }
 }

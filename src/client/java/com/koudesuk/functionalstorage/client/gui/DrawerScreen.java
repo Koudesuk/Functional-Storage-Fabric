@@ -201,24 +201,47 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
             long amount = handler.getAmount(k);
             long capacity = handler.getSlotLimit(k);
 
-            if (!resource.isBlank()) {
+            // Use filterStack when locked and resource is blank
+            FluidVariant displayResource = resource;
+            if (resource.isBlank() && tile.isLocked()) {
+                displayResource = handler.getFilterStack(k);
+            }
+
+            if (!displayResource.isBlank()) {
                 Pair<Integer, Integer> pos = type.getSlotPosition().apply(k);
                 int itemX = x + pos.getLeft();
                 int itemY = y + pos.getRight();
 
                 // Render fluid sprite
-                TextureAtlasSprite sprite = FluidVariantRendering.getSprite(resource);
+                TextureAtlasSprite sprite = FluidVariantRendering.getSprite(displayResource);
                 if (sprite != null) {
-                    int color = FluidVariantRendering.getColor(resource);
+                    int color = FluidVariantRendering.getColor(displayResource);
                     float red = ((color >> 16) & 0xFF) / 255f;
                     float green = ((color >> 8) & 0xFF) / 255f;
                     float blue = (color & 0xFF) / 255f;
+                    float alpha = resource.isBlank() ? 0.4f : 1.0f; // Dimmed when locked but empty
 
-                    RenderSystem.setShaderColor(red, green, blue, 1.0f);
+                    RenderSystem.setShaderColor(red, green, blue, alpha);
                     RenderSystem.enableBlend();
                     guiGraphics.blit(itemX, itemY, 0, 16, 16, sprite);
                     RenderSystem.disableBlend();
                     RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                } else if (!displayResource.isBlank()) {
+                    // Fallback for fluids without textures (like Milk)
+                    // Access raw water_still texture directly from block atlas
+                    // to bypass Fabric's biome-dependent coloring
+                    TextureAtlasSprite waterSprite = net.minecraft.client.Minecraft.getInstance()
+                            .getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS)
+                            .apply(new ResourceLocation("minecraft", "block/water_still"));
+                    if (waterSprite != null) {
+                        float alpha = resource.isBlank() ? 0.4f : 1.0f;
+                        // Water texture is grayscale - with white tint = white result
+                        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+                        RenderSystem.enableBlend();
+                        guiGraphics.blit(itemX, itemY, 0, 16, 16, waterSprite);
+                        RenderSystem.disableBlend();
+                        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                    }
                 }
 
                 // Render Amount
@@ -410,7 +433,13 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                 long amount = handler.getAmount(slot);
                 long capacity = handler.getSlotLimit(slot);
 
-                if (resource.isBlank()) {
+                // Use filterStack if locked and resource is blank
+                FluidVariant displayResource = resource;
+                if (resource.isBlank() && tile.isLocked()) {
+                    displayResource = handler.getFilterStack(slot);
+                }
+
+                if (displayResource.isBlank()) {
                     componentList
                             .add(Component.translatable("gui.functionalstorage.fluid").withStyle(ChatFormatting.GOLD)
                                     .append(Component.translatable("gui.functionalstorage.empty")
@@ -418,7 +447,8 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                 } else {
                     componentList.add(Component.translatable("gui.functionalstorage.fluid")
                             .withStyle(ChatFormatting.GOLD)
-                            .append(FluidVariantAttributes.getName(resource).copy().withStyle(ChatFormatting.WHITE)));
+                            .append(FluidVariantAttributes.getName(displayResource).copy()
+                                    .withStyle(ChatFormatting.WHITE)));
                     String amountStr = NumberUtils.getFormatedFluidBigNumber(amount) + "/"
                             + NumberUtils.getFormatedFluidBigNumber(capacity);
                     componentList

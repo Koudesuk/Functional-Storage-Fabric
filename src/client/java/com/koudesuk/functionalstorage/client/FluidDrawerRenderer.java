@@ -20,6 +20,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
 
@@ -82,11 +84,19 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 long amount = handler.getAmount(0);
                 long capacity = handler.getSlotLimit(0);
 
-                if (!resource.isBlank() || tile.isLocked()) {
-                        float fillRatio = capacity > 0 ? (float) amount / capacity : 0f;
+                // Use filterStack when locked and empty (matching Forge)
+                if (!resource.isBlank() || (tile.isLocked() && !handler.getFilterStack(0).isBlank())) {
+                        FluidVariant displayFluid = resource;
+                        long displayAmount = amount;
+                        if (resource.isBlank() && tile.isLocked() && !handler.getFilterStack(0).isBlank()) {
+                                displayFluid = handler.getFilterStack(0);
+                                displayAmount = 0;
+                        }
+                        float fillRatio = capacity > 0 ? (float) displayAmount / capacity : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 15 / 16D,
                                         1.25 / 16D + fillRatio * (12.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource, amount,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity,
                                         0.007f, tile.getDrawerOptions(), bounds, false, false);
                 }
@@ -100,11 +110,18 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource0 = handler.getResource(0);
                 long amount0 = handler.getAmount(0);
                 long capacity0 = handler.getSlotLimit(0);
-                if (!resource0.isBlank() || tile.isLocked()) {
-                        float fillRatio = capacity0 > 0 ? (float) amount0 / capacity0 : 0f;
+                if (!resource0.isBlank() || (tile.isLocked() && !handler.getFilterStack(0).isBlank())) {
+                        FluidVariant displayFluid = resource0;
+                        long displayAmount = amount0;
+                        if (resource0.isBlank() && tile.isLocked() && !handler.getFilterStack(0).isBlank()) {
+                                displayFluid = handler.getFilterStack(0);
+                                displayAmount = 0;
+                        }
+                        float fillRatio = capacity0 > 0 ? (float) displayAmount / capacity0 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 15 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource0, amount0,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity0,
                                         0.007f, tile.getDrawerOptions(), bounds, false, true);
                 }
@@ -113,13 +130,20 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource1 = handler.getResource(1);
                 long amount1 = handler.getAmount(1);
                 long capacity1 = handler.getSlotLimit(1);
-                if (!resource1.isBlank() || tile.isLocked()) {
+                if (!resource1.isBlank() || (tile.isLocked() && !handler.getFilterStack(1).isBlank())) {
+                        FluidVariant displayFluid = resource1;
+                        long displayAmount = amount1;
+                        if (resource1.isBlank() && tile.isLocked() && !handler.getFilterStack(1).isBlank()) {
+                                displayFluid = handler.getFilterStack(1);
+                                displayAmount = 0;
+                        }
                         matrixStack.pushPose();
                         matrixStack.translate(0, 0.5, 0);
-                        float fillRatio = capacity1 > 0 ? (float) amount1 / capacity1 : 0f;
+                        float fillRatio = capacity1 > 0 ? (float) displayAmount / capacity1 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 15 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource1, amount1,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity1,
                                         0.007f, tile.getDrawerOptions(), bounds, false, true);
                         matrixStack.popPose();
@@ -134,13 +158,20 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource0 = handler.getResource(0);
                 long amount0 = handler.getAmount(0);
                 long capacity0 = handler.getSlotLimit(0);
-                if (!resource0.isBlank() || tile.isLocked()) {
+                if (!resource0.isBlank() || (tile.isLocked() && !handler.getFilterStack(0).isBlank())) {
+                        FluidVariant displayFluid = resource0;
+                        long displayAmount = amount0;
+                        if (resource0.isBlank() && tile.isLocked() && !handler.getFilterStack(0).isBlank()) {
+                                displayFluid = handler.getFilterStack(0);
+                                displayAmount = 0;
+                        }
                         matrixStack.pushPose();
                         matrixStack.translate(0.5, 0, 0);
-                        float fillRatio = capacity0 > 0 ? (float) amount0 / capacity0 : 0f;
+                        float fillRatio = capacity0 > 0 ? (float) displayAmount / capacity0 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 8 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource0, amount0,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity0,
                                         0.007f, tile.getDrawerOptions(), bounds, true, true);
                         matrixStack.popPose();
@@ -150,12 +181,19 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource1 = handler.getResource(1);
                 long amount1 = handler.getAmount(1);
                 long capacity1 = handler.getSlotLimit(1);
-                if (!resource1.isBlank() || tile.isLocked()) {
+                if (!resource1.isBlank() || (tile.isLocked() && !handler.getFilterStack(1).isBlank())) {
+                        FluidVariant displayFluid = resource1;
+                        long displayAmount = amount1;
+                        if (resource1.isBlank() && tile.isLocked() && !handler.getFilterStack(1).isBlank()) {
+                                displayFluid = handler.getFilterStack(1);
+                                displayAmount = 0;
+                        }
                         matrixStack.pushPose();
-                        float fillRatio = capacity1 > 0 ? (float) amount1 / capacity1 : 0f;
+                        float fillRatio = capacity1 > 0 ? (float) displayAmount / capacity1 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 8 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource1, amount1,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity1,
                                         0.007f, tile.getDrawerOptions(), bounds, true, true);
                         matrixStack.popPose();
@@ -165,13 +203,20 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource2 = handler.getResource(2);
                 long amount2 = handler.getAmount(2);
                 long capacity2 = handler.getSlotLimit(2);
-                if (!resource2.isBlank() || tile.isLocked()) {
+                if (!resource2.isBlank() || (tile.isLocked() && !handler.getFilterStack(2).isBlank())) {
+                        FluidVariant displayFluid = resource2;
+                        long displayAmount = amount2;
+                        if (resource2.isBlank() && tile.isLocked() && !handler.getFilterStack(2).isBlank()) {
+                                displayFluid = handler.getFilterStack(2);
+                                displayAmount = 0;
+                        }
                         matrixStack.pushPose();
                         matrixStack.translate(0.5, 0.5, 0);
-                        float fillRatio = capacity2 > 0 ? (float) amount2 / capacity2 : 0f;
+                        float fillRatio = capacity2 > 0 ? (float) displayAmount / capacity2 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 8 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource2, amount2,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity2,
                                         0.007f, tile.getDrawerOptions(), bounds, true, true);
                         matrixStack.popPose();
@@ -181,13 +226,20 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 FluidVariant resource3 = handler.getResource(3);
                 long amount3 = handler.getAmount(3);
                 long capacity3 = handler.getSlotLimit(3);
-                if (!resource3.isBlank() || tile.isLocked()) {
+                if (!resource3.isBlank() || (tile.isLocked() && !handler.getFilterStack(3).isBlank())) {
+                        FluidVariant displayFluid = resource3;
+                        long displayAmount = amount3;
+                        if (resource3.isBlank() && tile.isLocked() && !handler.getFilterStack(3).isBlank()) {
+                                displayFluid = handler.getFilterStack(3);
+                                displayAmount = 0;
+                        }
                         matrixStack.pushPose();
                         matrixStack.translate(0, 0.5, 0);
-                        float fillRatio = capacity3 > 0 ? (float) amount3 / capacity3 : 0f;
+                        float fillRatio = capacity3 > 0 ? (float) displayAmount / capacity3 : 0f;
                         AABB bounds = new AABB(1 / 16D, 1.25 / 16D, 1 / 16D, 8 / 16D,
                                         1.25 / 16D + fillRatio * (5.5 / 16D), 15 / 16D);
-                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, resource3, amount3,
+                        renderFluidStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, displayFluid,
+                                        displayAmount,
                                         capacity3,
                                         0.007f, tile.getDrawerOptions(), bounds, true, true);
                         matrixStack.popPose();
@@ -205,14 +257,37 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 if (options.isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_RENDER)
                                 && !fluidVariant.isBlank()) {
                         TextureAtlasSprite sprite = FluidVariantRendering.getSprite(fluidVariant);
+                        int color = FluidVariantRendering.getColor(fluidVariant);
+                        boolean isMilkFallback = false;
+
+                        // Fallback for fluids without textures (like Milk)
+                        // Access raw water_still texture directly from block atlas
+                        // to bypass Fabric's biome-dependent coloring
+                        if (sprite == null) {
+                                sprite = Minecraft.getInstance()
+                                                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                                                .apply(new ResourceLocation("minecraft", "block/water_still"));
+                                isMilkFallback = true;
+                        }
+
                         if (sprite != null) {
-                                int color = FluidVariantRendering.getColor(fluidVariant);
-                                float red = ((color >> 16) & 0xFF) / 255f;
-                                float green = ((color >> 8) & 0xFF) / 255f;
-                                float blue = (color & 0xFF) / 255f;
-                                float alpha = amount == 0 ? 0.3f : ((color >> 24) & 0xFF) / 255f;
-                                if (alpha == 0)
-                                        alpha = 1.0f;
+                                float red, green, blue, alpha;
+                                if (isMilkFallback) {
+                                        // Water texture is GRAYSCALE, blue color comes from vertex tinting
+                                        // Setting vertex to pure white = grayscale texture * white = white result
+                                        // (Per hint: 把 Vertex Color 設回 0xFFFFFFFF 純白 即可)
+                                        red = 1.0f;
+                                        green = 1.0f;
+                                        blue = 1.0f;
+                                        alpha = amount == 0 ? 0.3f : 1.0f;
+                                } else {
+                                        red = ((color >> 16) & 0xFF) / 255f;
+                                        green = ((color >> 8) & 0xFF) / 255f;
+                                        blue = (color & 0xFF) / 255f;
+                                        alpha = amount == 0 ? 0.3f : ((color >> 24) & 0xFF) / 255f;
+                                        if (alpha == 0)
+                                                alpha = 1.0f;
+                                }
 
                                 VertexConsumer builder = bufferIn.getBuffer(RenderType.translucent());
 

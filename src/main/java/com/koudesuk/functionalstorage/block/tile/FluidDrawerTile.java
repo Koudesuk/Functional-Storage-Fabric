@@ -149,6 +149,19 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     @Override
+    public void setLocked(boolean locked) {
+        super.setLocked(locked);
+        // When locking, capture current fluids in filterStack (matching Forge
+        // BigFluidHandler.lockHandler)
+        if (locked) {
+            handler.lockHandler();
+        }
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
     public Component getDisplayName() {
         return Component.translatable(this.getBlockState().getBlock().getDescriptionId());
     }

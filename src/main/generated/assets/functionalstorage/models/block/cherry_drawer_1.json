@@ -1,8 +1,0 @@
-{
-  "parent": "functionalstorage:block/base_x_1",
-  "textures": {
-    "front": "functionalstorage:block/cherry_front_1",
-    "particle": "functionalstorage:block/cherry_front_1",
-    "side": "functionalstorage:block/cherry_side"
-  }
-}

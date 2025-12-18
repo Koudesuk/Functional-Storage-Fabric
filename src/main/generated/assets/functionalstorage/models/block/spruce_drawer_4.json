@@ -1,8 +1,0 @@
-{
-  "parent": "functionalstorage:block/base_x_4",
-  "textures": {
-    "front": "functionalstorage:block/spruce_front_4",
-    "particle": "functionalstorage:block/spruce_front_4",
-    "side": "functionalstorage:block/spruce_side"
-  }
-}
