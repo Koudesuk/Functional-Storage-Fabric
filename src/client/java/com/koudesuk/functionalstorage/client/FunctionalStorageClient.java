@@ -43,6 +43,10 @@ public class FunctionalStorageClient implements ClientModInitializer {
                 BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_4,
                                 ctx -> new FluidDrawerRenderer());
 
+                // Ender drawer renderer
+                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.ENDER_DRAWER,
+                                ctx -> new EnderDrawerRenderer());
+
                 // Block render layers
                 FunctionalStorageBlocks.DRAWER_TYPES.values().forEach(blocks -> blocks
                                 .forEach(block -> BlockRenderLayerMap.INSTANCE.putBlock(block, RenderType.cutout())));

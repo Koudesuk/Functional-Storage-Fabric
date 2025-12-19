@@ -3,6 +3,7 @@ package com.koudesuk.functionalstorage.client.gui;
 import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.DrawerTile;
+import com.koudesuk.functionalstorage.block.tile.EnderDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
@@ -90,6 +91,11 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                     isFramed ? "textures/block/framed_front_compacting.png"
                             : "textures/block/simple_compacting_drawer_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
+        } else if (this.menu.getTile() instanceof EnderDrawerTile) {
+            // Draw Ender Drawer Face Background
+            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+                    "textures/block/ender_front.png");
+            guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         }
 
         // Draw Slot Backgrounds for Upgrades
@@ -118,6 +124,10 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (this.menu.getTile() instanceof StorageControllerTile) {
             guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.storage_range"), 10, 59,
+                    ChatFormatting.DARK_GRAY.getColor(), false);
+        } else if (this.menu.getTile() instanceof EnderDrawerTile) {
+            // Ender Drawer has no storage upgrade slots, only utility
+            guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.utility"), 114, 59,
                     ChatFormatting.DARK_GRAY.getColor(), false);
         } else {
             guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.storage"), 10, 59,
@@ -155,6 +165,11 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         else if (this.menu.getTile() instanceof SimpleCompactingDrawerTile simpleCompactingTile) {
             renderSimpleCompactingDrawerContents(guiGraphics, simpleCompactingTile);
             renderSimpleCompactingDrawerTooltip(guiGraphics, simpleCompactingTile, mouseX, mouseY);
+        }
+        // Render Ender Drawer Contents (1-slot, uses EnderInventoryHandler)
+        else if (this.menu.getTile() instanceof EnderDrawerTile enderTile) {
+            renderEnderDrawerContents(guiGraphics, enderTile);
+            renderEnderDrawerTooltip(guiGraphics, enderTile, mouseX, mouseY);
         }
 
         this.renderTooltip(guiGraphics, mouseX, mouseY);
@@ -573,6 +588,85 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                 guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
                 return; // Only show one tooltip
             }
+        }
+    }
+
+    /**
+     * Render Ender Drawer contents (1-slot layout, uses EnderInventoryHandler).
+     */
+    private void renderEnderDrawerContents(GuiGraphics guiGraphics, EnderDrawerTile tile) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int x = i + 64;
+        int y = j + 16;
+
+        com.koudesuk.functionalstorage.inventory.EnderInventoryHandler handler = tile.getHandler();
+        if (handler == null) {
+            return;
+        }
+
+        // Single slot at center (similar to X_1 drawer)
+        BigInventoryHandler.BigStack stack = handler.getStoredStacks().get(0);
+        if (!stack.getStack().isEmpty()) {
+            int itemX = x + 16; // Centered in 48x48 area
+            int itemY = y + 16;
+
+            guiGraphics.renderItem(stack.getStack(), itemX, itemY);
+            guiGraphics.renderItemDecorations(this.font, stack.getStack(), itemX, itemY, null);
+
+            // Render Amount
+            String amount = NumberUtils.getFormatedBigNumber(stack.getAmount()) + "/"
+                    + NumberUtils.getFormatedBigNumber(handler.getSlotLimit(0));
+            renderAmountText(guiGraphics, itemX + 8, itemY + 12, amount);
+        }
+    }
+
+    /**
+     * Render tooltip when hovering over ender drawer slot.
+     */
+    private void renderEnderDrawerTooltip(GuiGraphics guiGraphics, EnderDrawerTile tile, int mouseX, int mouseY) {
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        int baseX = i + 64;
+        int baseY = j + 16;
+
+        com.koudesuk.functionalstorage.inventory.EnderInventoryHandler handler = tile.getHandler();
+        if (handler == null) {
+            return;
+        }
+
+        // Single slot centered
+        int slotX = baseX + 16;
+        int slotY = baseY + 16;
+
+        // Check if mouse is hovering over this slot (18x18 area)
+        if (mouseX >= slotX && mouseX < slotX + 18 && mouseY >= slotY && mouseY < slotY + 18) {
+            // Render highlight
+            guiGraphics.fill(slotX, slotY, slotX + 16, slotY + 16, 0x80FFFFFF);
+
+            // Build tooltip
+            List<Component> componentList = new ArrayList<>();
+            BigInventoryHandler.BigStack bigStack = handler.getStoredStacks().get(0);
+
+            if (bigStack.getStack().isEmpty()) {
+                componentList
+                        .add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                                .append(Component.translatable("gui.functionalstorage.empty")
+                                        .withStyle(ChatFormatting.WHITE)));
+            } else {
+                componentList
+                        .add(Component.translatable("gui.functionalstorage.item").withStyle(ChatFormatting.GOLD)
+                                .append(bigStack.getStack().getHoverName().copy().withStyle(ChatFormatting.WHITE)));
+                String amount = NumberUtils.getFormatedBigNumber(bigStack.getAmount()) + "/"
+                        + NumberUtils.getFormatedBigNumber(handler.getSlotLimit(0));
+                componentList
+                        .add(Component.translatable("gui.functionalstorage.amount").withStyle(ChatFormatting.GOLD)
+                                .append(Component.literal(amount).withStyle(ChatFormatting.WHITE)));
+            }
+            componentList.add(Component.translatable("gui.functionalstorage.slot").withStyle(ChatFormatting.GOLD)
+                    .append(Component.literal("0").withStyle(ChatFormatting.WHITE)));
+
+            guiGraphics.renderTooltip(this.font, componentList, Optional.empty(), mouseX, mouseY);
         }
     }
 }

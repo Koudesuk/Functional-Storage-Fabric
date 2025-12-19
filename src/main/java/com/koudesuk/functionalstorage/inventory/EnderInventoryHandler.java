@@ -37,12 +37,13 @@ public class EnderInventoryHandler extends BigInventoryHandler {
 
     @Override
     public void onChange() {
-        if (manager != null) manager.setDirty();
+        if (manager != null)
+            manager.setDirty();
     }
 
     @Override
     public int getMultiplier() {
-        return 1;
+        return 4; // Ender Drawers have 4x base capacity
     }
 
     @Override
@@ -74,7 +75,7 @@ public class EnderInventoryHandler extends BigInventoryHandler {
         this.voidItems = voidItems;
         onChange();
     }
-    
+
     public String getFrequency() {
         return frequency;
     }

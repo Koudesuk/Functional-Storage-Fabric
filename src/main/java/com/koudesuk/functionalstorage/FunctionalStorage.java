@@ -106,6 +106,9 @@ public class FunctionalStorage implements ModInitializer {
                 net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
                                 (drawer, direction) -> drawer.getStorage(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_SIMPLE_COMPACTING_DRAWER);
+                net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getStorage(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.ENDER_DRAWER);
 
                 // Register FluidStorage for Fluid Drawers
                 net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
@@ -129,6 +132,29 @@ public class FunctionalStorage implements ModInitializer {
                                         }
                                         if (!blockHitResult.getBlockPos().equals(pos)) {
                                                 return net.minecraft.world.InteractionResult.PASS;
+                                        }
+
+                                        // Handle LinkingTool left-click on EnderDrawer to store frequency
+                                        net.minecraft.world.item.ItemStack heldItem = player.getItemInHand(hand);
+                                        if (heldItem.getItem() instanceof com.koudesuk.functionalstorage.item.LinkingToolItem) {
+                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                .getBlockEntity(pos);
+                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.EnderDrawerTile enderTile) {
+                                                        if (!world.isClientSide()) {
+                                                                heldItem.getOrCreateTag().putString(
+                                                                                com.koudesuk.functionalstorage.item.LinkingToolItem.NBT_ENDER,
+                                                                                enderTile.getFrequency());
+                                                                player.displayClientMessage(
+                                                                                net.minecraft.network.chat.Component
+                                                                                                .translatable("linkingtool.ender.stored")
+                                                                                                .setStyle(net.minecraft.network.chat.Style.EMPTY
+                                                                                                                .withColor(
+                                                                                                                                com.koudesuk.functionalstorage.item.LinkingToolItem.LinkingMode.SINGLE
+                                                                                                                                                .getColor())),
+                                                                                true);
+                                                        }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                }
                                         }
 
                                         // Handle DrawerBlock
@@ -191,6 +217,21 @@ public class FunctionalStorage implements ModInitializer {
                                                 }
                                         }
 
+                                        // Handle EnderDrawerBlock
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.EnderDrawerBlock enderBlock) {
+                                                int hit = enderBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        if (!world.isClientSide()) {
+                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
+                                                                                .getBlockEntity(pos);
+                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.EnderDrawerTile enderTile) {
+                                                                        enderTile.onClicked(player, hit);
+                                                                }
+                                                        }
+                                                        return net.minecraft.world.InteractionResult.SUCCESS;
+                                                }
+                                        }
+
                                         return net.minecraft.world.InteractionResult.PASS;
                                 });
 
@@ -232,6 +273,12 @@ public class FunctionalStorage implements ModInitializer {
                                         }
                                         if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FluidDrawerBlock fluidBlock) {
                                                 int hit = fluidBlock.getHit(state, pos, blockHitResult);
+                                                if (hit != -1) {
+                                                        return false; // Cancel breaking - front face was clicked
+                                                }
+                                        }
+                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.EnderDrawerBlock enderBlock) {
+                                                int hit = enderBlock.getHit(state, pos, blockHitResult);
                                                 if (hit != -1) {
                                                         return false; // Cancel breaking - front face was clicked
                                                 }
