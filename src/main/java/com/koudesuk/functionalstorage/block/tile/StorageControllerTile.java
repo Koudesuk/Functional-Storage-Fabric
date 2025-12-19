@@ -2,6 +2,7 @@ package com.koudesuk.functionalstorage.block.tile;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
+import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.ControllerInventoryHandler;
 import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
@@ -175,7 +176,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                     if (!stack.isEmpty()) {
                         boolean hasItem = false;
                         for (var stored : handler.getStoredStacks()) {
-                            if (stored.getAmount() > 0 && ItemVariant.of(stored.getStack()).equals(ItemVariant.of(stack))) {
+                            if (stored.getAmount() > 0
+                                    && ItemVariant.of(stored.getStack()).equals(ItemVariant.of(stack))) {
                                 hasItem = true;
                                 break;
                             }
@@ -201,7 +203,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                             if (!invStack.isEmpty()) {
                                 boolean hasItem = false;
                                 for (var stored : handler.getStoredStacks()) {
-                                    if (stored.getAmount() > 0 && ItemVariant.of(stored.getStack()).equals(ItemVariant.of(invStack))) {
+                                    if (stored.getAmount() > 0
+                                            && ItemVariant.of(stored.getStack()).equals(ItemVariant.of(invStack))) {
                                         hasItem = true;
                                         break;
                                     }
@@ -217,6 +220,104 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                                             invStack.shrink((int) insertedAmount);
                                             transaction.commit();
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Third priority: Try locked Compacting Drawers
+            for (Storage<ItemVariant> storage : this.connectedDrawers.getItemHandlers()) {
+                if (storage instanceof CompactingInventoryHandler handler && handler.isLocked()) {
+                    // Check if the item matches any of the compacting tiers
+                    if (!stack.isEmpty() && handler.isSetup()) {
+                        for (var result : handler.getResultList()) {
+                            if (!result.getResult().isEmpty()
+                                    && ItemVariant.of(result.getResult()).equals(ItemVariant.of(stack))) {
+                                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                                        .openOuter()) {
+                                    long insertedAmount = handler.insert(ItemVariant.of(stack), stack.getCount(),
+                                            transaction);
+                                    if (insertedAmount > 0) {
+                                        stack.shrink((int) insertedAmount);
+                                        transaction.commit();
+                                        return InteractionResult.SUCCESS;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // Double click: Insert all matching items from inventory
+                    if (isDouble) {
+                        for (int i = 0; i < playerIn.getInventory().getContainerSize(); i++) {
+                            ItemStack invStack = playerIn.getInventory().getItem(i);
+                            if (!invStack.isEmpty() && handler.isSetup()) {
+                                for (var result : handler.getResultList()) {
+                                    if (!result.getResult().isEmpty()
+                                            && ItemVariant.of(result.getResult()).equals(ItemVariant.of(invStack))) {
+                                        try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                                                .openOuter()) {
+                                            long insertedAmount = handler.insert(ItemVariant.of(invStack),
+                                                    invStack.getCount(), transaction);
+                                            if (insertedAmount > 0) {
+                                                invStack.shrink((int) insertedAmount);
+                                                transaction.commit();
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fourth priority: Try unlocked Compacting Drawers (ONLY IF SETUP)
+            for (Storage<ItemVariant> storage : this.connectedDrawers.getItemHandlers()) {
+                if (storage instanceof CompactingInventoryHandler handler && !handler.isLocked()) {
+                    // Check if the item matches any of the compacting tiers
+                    if (!stack.isEmpty() && handler.isSetup()) {
+                        for (var result : handler.getResultList()) {
+                            if (!result.getResult().isEmpty()
+                                    && ItemVariant.of(result.getResult()).equals(ItemVariant.of(stack))) {
+                                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                                        .openOuter()) {
+                                    long insertedAmount = handler.insert(ItemVariant.of(stack), stack.getCount(),
+                                            transaction);
+                                    if (insertedAmount > 0) {
+                                        stack.shrink((int) insertedAmount);
+                                        transaction.commit();
+                                        return InteractionResult.SUCCESS;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    // Double click: Insert all matching items from inventory
+                    if (isDouble) {
+                        for (int i = 0; i < playerIn.getInventory().getContainerSize(); i++) {
+                            ItemStack invStack = playerIn.getInventory().getItem(i);
+                            if (!invStack.isEmpty() && handler.isSetup()) {
+                                for (var result : handler.getResultList()) {
+                                    if (!result.getResult().isEmpty()
+                                            && ItemVariant.of(result.getResult()).equals(ItemVariant.of(invStack))) {
+                                        try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                                                .openOuter()) {
+                                            long insertedAmount = handler.insert(ItemVariant.of(invStack),
+                                                    invStack.getCount(),
+                                                    transaction);
+                                            if (insertedAmount > 0) {
+                                                invStack.shrink((int) insertedAmount);
+                                                transaction.commit();
+                                            }
+                                        }
+                                        break;
                                     }
                                 }
                             }
@@ -291,7 +392,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                 .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
         this.connectedDrawers.setLevel(this.getLevel());
         for (BlockPos position : positions) {
-            if (level != null && level.getBlockState(position).getBlock() instanceof com.koudesuk.functionalstorage.block.StorageControllerBlock)
+            if (level != null && level.getBlockState(position)
+                    .getBlock() instanceof com.koudesuk.functionalstorage.block.StorageControllerBlock)
                 continue;
             if (area.contains(Vec3.atCenterOf(position)) && this.getLevel()
                     .getBlockEntity(position) instanceof ControllableDrawerTile<?> controllableDrawerTile) {
