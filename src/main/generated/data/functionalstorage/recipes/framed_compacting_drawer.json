@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "tag": "functionalstorage:drawer"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "S": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "PDP",
+    "SIS"
+  ],
+  "result": {
+    "item": "functionalstorage:framed_compacting_drawer"
+  },
+  "show_notification": true
+}

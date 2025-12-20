@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": {
+      "tag": "functionalstorage:drawer"
+    },
+    "E": {
+      "item": "minecraft:emerald"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    }
+  },
+  "pattern": [
+    "PPG",
+    "PDG",
+    "PEP"
+  ],
+  "result": {
+    "item": "functionalstorage:configuration_tool"
+  },
+  "show_notification": true
+}

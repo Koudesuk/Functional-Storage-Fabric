@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "tag": "functionalstorage:drawer"
+    },
+    "I": {
+      "item": "minecraft:obsidian"
+    }
+  },
+  "pattern": [
+    "III",
+    "IDI",
+    "III"
+  ],
+  "result": {
+    "item": "functionalstorage:void_upgrade"
+  },
+  "show_notification": true
+}

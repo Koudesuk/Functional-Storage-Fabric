@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:bucket"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    }
+  },
+  "pattern": [
+    "BPB",
+    "PPP",
+    "BPB"
+  ],
+  "result": {
+    "count": 4,
+    "item": "functionalstorage:fluid_drawer_4"
+  },
+  "show_notification": true
+}

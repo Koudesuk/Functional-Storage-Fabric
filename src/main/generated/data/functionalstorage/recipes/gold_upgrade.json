@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:gold_block"
+    },
+    "C": {
+      "tag": "c:wooden_chests"
+    },
+    "D": {
+      "item": "functionalstorage:copper_upgrade"
+    },
+    "I": {
+      "item": "minecraft:gold_ingot"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "CDC",
+    "BIB"
+  ],
+  "result": {
+    "item": "functionalstorage:gold_upgrade"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_gold_upgrade": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "functionalstorage:gold_upgrade"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "functionalstorage:diamond_upgrade"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_gold_upgrade",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "functionalstorage:diamond_upgrade"
+    ]
+  },
+  "sends_telemetry_event": false
+}

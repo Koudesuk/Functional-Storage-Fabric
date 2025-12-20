@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_drawer": {
+      "conditions": {
+        "items": [
+          {
+            "tag": "functionalstorage:drawer"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "functionalstorage:framed_compacting_drawer"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_drawer",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "functionalstorage:framed_compacting_drawer"
+    ]
+  },
+  "sends_telemetry_event": false
+}

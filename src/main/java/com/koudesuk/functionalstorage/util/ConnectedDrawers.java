@@ -2,8 +2,10 @@ package com.koudesuk.functionalstorage.util;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.minecraft.core.BlockPos;
@@ -25,6 +27,7 @@ public class ConnectedDrawers {
     private StorageControllerTile controllerTile;
     private List<Long> connectedDrawers;
     private List<Storage<ItemVariant>> itemHandlers;
+    private List<Storage<FluidVariant>> fluidHandlers;
     private Level level;
     private int extensions;
     private VoxelShape cachedVoxelShape;
@@ -33,6 +36,7 @@ public class ConnectedDrawers {
         this.controllerTile = controllerTile;
         this.connectedDrawers = new ArrayList<>();
         this.itemHandlers = new ArrayList<>();
+        this.fluidHandlers = new ArrayList<>();
         this.level = level;
         this.extensions = 0;
         this.cachedVoxelShape = null;
@@ -44,6 +48,7 @@ public class ConnectedDrawers {
 
     public void rebuild() {
         this.itemHandlers = new ArrayList<>();
+        this.fluidHandlers = new ArrayList<>();
         this.extensions = 0;
         if (level != null && !level.isClientSide()) {
             var extraRange = controllerTile.getStorageMultiplier();
@@ -71,11 +76,21 @@ public class ConnectedDrawers {
                         this.itemHandlers.add(storage);
                     }
                 }
+                if (entity instanceof FluidDrawerTile fluidDrawer) {
+                    // Get the fluid storage from the fluid drawer
+                    Storage<FluidVariant> fluidStorage = fluidDrawer.getHandler();
+                    if (fluidStorage != null) {
+                        this.fluidHandlers.add(fluidStorage);
+                    }
+                }
             }
         }
 
         if (this.controllerTile.getInventoryHandler() != null) {
             this.controllerTile.getInventoryHandler().invalidate();
+        }
+        if (this.controllerTile.getFluidHandler() != null) {
+            this.controllerTile.getFluidHandler().invalidate();
         }
     }
 
@@ -112,6 +127,10 @@ public class ConnectedDrawers {
 
     public List<Storage<ItemVariant>> getItemHandlers() {
         return itemHandlers;
+    }
+
+    public List<Storage<FluidVariant>> getFluidHandlers() {
+        return fluidHandlers;
     }
 
     public int getExtensions() {

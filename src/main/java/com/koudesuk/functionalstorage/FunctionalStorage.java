@@ -121,6 +121,15 @@ public class FunctionalStorage implements ModInitializer {
                                 (drawer, direction) -> drawer.getHandler(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_4);
 
+                // Register FluidStorage for Storage Controllers (enables AE2 and other mods to
+                // access fluid drawers via controller)
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (controller, direction) -> controller.getFluidHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.STORAGE_CONTROLLER);
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (controller, direction) -> controller.getFluidHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER);
+
                 // Handle left-click (attack) on drawer blocks to extract items
                 net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT
                                 .register((player, world, hand, pos, direction) -> {

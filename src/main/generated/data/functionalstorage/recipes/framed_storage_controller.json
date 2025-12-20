@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:quartz_block"
+    },
+    "C": {
+      "tag": "functionalstorage:drawer"
+    },
+    "D": {
+      "item": "minecraft:comparator"
+    },
+    "I": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "CDC",
+    "IBI"
+  ],
+  "result": {
+    "item": "functionalstorage:framed_storage_controller"
+  },
+  "show_notification": true
+}

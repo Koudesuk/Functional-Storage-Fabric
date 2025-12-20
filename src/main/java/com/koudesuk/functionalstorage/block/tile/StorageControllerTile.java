@@ -1,6 +1,7 @@
 package com.koudesuk.functionalstorage.block.tile;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
+import com.koudesuk.functionalstorage.fluid.ControllerFluidHandler;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.ControllerInventoryHandler;
@@ -33,6 +34,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
     private ConnectedDrawers connectedDrawers;
     public ControllerInventoryHandler inventoryHandler;
+    public ControllerFluidHandler fluidHandler;
 
     public StorageControllerTile(BlockPos pos, BlockState blockState) {
         this(FunctionalStorageBlockEntities.STORAGE_CONTROLLER, pos, blockState);
@@ -43,6 +45,12 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         super(type, pos, blockState);
         this.connectedDrawers = new ConnectedDrawers(null, this);
         this.inventoryHandler = new ControllerInventoryHandler() {
+            @Override
+            public ConnectedDrawers getDrawers() {
+                return connectedDrawers;
+            }
+        };
+        this.fluidHandler = new ControllerFluidHandler() {
             @Override
             public ConnectedDrawers getDrawers() {
                 return connectedDrawers;
@@ -77,6 +85,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
         if (blockEntity.connectedDrawers.getConnectedDrawers()
                 .size() != (blockEntity.connectedDrawers.getItemHandlers().size()
+                        + blockEntity.connectedDrawers.getFluidHandlers().size()
                         + blockEntity.connectedDrawers.getExtensions())) {
             blockEntity.connectedDrawers.setLevel(level);
             blockEntity.connectedDrawers.rebuild();
@@ -446,6 +455,10 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
     public ControllerInventoryHandler getInventoryHandler() {
         return inventoryHandler;
+    }
+
+    public ControllerFluidHandler getFluidHandler() {
+        return fluidHandler;
     }
 
     public boolean isEverythingEmpty() {
