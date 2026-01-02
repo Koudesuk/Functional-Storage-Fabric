@@ -60,6 +60,11 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
         // Fill the gap (83 to 100) with a grey rectangle
         guiGraphics.fill(i, j + 83, i + 176, j + 100, 0xFFC6C6C6);
 
+        // Render title at top of GUI (centered) - matching Titanium library's approach
+        int titleX = i + (this.imageWidth - this.font.width(this.title)) / 2;
+        int titleY = j + 6;
+        guiGraphics.drawString(this.font, this.title, titleX, titleY, 0x404040, false);
+
         // Cover the dispenser slots (3x3 grid) with grey background
         guiGraphics.fill(i + 61, j + 16, i + 61 + 54, j + 16 + 54, 0xFFC6C6C6);
 
