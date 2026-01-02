@@ -47,7 +47,7 @@ public class FunctionalStorageGroup {
                                                         entries.accept(FunctionalStorageItems.LINKING_TOOL);
                                                         entries.accept(FunctionalStorageItems.CONFIGURATION_TOOL);
 
-                                                        // Add upgrades
+                                                        // Add storage upgrades
                                                         entries.accept(FunctionalStorageItems.STORAGE_UPGRADES
                                                                         .get(com.koudesuk.functionalstorage.item.StorageUpgradeItem.StorageTier.COPPER));
                                                         entries.accept(FunctionalStorageItems.STORAGE_UPGRADES
@@ -58,6 +58,10 @@ public class FunctionalStorageGroup {
                                                                         .get(com.koudesuk.functionalstorage.item.StorageUpgradeItem.StorageTier.NETHERITE));
                                                         entries.accept(FunctionalStorageItems.STORAGE_UPGRADES
                                                                         .get(com.koudesuk.functionalstorage.item.StorageUpgradeItem.StorageTier.IRON));
+                                                        entries.accept(FunctionalStorageItems.STORAGE_UPGRADES
+                                                                        .get(com.koudesuk.functionalstorage.item.StorageUpgradeItem.StorageTier.MAX_STORAGE));
+
+                                                        // Add utility upgrades
                                                         entries.accept(FunctionalStorageItems.PULLING_UPGRADE);
                                                         entries.accept(FunctionalStorageItems.PUSHING_UPGRADE);
                                                         entries.accept(FunctionalStorageItems.COLLECTOR_UPGRADE);
