@@ -2,6 +2,7 @@ package com.koudesuk.functionalstorage.util;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.ControllerExtensionTile;
 import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
@@ -67,7 +68,12 @@ public class ConnectedDrawers {
                 BlockEntity entity = level.getBlockEntity(pos);
                 if (entity instanceof StorageControllerTile)
                     continue;
-                // Extension check omitted for now
+                // Skip Controller Extension tiles - they return controller's storage which
+                // would cause infinite recursion
+                if (entity instanceof ControllerExtensionTile) {
+                    ++extensions;
+                    continue;
+                }
 
                 if (entity instanceof ItemControllableDrawerTile<?> drawer) {
                     // Get the storage directly from the drawer (returns BigInventoryHandler)
