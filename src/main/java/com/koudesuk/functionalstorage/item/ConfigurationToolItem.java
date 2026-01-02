@@ -33,7 +33,8 @@ public class ConfigurationToolItem extends Item {
         TOGGLE_NUMBERS(TextColor.fromRgb(getIntColorFromRgb(250, 145, 40)), 1),
         TOGGLE_RENDER(TextColor.fromRgb(getIntColorFromRgb(100, 250, 40)), 1),
         TOGGLE_UPGRADES(TextColor.fromRgb(getIntColorFromRgb(166, 40, 250)), 1),
-        INDICATOR(TextColor.fromRgb(getIntColorFromRgb(255, 40, 40)), 3); //0 NO , 1 - PROGRESS, 2 - ONLY FULL, 3 - ONLY FULL WITHOUT BG
+        INDICATOR(TextColor.fromRgb(getIntColorFromRgb(255, 40, 40)), 3); // 0 NO , 1 - PROGRESS, 2 - ONLY FULL, 3 -
+                                                                          // ONLY FULL WITHOUT BG
 
         private final TextColor color;
         private final int max;
@@ -88,7 +89,12 @@ public class ConfigurationToolItem extends Item {
                 ((ControllableDrawerTile<?>) blockEntity).toggleOption(configuractionAction);
                 if (configuractionAction.getMax() > 1) {
                     context.getPlayer().displayClientMessage(
-                            Component.translatable("configurationtool.configmode.indicator.mode_" + ((ControllableDrawerTile<?>) blockEntity).getDrawerOptions().getAdvancedValue(configuractionAction)).setStyle(Style.EMPTY.withColor(configuractionAction.getColor())), true);
+                            Component
+                                    .translatable("configurationtool.configmode.indicator.mode_"
+                                            + ((ControllableDrawerTile<?>) blockEntity).getDrawerOptions()
+                                                    .getAdvancedValue(configuractionAction))
+                                    .setStyle(Style.EMPTY.withColor(configuractionAction.getColor())),
+                            true);
                 }
             }
             return InteractionResult.SUCCESS;
@@ -102,10 +108,16 @@ public class ConfigurationToolItem extends Item {
         if (!stack.isEmpty()) {
             if (player.isShiftKeyDown()) {
                 ConfigurationAction action = getAction(stack);
-                ConfigurationAction newAction = ConfigurationAction.values()[(Arrays.asList(ConfigurationAction.values()).indexOf(action) + 1) % ConfigurationAction.values().length];
+                ConfigurationAction newAction = ConfigurationAction
+                        .values()[(Arrays.asList(ConfigurationAction.values()).indexOf(action) + 1)
+                                % ConfigurationAction.values().length];
                 stack.getOrCreateTag().putString(NBT_MODE, newAction.name());
-                player.displayClientMessage(Component.translatable("configurationtool.configmode.swapped").setStyle(Style.EMPTY.withColor(newAction.getColor()))
-                        .append(Component.translatable("configurationtool.configmode." + newAction.name().toLowerCase(Locale.ROOT))), true);
+                player.displayClientMessage(
+                        Component.translatable("configurationtool.configmode.swapped")
+                                .setStyle(Style.EMPTY.withColor(newAction.getColor()))
+                                .append(Component.translatable(
+                                        "configurationtool.configmode." + newAction.name().toLowerCase(Locale.ROOT))),
+                        true);
                 player.playSound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.5f, 1);
                 return InteractionResultHolder.success(stack);
             }
@@ -114,19 +126,29 @@ public class ConfigurationToolItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag isAdvanced) {
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
+            TooltipFlag isAdvanced) {
         super.appendHoverText(stack, level, tooltip, isAdvanced);
         ConfigurationAction linkingMode = getAction(stack);
         tooltip.add(Component.translatable("configurationtool.configmode").withStyle(ChatFormatting.YELLOW)
-                .append(Component.translatable("configurationtool.configmode." + linkingMode.name().toLowerCase(Locale.ROOT)).withStyle(Style.EMPTY.withColor(linkingMode.getColor()))));
+                .append(Component
+                        .translatable("configurationtool.configmode." + linkingMode.name().toLowerCase(Locale.ROOT))
+                        .withStyle(Style.EMPTY.withColor(linkingMode.getColor()))));
         tooltip.add(Component.literal("").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("configurationtool.use").withStyle(ChatFormatting.GRAY));
+        // Parse newlines in configurationtool.use and add each line as a separate
+        // Component
+        String useText = Component.translatable("configurationtool.use").getString();
+        for (String line : useText.split("\n")) {
+            if (!line.trim().isEmpty()) {
+                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
+            }
+        }
     }
 
     private static int getIntColorFromRgba(int r, int g, int b, int a) {
         return ((a & 0xFF) << 24) |
                 ((r & 0xFF) << 16) |
-                ((g & 0xFF) << 8)  |
+                ((g & 0xFF) << 8) |
                 ((b & 0xFF));
     }
 

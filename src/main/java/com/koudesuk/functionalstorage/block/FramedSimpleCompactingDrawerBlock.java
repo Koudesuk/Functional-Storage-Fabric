@@ -88,9 +88,13 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
     @Override
     public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip,
             TooltipFlag flag) {
-        tooltip.add(Component.translatable("frameddrawer.use.line1").withStyle(net.minecraft.ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("frameddrawer.use.line2").withStyle(net.minecraft.ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("frameddrawer.use.line3").withStyle(net.minecraft.ChatFormatting.GRAY));
+        // Parse newlines in frameddrawer.use and add each line as a separate Component
+        String useText = Component.translatable("frameddrawer.use").getString();
+        for (String line : useText.split("\n")) {
+            if (!line.trim().isEmpty()) {
+                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+        }
         super.appendHoverText(stack, level, tooltip, flag);
     }
 }

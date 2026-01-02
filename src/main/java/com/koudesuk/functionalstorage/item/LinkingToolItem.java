@@ -297,7 +297,16 @@ public class LinkingToolItem extends Item {
             tooltip.add(Component
                     .translatable("linkingtool.linkingmode." + linkingMode.name().toLowerCase(Locale.ROOT) + ".desc")
                     .withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.translatable("linkingtool.use").withStyle(ChatFormatting.GRAY));
+            // Parse newlines in linkingtool.use and add each line as a separate Component
+            // Empty lines (from \n\n) are preserved as blank lines in the tooltip
+            String useText = Component.translatable("linkingtool.use").getString();
+            for (String line : useText.split("\n")) {
+                if (line.trim().isEmpty()) {
+                    tooltip.add(Component.literal("")); // Add empty line
+                } else {
+                    tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
+                }
+            }
         }
     }
 
