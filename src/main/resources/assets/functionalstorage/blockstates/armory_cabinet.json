@@ -1,33 +1,18 @@
 {
   "variants": {
-    "facing=north,locked=false": {
+    "facing=north": {
       "model": "functionalstorage:block/armory_cabinet"
     },
-    "facing=north,locked=true": {
-      "model": "functionalstorage:block/armory_cabinet_locked"
-    },
-    "facing=east,locked=false": {
+    "facing=east": {
       "model": "functionalstorage:block/armory_cabinet",
       "y": 90
     },
-    "facing=east,locked=true": {
-      "model": "functionalstorage:block/armory_cabinet_locked",
-      "y": 90
-    },
-    "facing=south,locked=false": {
+    "facing=south": {
       "model": "functionalstorage:block/armory_cabinet",
       "y": 180
     },
-    "facing=south,locked=true": {
-      "model": "functionalstorage:block/armory_cabinet_locked",
-      "y": 180
-    },
-    "facing=west,locked=false": {
+    "facing=west": {
       "model": "functionalstorage:block/armory_cabinet",
-      "y": 270
-    },
-    "facing=west,locked=true": {
-      "model": "functionalstorage:block/armory_cabinet_locked",
       "y": 270
     }
   }

@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
+import net.fabricmc.fabric.api.transfer.v1.transaction.base.SnapshotParticipant;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
@@ -16,7 +17,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class ArmoryCabinetInventoryHandler implements Storage<ItemVariant>, Container {
+public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<List<ItemStack>>
+        implements Storage<ItemVariant>, Container {
 
     private List<ItemStack> stackList;
 
@@ -25,6 +27,29 @@ public abstract class ArmoryCabinetInventoryHandler implements Storage<ItemVaria
         for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
             this.stackList.add(ItemStack.EMPTY);
         }
+    }
+
+    // SnapshotParticipant implementation for transactional safety
+    @Override
+    protected List<ItemStack> createSnapshot() {
+        List<ItemStack> snapshot = new ArrayList<>(stackList.size());
+        for (ItemStack stack : stackList) {
+            snapshot.add(stack.copy());
+        }
+        return snapshot;
+    }
+
+    @Override
+    protected void readSnapshot(List<ItemStack> snapshot) {
+        this.stackList = new ArrayList<>(snapshot.size());
+        for (ItemStack stack : snapshot) {
+            this.stackList.add(stack.copy());
+        }
+    }
+
+    @Override
+    protected void onFinalCommit() {
+        onChange();
     }
 
     @Override
@@ -36,8 +61,7 @@ public abstract class ArmoryCabinetInventoryHandler implements Storage<ItemVaria
         for (int i = 0; i < stackList.size(); i++) {
             if (stackList.get(i).isEmpty()) {
                 updateSnapshots(transaction);
-                stackList.set(i, resource.toStack((int) 1));
-                onChange();
+                stackList.set(i, resource.toStack(1));
                 return 1; // Only insert 1
             }
         }
@@ -51,19 +75,10 @@ public abstract class ArmoryCabinetInventoryHandler implements Storage<ItemVaria
             if (!stack.isEmpty() && resource.matches(stack)) {
                 updateSnapshots(transaction);
                 stackList.set(i, ItemStack.EMPTY);
-                onChange();
                 return 1;
             }
         }
         return 0;
-    }
-
-    private void updateSnapshots(TransactionContext transaction) {
-        transaction.addCloseCallback((t, result) -> {
-            if (result.wasAborted()) {
-                // TODO: Implement rollback if needed
-            }
-        });
     }
 
     @Override
@@ -101,9 +116,10 @@ public abstract class ArmoryCabinetInventoryHandler implements Storage<ItemVaria
                 if (extracted == stack.getCount()) {
                     stackList.set(slot, ItemStack.EMPTY);
                 } else {
-                    stack.shrink((int) extracted);
+                    ItemStack remaining = stack.copy();
+                    remaining.shrink((int) extracted);
+                    stackList.set(slot, remaining);
                 }
-                onChange();
             }
             return extracted;
         }
