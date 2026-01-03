@@ -205,4 +205,38 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
             super.onRemove(state, level, pos, newState, isMoving);
         }
     }
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter blockGetter, BlockPos pos,
+            Direction direction) {
+        BlockEntity blockEntity = blockGetter.getBlockEntity(pos);
+        if (blockEntity instanceof EnderDrawerTile tile) {
+            net.minecraft.world.SimpleContainer utilityUpgrades = tile.getUtilityUpgrades();
+            for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
+                net.minecraft.world.item.ItemStack stack = utilityUpgrades.getItem(i);
+                if (stack
+                        .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
+                    int redstoneSlot = stack.getOrCreateTag().getInt("Slot");
+                    var handler = tile.getHandler();
+                    if (handler != null) {
+                        var storedStacks = handler.getStoredStacks();
+                        if (redstoneSlot < storedStacks.size()) {
+                            int slotLimit = handler.getSlotLimit(redstoneSlot);
+                            int amount = storedStacks.get(redstoneSlot).getAmount();
+                            if (slotLimit > 0) {
+                                int signal = amount * 14 / slotLimit;
+                                return signal + (signal > 0 ? 1 : 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
 }

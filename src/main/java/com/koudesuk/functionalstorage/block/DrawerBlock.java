@@ -242,4 +242,35 @@ public class DrawerBlock extends Block implements EntityBlock {
     public IWoodType getWoodType() {
         return woodType;
     }
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter blockGetter, BlockPos pos,
+            net.minecraft.core.Direction direction) {
+        BlockEntity blockEntity = blockGetter.getBlockEntity(pos);
+        if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile tile) {
+            net.minecraft.world.SimpleContainer utilityUpgrades = tile.getUtilityUpgrades();
+            for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
+                net.minecraft.world.item.ItemStack stack = utilityUpgrades.getItem(i);
+                if (stack
+                        .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
+                    int redstoneSlot = stack.getOrCreateTag().getInt("Slot");
+                    var storedStacks = tile.getHandler().getStoredStacks();
+                    if (redstoneSlot < storedStacks.size()) {
+                        int slotLimit = tile.getHandler().getSlotLimit(redstoneSlot);
+                        int amount = storedStacks.get(redstoneSlot).getAmount();
+                        if (slotLimit > 0) {
+                            int signal = amount * 14 / slotLimit;
+                            return signal + (signal > 0 ? 1 : 0);
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
 }

@@ -63,4 +63,40 @@ public class FluidDrawerBlock extends DrawerBlock {
             }
         }
     }
+
+    @Override
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> blockEntityType) {
+        return (level1, pos, state1, blockEntity) -> {
+            if (blockEntity instanceof FluidDrawerTile tile) {
+                FluidDrawerTile.tick(level1, pos, state1, tile);
+            }
+        };
+    }
+
+    @Override
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter blockGetter, BlockPos pos,
+            net.minecraft.core.Direction direction) {
+        BlockEntity blockEntity = blockGetter.getBlockEntity(pos);
+        if (blockEntity instanceof FluidDrawerTile tile) {
+            net.minecraft.world.SimpleContainer utilityUpgrades = tile.getUtilityUpgrades();
+            for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
+                net.minecraft.world.item.ItemStack stack = utilityUpgrades.getItem(i);
+                if (stack
+                        .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
+                    int redstoneSlot = stack.getOrCreateTag().getInt("Slot");
+                    var handler = tile.getHandler();
+                    if (redstoneSlot < this.getType().getSlots()) {
+                        long slotLimit = handler.getSlotLimit(redstoneSlot);
+                        long amount = handler.getAmount(redstoneSlot);
+                        if (slotLimit > 0) {
+                            int signal = (int) (amount * 15 / slotLimit);
+                            return Math.min(15, signal);
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
 }

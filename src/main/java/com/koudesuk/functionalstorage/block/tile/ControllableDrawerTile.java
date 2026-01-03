@@ -149,6 +149,9 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
                 ControllableDrawerTile.this.setChanged();
                 if (level != null && !level.isClientSide) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+                    // Notify neighbors that redstone signal might have changed (for Redstone
+                    // Upgrade add/remove)
+                    level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
                 }
             }
         };

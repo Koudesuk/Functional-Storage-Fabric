@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,26 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
                 return FluidDrawerTile.this.isCreative();
             }
         };
+    }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, FluidDrawerTile tile) {
+        if (level.isClientSide)
+            return;
+
+        // Redstone update - check every 20 ticks like original Forge version
+        if (level.getGameTime() % 20 == 0) {
+            if (tile.getUtilitySlotAmount() > 0) {
+                for (int i = 0; i < tile.getUtilityUpgrades().getContainerSize(); i++) {
+                    net.minecraft.world.item.ItemStack stack = tile.getUtilityUpgrades().getItem(i);
+                    if (!stack.isEmpty() && stack
+                            .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
+                        // Notify neighbors that redstone signal might have changed
+                        level.updateNeighborsAt(pos, state.getBlock());
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private static BlockEntityType<?> getType(DrawerType type) {
