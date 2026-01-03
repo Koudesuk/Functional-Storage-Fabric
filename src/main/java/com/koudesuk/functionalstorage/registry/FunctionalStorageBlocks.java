@@ -207,7 +207,7 @@ public class FunctionalStorageBlocks {
 
                 // Register Fluid Drawers
                 for (DrawerType type : DrawerType.values()) {
-                        Block block = new FluidDrawerBlock(type, FabricBlockSettings.copyOf(Blocks.OAK_PLANKS));
+                        Block block = new FluidDrawerBlock(type, FabricBlockSettings.copyOf(Blocks.STONE_BRICKS));
                         if (type == DrawerType.X_1)
                                 FLUID_DRAWER_1 = block;
                         if (type == DrawerType.X_2)

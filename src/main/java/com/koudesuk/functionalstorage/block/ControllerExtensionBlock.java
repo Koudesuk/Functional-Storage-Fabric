@@ -74,4 +74,10 @@ public class ControllerExtensionBlock extends Block implements EntityBlock {
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+
+    @Override
+    public java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
+            net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
+        return java.util.Collections.singletonList(new net.minecraft.world.item.ItemStack(this));
+    }
 }
