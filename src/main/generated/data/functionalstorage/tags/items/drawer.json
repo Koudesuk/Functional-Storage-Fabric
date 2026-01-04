@@ -1,6 +1,16 @@
 {
   "replace": false,
   "values": [
+    "functionalstorage:oak_drawer_1",
+    "functionalstorage:spruce_drawer_1",
+    "functionalstorage:birch_drawer_1",
+    "functionalstorage:jungle_drawer_1",
+    "functionalstorage:acacia_drawer_1",
+    "functionalstorage:dark_oak_drawer_1",
+    "functionalstorage:crimson_drawer_1",
+    "functionalstorage:warped_drawer_1",
+    "functionalstorage:mangrove_drawer_1",
+    "functionalstorage:cherry_drawer_1",
     "functionalstorage:oak_drawer_2",
     "functionalstorage:spruce_drawer_2",
     "functionalstorage:birch_drawer_2",
@@ -20,16 +30,6 @@
     "functionalstorage:crimson_drawer_4",
     "functionalstorage:warped_drawer_4",
     "functionalstorage:mangrove_drawer_4",
-    "functionalstorage:cherry_drawer_4",
-    "functionalstorage:oak_drawer_1",
-    "functionalstorage:spruce_drawer_1",
-    "functionalstorage:birch_drawer_1",
-    "functionalstorage:jungle_drawer_1",
-    "functionalstorage:acacia_drawer_1",
-    "functionalstorage:dark_oak_drawer_1",
-    "functionalstorage:crimson_drawer_1",
-    "functionalstorage:warped_drawer_1",
-    "functionalstorage:mangrove_drawer_1",
-    "functionalstorage:cherry_drawer_1"
+    "functionalstorage:cherry_drawer_4"
   ]
 }

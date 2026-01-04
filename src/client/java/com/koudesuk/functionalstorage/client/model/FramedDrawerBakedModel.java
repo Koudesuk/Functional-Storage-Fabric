@@ -38,11 +38,11 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
     private final ItemTransforms transforms;
     private final ItemOverrides overrides;
     private final ImmutableMap<String, BakedModel> children;
-    private final ImmutableList<BakedModel> itemPasses;
+    private final ImmutableList<String> itemPassKeys;
 
     public FramedDrawerBakedModel(boolean isGui3d, boolean useBlockLight, boolean useAmbientOcclusion,
             TextureAtlasSprite particle, ItemTransforms transforms,
-            ImmutableMap<String, BakedModel> children, ImmutableList<BakedModel> itemPasses) {
+            ImmutableMap<String, BakedModel> children, ImmutableList<String> itemPassKeys) {
         this.isGui3d = isGui3d;
         this.useBlockLight = useBlockLight;
         this.useAmbientOcclusion = useAmbientOcclusion;
@@ -50,7 +50,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         this.transforms = transforms;
         this.overrides = createItemOverrides();
         this.children = children;
-        this.itemPasses = itemPasses;
+        this.itemPassKeys = itemPassKeys;
     }
 
     /**
@@ -121,15 +121,41 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         // Has custom texture data, proceed with retexturing
         if (children != null) {
             for (Map.Entry<String, BakedModel> entry : children.entrySet()) {
+                String partName = entry.getKey();
                 BakedModel childModel = entry.getValue();
                 if (childModel != null) {
-                    emitRetexturedQuads(childModel, data, state, pos, randomSupplier, context);
+                    // Hybrid Rendering Logic:
+                    // If child provided is "base", we use the scanning logic (for normal drawers
+                    // backwards compat)
+                    // If child provided has a specific name (e.g. "front", "side"), we use Explicit
+                    // Mode (direct NBT lookup)
+                    if (partName.equals("base")) {
+                        emitRetexturedQuadsScanning(childModel, data, state, pos, randomSupplier, context);
+                    } else {
+                        // Explicit Mode: check if NBT has a style for this partName
+                        Item designItem = null;
+                        if (data.getDesign().containsKey(partName)) {
+                            designItem = data.getDesign().get(partName);
+                        }
+
+                        if (designItem != null) {
+                            emitRetexturedQuadsExplicit(childModel, designItem, state, pos, randomSupplier, context);
+                        } else {
+                            emitVanillaQuads(childModel, state, randomSupplier, context);
+                        }
+                    }
                 }
             }
         }
     }
 
-    private void emitRetexturedQuads(BakedModel shapeModel, FramedDrawerModelData data, BlockState state, BlockPos pos,
+    /**
+     * Scanning Mode: Uses sprite name matching to determine which NBT style to
+     * apply.
+     * Used for "base" part which contains the whole model in normal drawers.
+     */
+    private void emitRetexturedQuadsScanning(BakedModel shapeModel, FramedDrawerModelData data, BlockState state,
+            BlockPos pos,
             Supplier<RandomSource> randomSupplier, RenderContext context) {
 
         QuadEmitter emitter = context.getEmitter();
@@ -190,6 +216,70 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         }
     }
 
+    /**
+     * Explicit Mode: Applies the texture from designItem to ALL quads of this
+     * model.
+     * Does NOT scan sprite names.
+     */
+    private void emitRetexturedQuadsExplicit(BakedModel shapeModel, Item designItem, BlockState state, BlockPos pos,
+            Supplier<RandomSource> randomSupplier, RenderContext context) {
+
+        QuadEmitter emitter = context.getEmitter();
+        RandomSource rand = randomSupplier.get();
+
+        // Resolve replacement sprite/color once if possible, or per quad?
+        // We need replacement sprite for each face ideally from the blockItem.
+
+        if (!(designItem instanceof BlockItem blockItem)) {
+            emitVanillaQuads(shapeModel, state, randomSupplier, context);
+            return;
+        }
+
+        BlockState frameState = blockItem.getBlock().defaultBlockState();
+        BakedModel frameModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(frameState);
+
+        for (Direction dir : new Direction[] { null, Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH,
+                Direction.WEST, Direction.EAST }) {
+            List<BakedQuad> quads = shapeModel.getQuads(state, dir, rand);
+
+            for (BakedQuad quad : quads) {
+                TextureAtlasSprite originalSprite = quad.getSprite();
+                TextureAtlasSprite newSprite = originalSprite;
+                int tintColor = -1;
+
+                // Find matching quad in frameModel for this face
+                List<BakedQuad> frameQuads = frameModel.getQuads(frameState, quad.getDirection(), rand);
+                if (frameQuads.isEmpty() && quad.getDirection() != null) {
+                    frameQuads = frameModel.getQuads(frameState, null, rand);
+                }
+
+                if (!frameQuads.isEmpty()) {
+                    BakedQuad frameQuad = frameQuads.get(0);
+                    newSprite = frameQuad.getSprite();
+
+                    if (frameQuad.isTinted()) {
+                        tintColor = Minecraft.getInstance().getBlockColors().getColor(frameState, null, null,
+                                frameQuad.getTintIndex());
+                    }
+                } else {
+                    newSprite = frameModel.getParticleIcon();
+                }
+
+                emitter.fromVanilla(quad, null, dir);
+
+                if (newSprite != originalSprite) {
+                    emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
+                }
+
+                if (tintColor != -1) {
+                    emitter.color(tintColor, tintColor, tintColor, tintColor);
+                }
+
+                emitter.emit();
+            }
+        }
+    }
+
     @Override
     public void emitItemQuads(ItemStack stack, Supplier<RandomSource> randomSupplier, RenderContext context) {
         // Check if item has custom texture data
@@ -200,8 +290,9 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
 
         // If no Style tag or empty data, render base models without retexturing
         if (data == null || data.getDesign().isEmpty()) {
-            if (itemPasses != null) {
-                for (BakedModel model : itemPasses) {
+            if (itemPassKeys != null && children != null) {
+                for (String key : itemPassKeys) {
+                    BakedModel model = children.get(key);
                     if (model != null) {
                         emitVanillaItemQuads(model, randomSupplier, context);
                     }
@@ -211,16 +302,30 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         }
 
         // Has custom texture data, proceed with retexturing
-        if (itemPasses != null) {
-            for (BakedModel model : itemPasses) {
+        if (itemPassKeys != null && children != null) {
+            for (String key : itemPassKeys) {
+                BakedModel model = children.get(key);
                 if (model != null) {
-                    emitRetexturedItemQuads(model, data, stack, randomSupplier, context);
+                    if (key.equals("base")) {
+                        emitRetexturedItemQuadsScanning(model, data, stack, randomSupplier, context);
+                    } else {
+                        // Explicit
+                        Item designItem = null;
+                        if (data.getDesign().containsKey(key)) {
+                            designItem = data.getDesign().get(key);
+                        }
+                        if (designItem != null) {
+                            emitRetexturedItemQuadsExplicit(model, designItem, stack, randomSupplier, context);
+                        } else {
+                            emitVanillaItemQuads(model, randomSupplier, context);
+                        }
+                    }
                 }
             }
         }
     }
 
-    private void emitRetexturedItemQuads(BakedModel shapeModel, FramedDrawerModelData data, ItemStack stack,
+    private void emitRetexturedItemQuadsScanning(BakedModel shapeModel, FramedDrawerModelData data, ItemStack stack,
             Supplier<RandomSource> randomSupplier, RenderContext context) {
 
         QuadEmitter emitter = context.getEmitter();
@@ -258,6 +363,56 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                             }
                         }
                     }
+                }
+
+                emitter.fromVanilla(quad, null, dir);
+
+                if (newSprite != originalSprite) {
+                    emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
+                }
+
+                if (tintColor != -1) {
+                    emitter.color(tintColor, tintColor, tintColor, tintColor);
+                }
+
+                emitter.emit();
+            }
+        }
+    }
+
+    private void emitRetexturedItemQuadsExplicit(BakedModel shapeModel, Item designItem, ItemStack stack,
+            Supplier<RandomSource> randomSupplier, RenderContext context) {
+
+        QuadEmitter emitter = context.getEmitter();
+        RandomSource rand = randomSupplier.get();
+
+        if (!(designItem instanceof BlockItem blockItem)) {
+            emitVanillaItemQuads(shapeModel, randomSupplier, context);
+            return;
+        }
+
+        BlockState frameState = blockItem.getBlock().defaultBlockState();
+        BakedModel frameModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(frameState);
+
+        for (Direction dir : new Direction[] { null, Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH,
+                Direction.WEST, Direction.EAST }) {
+            List<BakedQuad> quads = shapeModel.getQuads(null, dir, rand);
+
+            for (BakedQuad quad : quads) {
+                TextureAtlasSprite originalSprite = quad.getSprite();
+                TextureAtlasSprite newSprite = originalSprite;
+                int tintColor = -1;
+
+                // Find matching quad in frameModel for this face
+                List<BakedQuad> frameQuads = frameModel.getQuads(frameState, quad.getDirection(), rand);
+                if (frameQuads.isEmpty() && quad.getDirection() != null) {
+                    frameQuads = frameModel.getQuads(frameState, null, rand);
+                }
+
+                if (!frameQuads.isEmpty()) {
+                    newSprite = frameQuads.get(0).getSprite();
+                } else {
+                    newSprite = frameModel.getParticleIcon();
                 }
 
                 emitter.fromVanilla(quad, null, dir);

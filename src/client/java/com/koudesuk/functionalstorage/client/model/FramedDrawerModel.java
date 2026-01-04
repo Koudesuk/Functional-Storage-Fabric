@@ -18,22 +18,26 @@ import java.util.function.Function;
 
 public class FramedDrawerModel implements UnbakedModel {
 
-    private final ImmutableMap<String, ResourceLocation> children;
+    private final ImmutableMap<String, UnbakedModel> children;
     private final ImmutableList<String> itemPasses;
 
-    public FramedDrawerModel(ImmutableMap<String, ResourceLocation> children, ImmutableList<String> itemPasses) {
+    public FramedDrawerModel(ImmutableMap<String, UnbakedModel> children, ImmutableList<String> itemPasses) {
         this.children = children;
         this.itemPasses = itemPasses;
     }
 
     @Override
     public Collection<ResourceLocation> getDependencies() {
-        return children.values();
+        return children.values().stream()
+                .flatMap(model -> model.getDependencies().stream())
+                .collect(ImmutableList.toImmutableList());
     }
 
     @Override
     public void resolveParents(Function<ResourceLocation, UnbakedModel> resolver) {
-        // Parents are resolved automatically by the baker when baking dependencies
+        for (UnbakedModel child : children.values()) {
+            child.resolveParents(resolver);
+        }
     }
 
     @Override
@@ -42,8 +46,8 @@ public class FramedDrawerModel implements UnbakedModel {
         ImmutableMap.Builder<String, BakedModel> bakedChildren = ImmutableMap.builder();
         BakedModel baseModel = null;
 
-        for (Map.Entry<String, ResourceLocation> entry : children.entrySet()) {
-            BakedModel baked = baker.bake(entry.getValue(), state);
+        for (Map.Entry<String, UnbakedModel> entry : children.entrySet()) {
+            BakedModel baked = entry.getValue().bake(baker, spriteGetter, state, location);
             if (baked != null) {
                 bakedChildren.put(entry.getKey(), baked);
                 // Store the first "base" model to get transforms from
@@ -54,13 +58,6 @@ public class FramedDrawerModel implements UnbakedModel {
         }
 
         ImmutableMap<String, BakedModel> bakedMap = bakedChildren.build();
-
-        ImmutableList.Builder<BakedModel> passBuilder = ImmutableList.builder();
-        for (String pass : itemPasses) {
-            if (bakedMap.containsKey(pass)) {
-                passBuilder.add(bakedMap.get(pass));
-            }
-        }
 
         TextureAtlasSprite particle = spriteGetter
                 .apply(new Material(TextureAtlas.LOCATION_BLOCKS, new ResourceLocation("minecraft", "missingno")));
@@ -81,6 +78,6 @@ public class FramedDrawerModel implements UnbakedModel {
                 particle,
                 transforms, // Use transforms from base model
                 bakedMap,
-                passBuilder.build());
+                itemPasses); // Pass the strings (keys) directly
     }
 }

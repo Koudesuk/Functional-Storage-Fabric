@@ -1,9 +1,74 @@
 {
+  "credit": "Made with Blockbench",
   "loader": "functionalstorage:framedblock",
-  "parent": "functionalstorage:block/framed_controller_extension_base",
+  "children": {
+    "front": {
+      "parent": "functionalstorage:block/framed_controller_front",
+      "textures": {
+        "front": "functionalstorage:block/framed_side"
+      }
+    },
+    "side": {
+      "parent": "functionalstorage:block/framed_controller_side",
+      "textures": {
+        "side": "functionalstorage:block/framed_side"
+      }
+    },
+    "display": {
+      "textures": {
+        "front": "functionalstorage:block/framed_controller_extension"
+      },
+      "elements": [
+        {
+          "from": [
+            1,
+            1,
+            0.45
+          ],
+          "to": [
+            15,
+            15,
+            2.45
+          ],
+          "rotation": {
+            "angle": 0,
+            "axis": "y",
+            "origin": [
+              -8,
+              0,
+              -8
+            ]
+          },
+          "faces": {
+            "north": {
+              "uv": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "texture": "#front"
+            },
+            "down": {
+              "uv": [
+                0,
+                0,
+                14,
+                2
+              ],
+              "texture": "#front"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "item_render_order": [
+    "front",
+    "side",
+    "display"
+  ],
   "textures": {
-    "particle": "functionalstorage:block/framed_side",
-    "front": "functionalstorage:block/framed_controller_front",
-    "side": "functionalstorage:block/framed_side"
+    "particle": "functionalstorage:block/framed_side"
   }
 }

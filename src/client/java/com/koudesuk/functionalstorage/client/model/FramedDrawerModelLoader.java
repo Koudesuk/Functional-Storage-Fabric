@@ -8,6 +8,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.model.BlockModel;
+import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 
@@ -56,11 +58,14 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
                             return null;
                         }
 
-                        ImmutableMap.Builder<String, ResourceLocation> children = ImmutableMap.builder();
+                        ImmutableMap.Builder<String, UnbakedModel> children = ImmutableMap.builder();
                         List<String> itemPasses = new ArrayList<>();
 
                         if (json.has("parent")) {
-                            children.put("base", new ResourceLocation(json.get("parent").getAsString()));
+                            // "parent": "..." is syntactic sugar for a child named "base"
+                            String parentJson = "{\"parent\":\"" + json.get("parent").getAsString() + "\"}";
+                            children.put("base",
+                                    BlockModel.fromString(parentJson));
                             itemPasses.add("base");
                         }
 
@@ -69,19 +74,27 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
                             for (Map.Entry<String, JsonElement> entry : childrenObj.entrySet()) {
                                 JsonElement value = entry.getValue();
                                 if (value.isJsonPrimitive()) {
-                                    // Simple string reference to a model
-                                    children.put(entry.getKey(), new ResourceLocation(value.getAsString()));
+                                    // Simple string reference -> treat as parent
+                                    String childJson = "{\"parent\":\"" + value.getAsString() + "\"}";
+                                    children.put(entry.getKey(),
+                                            BlockModel.fromString(childJson));
                                     itemPasses.add(entry.getKey());
                                 } else if (value.isJsonObject()) {
-                                    // Forge-style embedded BlockModel object with parent
-                                    JsonObject childModel = value.getAsJsonObject();
-                                    if (childModel.has("parent")) {
-                                        children.put(entry.getKey(),
-                                                new ResourceLocation(childModel.get("parent").getAsString()));
-                                        itemPasses.add(entry.getKey());
-                                    }
+                                    // Full model definition (parent + textures) -> pass raw JSON string
+                                    children.put(entry.getKey(),
+                                            BlockModel.fromString(value.toString()));
+                                    itemPasses.add(entry.getKey());
                                 }
                             }
+                        }
+
+                        // Handle particle texture explicitly
+                        if (json.has("textures") && json.getAsJsonObject("textures").has("particle")) {
+                            String particleTex = json.getAsJsonObject("textures").get("particle").getAsString();
+                            // Create a dummy model that purely defines the particle texture
+                            String particleJson = "{\"parent\":\"minecraft:block/block\",\"textures\":{\"particle\":\""
+                                    + particleTex + "\"}}";
+                            children.put("particle", BlockModel.fromString(particleJson));
                         }
 
                         if (json.has("item_render_order")) {
