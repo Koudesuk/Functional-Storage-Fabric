@@ -37,6 +37,7 @@ public class FunctionalStorageGroup {
                                                         entries.accept(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER);
                                                         entries.accept(FunctionalStorageBlocks.ENDER_DRAWER);
                                                         entries.accept(FunctionalStorageBlocks.CONTROLLER_EXTENSION);
+                                                        entries.accept(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION);
 
                                                         // Add Fluid Drawers explicitly (not in DRAWER_TYPES)
                                                         entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_1);

@@ -18,6 +18,16 @@ public class ControllerExtensionTile extends ItemControllableDrawerTile<Controll
         super(FunctionalStorageBlockEntities.CONTROLLER_EXTENSION, pos, state);
     }
 
+    /**
+     * Protected constructor for subclasses (e.g., FramedControllerExtensionTile)
+     * that need to specify
+     * their own BlockEntityType.
+     */
+    protected ControllerExtensionTile(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos,
+            BlockState state) {
+        super(type, pos, state);
+    }
+
     @Override
     public Storage<ItemVariant> getStorage() {
         if (getControllerPos() != null && level != null) {

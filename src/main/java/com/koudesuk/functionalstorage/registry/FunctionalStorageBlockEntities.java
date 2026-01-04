@@ -30,6 +30,7 @@ public class FunctionalStorageBlockEntities {
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FluidDrawerTile> FLUID_DRAWER_4;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile> FRAMED_DRAWER_CONTROLLER;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile> FRAMED_SIMPLE_COMPACTING_DRAWER;
+        public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile> FRAMED_CONTROLLER_EXTENSION;
 
         public static void register() {
                 List<Block> drawerBlocks = new ArrayList<>();
@@ -126,5 +127,11 @@ public class FunctionalStorageBlockEntities {
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile::new,
                                                 FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER).build(null));
+
+                FRAMED_CONTROLLER_EXTENSION = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_controller_extension"),
+                                FabricBlockEntityTypeBuilder.create(
+                                                com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile::new,
+                                                FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION).build(null));
         }
 }

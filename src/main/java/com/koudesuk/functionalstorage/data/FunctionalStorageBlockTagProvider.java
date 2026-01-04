@@ -48,6 +48,7 @@ public class FunctionalStorageBlockTagProvider extends FabricTagProvider.BlockTa
                 .add(FunctionalStorageBlocks.CONTROLLER_EXTENSION)
                 .add(FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER)
                 .add(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER)
-                .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER);
+                .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER)
+                .add(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION);
     }
 }

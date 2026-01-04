@@ -3,6 +3,7 @@ package com.koudesuk.functionalstorage.client;
 import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.tile.FramedCompactingDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile;
 import com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile;
 import com.koudesuk.functionalstorage.block.tile.FramedDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile;
@@ -31,6 +32,7 @@ public class FramedColors {
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER);
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER);
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER);
+        framedBlocks.add(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION);
 
         ColorProviderRegistry.BLOCK.register(FramedColors::getBlockColor,
                 framedBlocks.toArray(new net.minecraft.world.level.block.Block[0]));
@@ -54,13 +56,15 @@ public class FramedColors {
             if (entity instanceof FramedDrawerControllerTile tile) {
                 return resolveColor(tile.getFramedDrawerModelData(), world, pos, tintIndex);
             }
+            if (entity instanceof FramedControllerExtensionTile tile) {
+                return resolveColor(tile.getFramedDrawerModelData(), world, pos, tintIndex);
+            }
         }
         return 0xFFFFFF;
     }
 
     private static int getItemColor(ItemStack stack, int tintIndex) {
-        if (tintIndex == 0 && stack.getItem() instanceof BlockItem blockItem
-                && blockItem.getBlock() instanceof FramedDrawerBlock) {
+        if (tintIndex == 0 && stack.getItem() instanceof BlockItem) {
             FramedDrawerModelData data = FramedDrawerBlock.getDrawerModelData(stack);
             if (data != null) {
                 return resolveItemColor(data, tintIndex);

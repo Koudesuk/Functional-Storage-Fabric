@@ -1,0 +1,34 @@
+{
+    "variants": {
+        "facing=north,locked=false": {
+            "model": "functionalstorage:block/framed_controller_extension"
+        },
+        "facing=north,locked=true": {
+            "model": "functionalstorage:block/framed_controller_extension"
+        },
+        "facing=east,locked=false": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 90
+        },
+        "facing=east,locked=true": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 90
+        },
+        "facing=south,locked=false": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 180
+        },
+        "facing=south,locked=true": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 180
+        },
+        "facing=west,locked=false": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 270
+        },
+        "facing=west,locked=true": {
+            "model": "functionalstorage:block/framed_controller_extension",
+            "y": 270
+        }
+    }
+}

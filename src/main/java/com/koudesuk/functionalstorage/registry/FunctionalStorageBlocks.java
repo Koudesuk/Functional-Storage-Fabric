@@ -28,6 +28,7 @@ public class FunctionalStorageBlocks {
         public static Block ENDER_DRAWER;
         public static Block DRAWER_CONTROLLER;
         public static Block FRAMED_DRAWER_CONTROLLER;
+        public static Block FRAMED_CONTROLLER_EXTENSION;
 
         public static Block FLUID_DRAWER_1;
         public static Block FLUID_DRAWER_2;
@@ -173,6 +174,16 @@ public class FunctionalStorageBlocks {
                 Registry.register(BuiltInRegistries.ITEM,
                                 new ResourceLocation(FunctionalStorage.MOD_ID, "framed_storage_controller"),
                                 new BlockItem(FRAMED_DRAWER_CONTROLLER, new Item.Properties()));
+
+                // Register Framed Controller Extension (Framed Access Point)
+                FRAMED_CONTROLLER_EXTENSION = new FramedControllerExtensionBlock(
+                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion());
+                Registry.register(BuiltInRegistries.BLOCK,
+                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_controller_extension"),
+                                FRAMED_CONTROLLER_EXTENSION);
+                Registry.register(BuiltInRegistries.ITEM,
+                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_controller_extension"),
+                                new BlockItem(FRAMED_CONTROLLER_EXTENSION, new Item.Properties()));
 
                 // Register Framed Drawer
                 Block framedDrawer = new FramedDrawerBlock(DrawerType.X_1);

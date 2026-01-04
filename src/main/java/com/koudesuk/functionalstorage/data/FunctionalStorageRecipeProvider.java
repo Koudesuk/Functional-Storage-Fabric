@@ -347,5 +347,16 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                                 .define('D', Items.COMPARATOR)
                                 .unlockedBy("has_drawer", has(DRAWER))
                                 .save(exporter);
+
+                // ===== FRAMED CONTROLLER EXTENSION (Access Point) =====
+                ShapedRecipeBuilder
+                                .shaped(RecipeCategory.DECORATIONS, FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION)
+                                .pattern("IBI").pattern("CDC").pattern("IBI")
+                                .define('I', Items.IRON_NUGGET)
+                                .define('B', Blocks.QUARTZ_BLOCK)
+                                .define('C', DRAWER)
+                                .define('D', Items.REPEATER)
+                                .unlockedBy("has_drawer", has(DRAWER))
+                                .save(exporter);
         }
 }

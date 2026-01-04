@@ -86,6 +86,9 @@ public class FunctionalStorage implements ModInitializer {
                                 (extension, direction) -> extension.getStorage(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.CONTROLLER_EXTENSION);
                 net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
+                                (extension, direction) -> extension.getStorage(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_CONTROLLER_EXTENSION);
+                net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
                                 (drawer, direction) -> drawer.getStorage(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.SIMPLE_COMPACTING_DRAWER);
                 net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
