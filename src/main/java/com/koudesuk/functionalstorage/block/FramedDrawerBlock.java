@@ -31,7 +31,8 @@ public class FramedDrawerBlock extends DrawerBlock {
 
     public FramedDrawerBlock(DrawerType type) {
         super(DrawerWoodType.FRAMED, type,
-                FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(1.5f, 1.5f).noOcclusion());
+                FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(1.5f, 1.5f).noOcclusion()
+                        .isViewBlocking((state, level, pos) -> false));
     }
 
     @Override

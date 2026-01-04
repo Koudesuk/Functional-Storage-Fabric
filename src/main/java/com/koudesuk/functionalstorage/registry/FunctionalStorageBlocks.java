@@ -90,7 +90,8 @@ public class FunctionalStorageBlocks {
 
                 // Register Framed Simple Compacting Drawer
                 FRAMED_SIMPLE_COMPACTING_DRAWER = new FramedSimpleCompactingDrawerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
+                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
+                                                .isViewBlocking((state, level, pos) -> false));
                 Registry.register(BuiltInRegistries.BLOCK,
                                 new ResourceLocation(FunctionalStorage.MOD_ID, "framed_simple_compacting_drawer"),
                                 FRAMED_SIMPLE_COMPACTING_DRAWER);
@@ -137,7 +138,8 @@ public class FunctionalStorageBlocks {
                 // than a simple rename or direct block replacement allows while maintaining
                 // syntactic correctness in the current Fabric environment.
                 FRAMED_COMPACTING_DRAWER = new FramedCompactingDrawerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
+                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
+                                                .isViewBlocking((state, level, pos) -> false));
                 Registry.register(BuiltInRegistries.BLOCK,
                                 new ResourceLocation(FunctionalStorage.MOD_ID, "framed_compacting_drawer"),
                                 FRAMED_COMPACTING_DRAWER);
@@ -167,7 +169,8 @@ public class FunctionalStorageBlocks {
 
                 // Register Framed Drawer Controller
                 FRAMED_DRAWER_CONTROLLER = new FramedDrawerControllerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
+                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
+                                                .isViewBlocking((state, level, pos) -> false));
                 Registry.register(BuiltInRegistries.BLOCK,
                                 new ResourceLocation(FunctionalStorage.MOD_ID, "framed_storage_controller"),
                                 FRAMED_DRAWER_CONTROLLER);
@@ -177,7 +180,8 @@ public class FunctionalStorageBlocks {
 
                 // Register Framed Controller Extension (Framed Access Point)
                 FRAMED_CONTROLLER_EXTENSION = new FramedControllerExtensionBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion());
+                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
+                                                .isViewBlocking((state, level, pos) -> false));
                 Registry.register(BuiltInRegistries.BLOCK,
                                 new ResourceLocation(FunctionalStorage.MOD_ID, "framed_controller_extension"),
                                 FRAMED_CONTROLLER_EXTENSION);
