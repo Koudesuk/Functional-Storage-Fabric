@@ -63,6 +63,8 @@ public class FunctionalStorageClient implements ClientModInitializer {
                                 RenderType.cutout());
                 BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.CONTROLLER_EXTENSION,
                                 RenderType.cutout());
+                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION,
+                                RenderType.cutout());
                 BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.ARMORY_CABINET, RenderType.cutout());
 
                 // Fluid drawer blocks - use cutout (like Forge) to avoid depth/transparency
