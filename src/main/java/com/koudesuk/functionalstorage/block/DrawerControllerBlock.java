@@ -84,6 +84,33 @@ public class DrawerControllerBlock extends Block implements EntityBlock {
     @Override
     public java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
-        return java.util.Collections.singletonList(new net.minecraft.world.item.ItemStack(this));
+        net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> stacks = net.minecraft.core.NonNullList
+                .create();
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
+        BlockEntity blockEntity = builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+        if (blockEntity instanceof StorageControllerTile tile) {
+            if (!tile.isEverythingEmpty()) {
+                stack.getOrCreateTag().put("Tile", blockEntity.saveWithoutMetadata());
+            }
+        }
+        stacks.add(stack);
+        return stacks;
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state,
+            @Nullable net.minecraft.world.entity.LivingEntity placer, net.minecraft.world.item.ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (stack.hasTag() && stack.getTag().contains("Tile")) {
+            if (entity instanceof StorageControllerTile tile) {
+                entity.load(stack.getTag().getCompound("Tile"));
+                tile.setChanged();
+                if (!level.isClientSide) {
+                    level.sendBlockUpdated(pos, state, state, 3);
+                }
+            }
+        }
     }
 }

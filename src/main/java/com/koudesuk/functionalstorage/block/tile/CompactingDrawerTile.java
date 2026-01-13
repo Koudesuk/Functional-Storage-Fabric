@@ -241,6 +241,17 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
                 return false;
             }
         }
+        // Check upgrades (matching DrawerTile pattern)
+        for (int i = 0; i < getStorageUpgrades().getContainerSize(); i++) {
+            if (!getStorageUpgrades().getItem(i).isEmpty()) {
+                return false;
+            }
+        }
+        for (int i = 0; i < getUtilityUpgrades().getContainerSize(); i++) {
+            if (!getUtilityUpgrades().getItem(i).isEmpty()) {
+                return false;
+            }
+        }
         return true;
     }
 

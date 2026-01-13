@@ -59,6 +59,11 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
 
         if (blockEntity instanceof FramedDrawerControllerTile framedControllerTile) {
+            // Save Tile NBT (upgrades etc.)
+            if (!framedControllerTile.isEverythingEmpty()) {
+                stack.getOrCreateTag().put("Tile", blockEntity.saveWithoutMetadata());
+            }
+            // Save Style (framed appearance)
             if (framedControllerTile.getFramedDrawerModelData() != null) {
                 stack.getOrCreateTag().put("Style", framedControllerTile.getFramedDrawerModelData().serializeNBT());
             }

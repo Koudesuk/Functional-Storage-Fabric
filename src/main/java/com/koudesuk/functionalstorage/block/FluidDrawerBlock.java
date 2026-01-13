@@ -75,6 +75,50 @@ public class FluidDrawerBlock extends DrawerBlock {
     }
 
     @Override
+    public java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
+            net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
+        net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> stacks = net.minecraft.core.NonNullList
+                .create();
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
+        BlockEntity drawerTile = builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+        if (drawerTile instanceof FluidDrawerTile tile) {
+            if (!tile.isEverythingEmpty()) {
+                stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
+            }
+            if (tile.isLocked()) {
+                stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
+            }
+        }
+        stacks.add(stack);
+        return stacks;
+    }
+
+    @Override
+    public void setPlacedBy(net.minecraft.world.level.Level level, BlockPos pos, BlockState state,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.entity.LivingEntity placer,
+            net.minecraft.world.item.ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (stack.hasTag()) {
+            if (stack.getTag().contains("Tile")) {
+                if (entity instanceof FluidDrawerTile tile) {
+                    entity.load(stack.getTag().getCompound("Tile"));
+                    tile.setChanged();
+                    if (!level.isClientSide) {
+                        level.sendBlockUpdated(pos, state, state, 3);
+                    }
+                }
+            }
+            if (stack.getTag().contains("Locked")) {
+                if (entity instanceof FluidDrawerTile tile) {
+                    tile.setLocked(stack.getTag().getBoolean("Locked"));
+                }
+            }
+        }
+    }
+
+    @Override
     public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter blockGetter, BlockPos pos,
             net.minecraft.core.Direction direction) {
         BlockEntity blockEntity = blockGetter.getBlockEntity(pos);

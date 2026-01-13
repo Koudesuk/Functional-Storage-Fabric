@@ -165,6 +165,26 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         return handler;
     }
 
+    public boolean isEverythingEmpty() {
+        for (int i = 0; i < type.getSlots(); i++) {
+            if (handler.getAmount(i) > 0) {
+                return false;
+            }
+        }
+        // Also check if upgrades are empty
+        for (int i = 0; i < getStorageUpgrades().getContainerSize(); i++) {
+            if (!getStorageUpgrades().getItem(i).isEmpty()) {
+                return false;
+            }
+        }
+        for (int i = 0; i < getUtilityUpgrades().getContainerSize(); i++) {
+            if (!getUtilityUpgrades().getItem(i).isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public DrawerType getDrawerType() {
         return type;
     }

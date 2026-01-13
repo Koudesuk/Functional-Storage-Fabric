@@ -104,6 +104,29 @@ public class SimpleCompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state,
+            @Nullable net.minecraft.world.entity.LivingEntity placer, net.minecraft.world.item.ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (stack.hasTag()) {
+            if (stack.getTag().contains("Tile")) {
+                if (entity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile tile) {
+                    entity.load(stack.getTag().getCompound("Tile"));
+                    tile.setChanged();
+                    if (!level.isClientSide) {
+                        level.sendBlockUpdated(pos, state, state, 3);
+                    }
+                }
+            }
+            if (stack.getTag().contains("Locked")) {
+                if (entity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile tile) {
+                    tile.setLocked(stack.getTag().getBoolean("Locked"));
+                }
+            }
+        }
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.level.BlockGetter level, BlockPos pos) {
