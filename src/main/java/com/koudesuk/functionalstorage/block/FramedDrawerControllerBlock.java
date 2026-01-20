@@ -2,12 +2,13 @@ package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -31,7 +32,7 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
     }
 
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level,
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level,
             BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide) {
             return null;
@@ -60,12 +61,14 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
 
         if (blockEntity instanceof FramedDrawerControllerTile framedControllerTile) {
             // Save Tile NBT (upgrades etc.)
-            if (!framedControllerTile.isEverythingEmpty()) {
-                stack.getOrCreateTag().put("Tile", blockEntity.saveWithoutMetadata());
+            if (!framedControllerTile.isEverythingEmpty() && framedControllerTile.getLevel() != null) {
+                stack.set(FSAttachments.TILE,
+                        framedControllerTile.saveWithoutMetadata(framedControllerTile.getLevel().registryAccess()));
             }
             // Save Style (framed appearance)
-            if (framedControllerTile.getFramedDrawerModelData() != null) {
-                stack.getOrCreateTag().put("Style", framedControllerTile.getFramedDrawerModelData().serializeNBT());
+            if (framedControllerTile.getFramedDrawerModelData() != null && framedControllerTile.getLevel() != null) {
+                stack.set(FSAttachments.STYLE, framedControllerTile.getFramedDrawerModelData()
+                        .serializeNBT(framedControllerTile.getLevel().registryAccess()));
             }
         }
 
@@ -74,17 +77,18 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedDrawerControllerTile framedControllerTile) {
             if (framedControllerTile.getFramedDrawerModelData() != null) {
                 if (!framedControllerTile.getFramedDrawerModelData().getDesign().isEmpty()) {
                     ItemStack stack = new ItemStack(this);
-                    stack.getOrCreateTag().put("Style", framedControllerTile.getFramedDrawerModelData().serializeNBT());
+                    stack.set(FSAttachments.STYLE,
+                            framedControllerTile.getFramedDrawerModelData().serializeNBT(level.registryAccess()));
                     return stack;
                 }
             }
         }
-        return super.getCloneItemStack(level, pos, state);
+        return new ItemStack(this);
     }
 }

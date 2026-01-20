@@ -16,9 +16,10 @@ import java.util.concurrent.CompletableFuture;
 public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagProvider {
 
     // Fabric convention tags - we add items to these tags for recipe compatibility
-    public static final TagKey<Item> STONES = TagKey.create(Registries.ITEM, new ResourceLocation("c", "stones"));
+    public static final TagKey<Item> STONES = TagKey.create(Registries.ITEM,
+            ResourceLocation.parse("c:stones"));
     public static final TagKey<Item> WOODEN_CHESTS = TagKey.create(Registries.ITEM,
-            new ResourceLocation("c", "wooden_chests"));
+            ResourceLocation.parse("c:wooden_chests"));
 
     public FunctionalStorageItemTagProvider(FabricDataOutput output,
             CompletableFuture<HolderLookup.Provider> registriesFuture) {
@@ -29,7 +30,7 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
     protected void addTags(HolderLookup.Provider arg) {
         // === DRAWER TAG ===
         FabricTagProvider<Item>.FabricTagBuilder drawerBuilder = getOrCreateTagBuilder(
-                TagKey.create(Registries.ITEM, new ResourceLocation("functionalstorage", "drawer")));
+                TagKey.create(Registries.ITEM, ResourceLocation.parse("functionalstorage:drawer")));
 
         for (java.util.List<Block> blocks : FunctionalStorageBlocks.DRAWER_TYPES.values()) {
             for (Block block : blocks) {

@@ -9,9 +9,8 @@ import net.fabricmc.fabric.api.transfer.v1.transaction.base.SnapshotParticipant;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.HorseArmorItem;
+import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.RecordItem;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -211,26 +210,43 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     private boolean isCertifiedStack(ItemStack stack) {
         if (stack.getMaxStackSize() > 1)
             return false;
-        return stack.hasTag() || stack.isDamageableItem() || stack.isEnchantable()
-                || stack.getItem() instanceof RecordItem || stack.getItem() instanceof HorseArmorItem;
+        // In 1.21, use Component API to check for custom data instead of hasTag()
+        // RecordItem was removed in 1.21, using isEnchantable and isDamageableItem as
+        // checks
+        return !stack.getComponents().isEmpty() || stack.isDamageableItem() || stack.isEnchantable()
+                || stack.getItem() instanceof AnimalArmorItem;
     }
 
-    public CompoundTag serializeNBT() {
-        CompoundTag compoundTag = new CompoundTag();
-        for (int i = 0; i < this.stackList.size(); i++) {
-            ItemStack stack = this.stackList.get(i);
+    public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
+        CompoundTag nbt = new CompoundTag();
+        net.minecraft.nbt.ListTag nbtList = new net.minecraft.nbt.ListTag();
+        for (int i = 0; i < this.getContainerSize(); i++) {
+            ItemStack stack = this.getItem(i);
             if (!stack.isEmpty()) {
-                compoundTag.put(i + "", stack.save(new CompoundTag()));
+                CompoundTag itemTag = new CompoundTag();
+                itemTag.putInt("Slot", i);
+                itemTag.put("Item",
+                        ItemStack.CODEC
+                                .encodeStart(net.minecraft.resources.RegistryOps
+                                        .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), stack)
+                                .result().orElse(new CompoundTag()));
+                nbtList.add(itemTag);
             }
         }
-        return compoundTag;
+        nbt.put("Items", nbtList);
+        return nbt;
     }
 
-    public void deserializeNBT(CompoundTag nbt) {
-        for (String allKey : nbt.getAllKeys()) {
-            int pos = Integer.parseInt(allKey);
-            if (pos < this.stackList.size()) {
-                this.stackList.set(pos, ItemStack.of(nbt.getCompound(allKey)));
+    public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+        net.minecraft.nbt.ListTag tagList = nbt.getList("Items", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < tagList.size(); i++) {
+            CompoundTag itemTag = tagList.getCompound(i);
+            int slot = itemTag.getInt("Slot");
+            if (slot >= 0 && slot < this.getContainerSize()) {
+                this.setItem(slot,
+                        ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
+                                .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag.getCompound("Item"))
+                                .result().orElse(ItemStack.EMPTY));
             }
         }
     }

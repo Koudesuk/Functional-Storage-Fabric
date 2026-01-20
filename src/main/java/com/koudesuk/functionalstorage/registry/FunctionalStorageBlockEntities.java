@@ -37,58 +37,61 @@ public class FunctionalStorageBlockEntities {
                 FunctionalStorageBlocks.DRAWER_TYPES.values().forEach(drawerBlocks::addAll);
 
                 DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "drawer"),
                                 FabricBlockEntityTypeBuilder.create(DrawerTile::new, drawerBlocks.toArray(new Block[0]))
                                                 .build(null));
 
                 STORAGE_CONTROLLER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "storage_controller"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "storage_controller"),
                                 FabricBlockEntityTypeBuilder.create(StorageControllerTile::new,
                                                 FunctionalStorageBlocks.DRAWER_CONTROLLER).build(null));
 
                 ENDER_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "ender_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "ender_drawer"),
                                 FabricBlockEntityTypeBuilder
                                                 .create(EnderDrawerTile::new, FunctionalStorageBlocks.ENDER_DRAWER)
                                                 .build(null));
 
                 ARMORY_CABINET = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "armory_cabinet"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "armory_cabinet"),
                                 FabricBlockEntityTypeBuilder
                                                 .create(com.koudesuk.functionalstorage.block.tile.ArmoryCabinetTile::new,
                                                                 FunctionalStorageBlocks.ARMORY_CABINET)
                                                 .build(null));
 
                 CONTROLLER_EXTENSION = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "controller_extension"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "controller_extension"),
                                 BlockEntityType.Builder.of(
                                                 com.koudesuk.functionalstorage.block.tile.ControllerExtensionTile::new,
                                                 FunctionalStorageBlocks.CONTROLLER_EXTENSION).build(null));
                 SIMPLE_COMPACTING_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "simple_compacting_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                "simple_compacting_drawer"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile::new,
                                                 FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER).build(null));
                 COMPACTING_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "compacting_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "compacting_drawer"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile::new,
                                                 FunctionalStorageBlocks.COMPACTING_DRAWER).build(null));
                 FRAMED_COMPACTING_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_compacting_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                "framed_compacting_drawer"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.FramedCompactingDrawerTile::new,
                                                 FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER).build(null));
 
                 FRAMED_SIMPLE_COMPACTING_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_simple_compacting_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                "framed_simple_compacting_drawer"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile::new,
                                                 FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER).build(null));
 
                 List<Block> framedDrawerBlocks = new ArrayList<>(FunctionalStorageBlocks.FRAMED_DRAWER);
                 FRAMED_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_drawer"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer"),
                                 FabricBlockEntityTypeBuilder.create((pos, state) -> {
                                         if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FramedDrawerBlock framedDrawerBlock) {
                                                 return new com.koudesuk.functionalstorage.block.tile.FramedDrawerTile(
@@ -101,21 +104,21 @@ public class FunctionalStorageBlockEntities {
 
                 // Fluid Drawers - use direct block references since they're not in DRAWER_TYPES
                 FLUID_DRAWER_1 = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "fluid_drawer_1"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "fluid_drawer_1"),
                                 FabricBlockEntityTypeBuilder.create((pos,
                                                 state) -> new com.koudesuk.functionalstorage.block.tile.FluidDrawerTile(
                                                                 pos, state,
                                                                 com.koudesuk.functionalstorage.util.DrawerType.X_1),
                                                 FunctionalStorageBlocks.FLUID_DRAWER_1).build(null));
                 FLUID_DRAWER_2 = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "fluid_drawer_2"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "fluid_drawer_2"),
                                 FabricBlockEntityTypeBuilder.create((pos,
                                                 state) -> new com.koudesuk.functionalstorage.block.tile.FluidDrawerTile(
                                                                 pos, state,
                                                                 com.koudesuk.functionalstorage.util.DrawerType.X_2),
                                                 FunctionalStorageBlocks.FLUID_DRAWER_2).build(null));
                 FLUID_DRAWER_4 = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "fluid_drawer_4"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "fluid_drawer_4"),
                                 FabricBlockEntityTypeBuilder.create((pos,
                                                 state) -> new com.koudesuk.functionalstorage.block.tile.FluidDrawerTile(
                                                                 pos, state,
@@ -123,13 +126,15 @@ public class FunctionalStorageBlockEntities {
                                                 FunctionalStorageBlocks.FLUID_DRAWER_4).build(null));
 
                 FRAMED_DRAWER_CONTROLLER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_storage_controller"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                "framed_storage_controller"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile::new,
                                                 FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER).build(null));
 
                 FRAMED_CONTROLLER_EXTENSION = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "framed_controller_extension"),
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                "framed_controller_extension"),
                                 FabricBlockEntityTypeBuilder.create(
                                                 com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile::new,
                                                 FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION).build(null));

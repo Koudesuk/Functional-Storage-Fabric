@@ -6,7 +6,7 @@ import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricRecipeProvider;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.tags.ItemTags;
@@ -15,8 +15,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.resources.ResourceLocation;
-
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.core.HolderLookup;
 
 public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
 
@@ -25,18 +25,20 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
         // c:stones includes stone, granite, diorite, andesite, deepslate, tuff,
         // calcite, etc.
         // c:wooden_chests includes chest and trapped_chest (excludes ender_chest)
-        private static final TagKey<Item> STONES = TagKey.create(Registries.ITEM, new ResourceLocation("c", "stones"));
+        private static final TagKey<Item> STONES = TagKey.create(Registries.ITEM,
+                        ResourceLocation.fromNamespaceAndPath("c", "stones"));
         private static final TagKey<Item> WOODEN_CHESTS = TagKey.create(Registries.ITEM,
-                        new ResourceLocation("c", "wooden_chests"));
+                        ResourceLocation.fromNamespaceAndPath("c", "wooden_chests"));
 
-        public FunctionalStorageRecipeProvider(FabricDataOutput output) {
-                super(output);
+        public FunctionalStorageRecipeProvider(FabricDataOutput output,
+                        CompletableFuture<HolderLookup.Provider> registriesFuture) {
+                super(output, registriesFuture);
         }
 
         @Override
-        public void buildRecipes(Consumer<FinishedRecipe> exporter) {
+        public void buildRecipes(RecipeOutput exporter) {
                 TagKey<Item> DRAWER = TagKey.create(Registries.ITEM,
-                                new ResourceLocation("functionalstorage", "drawer"));
+                                ResourceLocation.fromNamespaceAndPath("functionalstorage", "drawer"));
 
                 // ===== UPGRADES =====
 
@@ -137,7 +139,7 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                                 RecipeCategory.MISC,
                                 FunctionalStorageItems.STORAGE_UPGRADES.get(StorageUpgradeItem.StorageTier.NETHERITE))
                                 .unlocks("has_netherite_ingot", has(Items.NETHERITE_INGOT))
-                                .save(exporter, new ResourceLocation("functionalstorage",
+                                .save(exporter, ResourceLocation.fromNamespaceAndPath("functionalstorage",
                                                 "netherite_upgrade_smithing"));
 
                 // Armory Cabinet (uses STONE tag)

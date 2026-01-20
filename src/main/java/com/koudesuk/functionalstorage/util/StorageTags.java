@@ -8,9 +8,9 @@ import net.minecraft.world.item.Item;
 
 public class StorageTags {
 
-    public static final TagKey<Item> DRAWER = TagKey.create(Registries.ITEM,
-            new ResourceLocation(FunctionalStorage.MOD_ID, "drawer"));
-    public static final TagKey<Item> IGNORE_CRAFTING_CHECK = TagKey.create(Registries.ITEM,
-            new ResourceLocation(FunctionalStorage.MOD_ID, "ignore_crafting_check"));
+        public static final TagKey<Item> DRAWER = TagKey.create(Registries.ITEM,
+                        ResourceLocation.parse(FunctionalStorage.MOD_ID + ":drawer"));
+        public static final TagKey<Item> IGNORE_CRAFTING_CHECK = TagKey.create(Registries.ITEM,
+                        ResourceLocation.parse(FunctionalStorage.MOD_ID + ":ignore_crafting_check"));
 
 }

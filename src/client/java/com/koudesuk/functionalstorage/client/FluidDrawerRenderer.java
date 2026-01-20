@@ -24,6 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 /**
  * Renders fluid contents and indicators on fluid drawer block faces.
@@ -266,7 +267,7 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                         if (sprite == null) {
                                 sprite = Minecraft.getInstance()
                                                 .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                                                .apply(new ResourceLocation("minecraft", "block/water_still"));
+                                                .apply(ResourceLocation.withDefaultNamespace("block/water_still"));
                                 isMilkFallback = true;
                         }
 
@@ -307,40 +308,32 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                                 Matrix4f posMat = matrixStack.last().pose();
 
                                 // TOP face
-                                float u1 = sprite.getU(bx1);
-                                float u2 = sprite.getU(bx2);
-                                float v1 = sprite.getV(bz1);
-                                float v2 = sprite.getV(bz2);
-                                builder.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).uv(u1, v2)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 1f, 0f)
-                                                .endVertex();
-                                builder.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).uv(u2, v2)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 1f, 0f)
-                                                .endVertex();
-                                builder.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).uv(u2, v1)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 1f, 0f)
-                                                .endVertex();
-                                builder.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).uv(u1, v1)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 1f, 0f)
-                                                .endVertex();
+                                float u1 = sprite.getU((float) bx1);
+                                float u2 = sprite.getU((float) bx2);
+                                float v1 = sprite.getV((float) bz1);
+                                float v2 = sprite.getV((float) bz2);
+                                addTransformedVertex(builder, posMat, x1, y2, z2, red, green, blue, alpha, u1, v2,
+                                                combinedOverlay, combinedLight, 0f, 1f, 0f);
+                                addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,
+                                                combinedOverlay, combinedLight, 0f, 1f, 0f);
+                                addTransformedVertex(builder, posMat, x2, y2, z1, red, green, blue, alpha, u2, v1,
+                                                combinedOverlay, combinedLight, 0f, 1f, 0f);
+                                addTransformedVertex(builder, posMat, x1, y2, z1, red, green, blue, alpha, u1, v1,
+                                                combinedOverlay, combinedLight, 0f, 1f, 0f);
 
                                 // FRONT face
-                                u1 = sprite.getU(bx1);
-                                u2 = sprite.getU(bx2);
-                                v1 = sprite.getV(by1);
-                                v2 = sprite.getV(by2);
-                                builder.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).uv(u2, v1)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 0f, 1f)
-                                                .endVertex();
-                                builder.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).uv(u2, v2)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 0f, 1f)
-                                                .endVertex();
-                                builder.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).uv(u1, v2)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 0f, 1f)
-                                                .endVertex();
-                                builder.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).uv(u1, v1)
-                                                .overlayCoords(combinedOverlay).uv2(combinedLight).normal(0f, 0f, 1f)
-                                                .endVertex();
+                                u1 = sprite.getU((float) bx1);
+                                u2 = sprite.getU((float) bx2);
+                                v1 = sprite.getV((float) by1);
+                                v2 = sprite.getV((float) by2);
+                                addTransformedVertex(builder, posMat, x2, y1, z2, red, green, blue, alpha, u2, v1,
+                                                combinedOverlay, combinedLight, 0f, 0f, 1f);
+                                addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,
+                                                combinedOverlay, combinedLight, 0f, 0f, 1f);
+                                addTransformedVertex(builder, posMat, x1, y2, z2, red, green, blue, alpha, u1, v2,
+                                                combinedOverlay, combinedLight, 0f, 0f, 1f);
+                                addTransformedVertex(builder, posMat, x1, y1, z2, red, green, blue, alpha, u1, v1,
+                                                combinedOverlay, combinedLight, 0f, 0f, 1f);
                         }
                 }
 
@@ -369,5 +362,21 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 DrawerRenderer.renderIndicator(matrixStack, bufferIn, combinedLight, combinedOverlay,
                                 Math.min(1, (float) amount / maxAmount), options);
                 matrixStack.popPose();
+        }
+
+        /**
+         * Helper method to add a vertex with matrix transformation for MC 1.21 Fabric.
+         * Transforms the position using the given matrix then adds the vertex.
+         */
+        private static void addTransformedVertex(VertexConsumer builder, Matrix4f matrix, float x, float y, float z,
+                        float r, float g, float b, float a, float u, float v, int overlay, int light,
+                        float nx, float ny, float nz) {
+                Vector3f pos = matrix.transformPosition(new Vector3f(x, y, z));
+                builder.addVertex(pos.x, pos.y, pos.z)
+                                .setColor(r, g, b, a)
+                                .setUv(u, v)
+                                .setOverlay(overlay)
+                                .setLight(light)
+                                .setNormal(nx, ny, nz);
         }
 }

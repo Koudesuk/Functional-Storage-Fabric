@@ -17,10 +17,14 @@ public class DrawerMenu extends AbstractContainerMenu {
     private final int storageSlotCount;
     private final int utilitySlotCount;
 
-    public DrawerMenu(int containerId, Inventory playerInventory, net.minecraft.network.FriendlyByteBuf buf) {
+    public DrawerMenu(int containerId, Inventory playerInventory, net.minecraft.core.BlockPos pos) {
         this(containerId, playerInventory,
                 (com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?>) playerInventory.player.level()
-                        .getBlockEntity(buf.readBlockPos()));
+                        .getBlockEntity(pos));
+    }
+
+    public DrawerMenu(int containerId, Inventory playerInventory, net.minecraft.network.FriendlyByteBuf buf) {
+        this(containerId, playerInventory, buf.readBlockPos());
     }
 
     public DrawerMenu(int containerId, Inventory playerInventory,
@@ -34,7 +38,7 @@ public class DrawerMenu extends AbstractContainerMenu {
         this.storageUpgrades = storageUpgrades;
         this.utilityUpgrades = utilityUpgrades;
         this.tile = tile;
-        
+
         // Get dynamic slot counts from tile
         this.storageSlotCount = tile.getStorageSlotAmount();
         this.utilitySlotCount = tile.getUtilitySlotAmount();
@@ -124,12 +128,12 @@ public class DrawerMenu extends AbstractContainerMenu {
     public ItemStack quickMoveStack(Player player, int index) {
         ItemStack itemStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
-        
+
         // Calculate dynamic slot boundaries
         int totalUpgradeSlots = storageSlotCount + utilitySlotCount;
         int playerInvStart = totalUpgradeSlots;
         int playerInvEnd = totalUpgradeSlots + 36; // 36 player inventory slots
-        
+
         if (slot != null && slot.hasItem()) {
             ItemStack itemStack2 = slot.getItem();
             itemStack = itemStack2.copy();
@@ -167,9 +171,9 @@ public class DrawerMenu extends AbstractContainerMenu {
                         }
                     }
                 }
-                
+
                 if (!isUpgrade && !this.moveItemStackTo(itemStack2, 0, totalUpgradeSlots, false)) {
-                     return ItemStack.EMPTY;
+                    return ItemStack.EMPTY;
                 }
             }
 

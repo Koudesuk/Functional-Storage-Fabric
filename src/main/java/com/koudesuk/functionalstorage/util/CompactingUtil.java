@@ -7,9 +7,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.registries.BuiltInRegistries;
 
@@ -66,8 +64,10 @@ public class CompactingUtil {
 
     private Result findUpperTier(ItemStack stack) {
         // Custom recipes
-        for (com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe : level.getRecipeManager()
+        for (RecipeHolder<com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe> holder : level
+                .getRecipeManager()
                 .getAllRecipesFor(com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)) {
+            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe = holder.value();
             if (recipe.getLowerInput().test(stack)) {
                 return new Result(recipe.getHigherOutput(), recipe.getNeeded());
             }
@@ -111,9 +111,11 @@ public class CompactingUtil {
 
     private Result findLowerTier(ItemStack stack) {
         // Custom recipes
-        for (com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe : level.getRecipeManager()
+        for (RecipeHolder<com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe> holder : level
+                .getRecipeManager()
                 .getAllRecipesFor(com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)) {
-            if (ItemStack.isSameItemSameTags(recipe.getHigherOutput(), stack)) {
+            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe = holder.value();
+            if (ItemStack.isSameItemSameComponents(recipe.getHigherOutput(), stack)) {
                 ItemStack input = recipe.getLowerInput().getItems()[0]; // Assuming simple ingredient
                 return new Result(input, recipe.getNeeded());
             }
@@ -121,7 +123,8 @@ public class CompactingUtil {
 
         List<ItemStack> candidates = new ArrayList<>();
         Map<ItemStack, Integer> candidatesRate = new HashMap<>();
-        for (CraftingRecipe craftingRecipe : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
+        for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
+            CraftingRecipe craftingRecipe = holder.value();
             ItemStack output = craftingRecipe.getResultItem(this.level.registryAccess());
             if (!ItemStack.isSameItem(stack, output))
                 continue;
@@ -156,9 +159,12 @@ public class CompactingUtil {
 
     private List<ItemStack> findAllMatchingRecipes(CraftingContainer crafting) {
         List<ItemStack> candidates = new ArrayList<>();
-        for (CraftingRecipe recipe : level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, crafting, level)) {
-            if (recipe.matches(crafting, level)) {
-                ItemStack result = recipe.assemble(crafting, this.level.registryAccess());
+        CraftingInput input = CraftingInput.of(crafting.getWidth(), crafting.getHeight(), crafting.getItems());
+        for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, input,
+                level)) {
+            CraftingRecipe recipe = holder.value();
+            if (recipe.matches(input, level)) {
+                ItemStack result = recipe.assemble(input, this.level.registryAccess());
                 if (!result.isEmpty())
                     candidates.add(result);
             }

@@ -26,27 +26,27 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
 
                 Direction facing = tile.getBlockState()
                                 .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
-                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
+                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
                                 new org.joml.Vector3f(0),
                                 new org.joml.Vector3f(0, 180, 0), 1));
 
                 if (facing == Direction.NORTH) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
                                                         new org.joml.Vector3f(-1, 0, 0),
                                                         new org.joml.Vector3f(0), 1));
                 } else if (facing == Direction.EAST) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
                                                         new org.joml.Vector3f(-1, 0, -1),
                                                         new org.joml.Vector3f(0, -90, 0), 1));
                 } else if (facing == Direction.SOUTH) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
                                                         new org.joml.Vector3f(0, 0, -1),
                                                         new org.joml.Vector3f(0, 180, 0), 1));
                 } else if (facing == Direction.WEST) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
                                                         new org.joml.Vector3f(0, 0, 0),
                                                         new org.joml.Vector3f(0, 90, 0), 1));
@@ -76,7 +76,7 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
                         if (!itemType0.isEmpty()) {
                                 int count0 = inventoryHandler.getStackInSlot(0).getCount();
                                 matrixStack.pushPose();
-                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils
                                                 .createTransformMatrix(new org.joml.Vector3f(0.75f, 0.27f, 0.0005f),
                                                                 new org.joml.Vector3f(0),
                                                                 new org.joml.Vector3f(.5f, .5f, 1.0f)));
@@ -94,7 +94,7 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
                         if (!itemType1.isEmpty()) {
                                 int count1 = inventoryHandler.getStackInSlot(1).getCount();
                                 matrixStack.pushPose();
-                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils
                                                 .createTransformMatrix(new org.joml.Vector3f(0.25f, 0.27f, 0.0005f),
                                                                 new org.joml.Vector3f(0),
                                                                 new org.joml.Vector3f(.5f, .5f, 1.0f)));
@@ -112,7 +112,7 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
                         if (!itemType2.isEmpty()) {
                                 int count2 = inventoryHandler.getStackInSlot(2).getCount();
                                 matrixStack.pushPose();
-                                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils
+                                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils
                                                 .createTransformMatrix(new org.joml.Vector3f(0.5f, 0.77f, 0.0005f),
                                                                 new org.joml.Vector3f(0),
                                                                 new org.joml.Vector3f(.5f, .5f, 1.0f)));

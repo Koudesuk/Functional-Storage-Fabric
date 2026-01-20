@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.fluid.ControllerFluidHandler;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class StorageControllerTile extends ItemControllableDrawerTile<StorageControllerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory {
+        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     protected static HashMap<UUID, Long> INTERACTION_LOGGER = new HashMap<>();
 
@@ -358,9 +359,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     }
 
     @Override
-    public void writeScreenOpeningData(net.minecraft.server.level.ServerPlayer player,
-            net.minecraft.network.FriendlyByteBuf buf) {
-        buf.writeBlockPos(this.getBlockPos());
+    public BlockPosPayload getScreenOpeningData(net.minecraft.server.level.ServerPlayer player) {
+        return new BlockPosPayload(this.getBlockPos());
     }
 
     @Override
@@ -440,16 +440,16 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("ConnectedDrawers")) {
             connectedDrawers.deserializeNBT(tag.getCompound("ConnectedDrawers"));
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.put("ConnectedDrawers", connectedDrawers.serializeNBT());
     }
 

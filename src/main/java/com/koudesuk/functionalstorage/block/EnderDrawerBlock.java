@@ -4,9 +4,11 @@ import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.EnderDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.item.LinkingToolItem;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -74,13 +76,34 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+            BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide)
+            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof EnderDrawerTile tile) {
+            InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
+                    hit.getLocation().z, getHit(state, pos, hit));
+            return switch (result) {
+                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
         if (level.isClientSide)
             return InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof EnderDrawerTile tile) {
-            return tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x, hit.getLocation().y,
+            return tile.onSlotActivated(player, InteractionHand.MAIN_HAND, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
                     hit.getLocation().z, getHit(state, pos, hit));
         }
         return InteractionResult.PASS;
@@ -112,11 +135,6 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         return super.getDestroyProgress(state, player, level, pos);
     }
 
-    /**
-     * Determine which slot was clicked on the drawer face.
-     * Ender Drawers are X_1 type (single slot), so returns 0 for front face, -1
-     * otherwise.
-     */
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();
@@ -138,13 +156,11 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
             else if (facing == Direction.WEST)
                 hitX = z;
 
-            // Check margins (1/16th)
             double margin = 0.0625;
             if (hitX < margin || hitX > 1 - margin || hitY < margin || hitY > 1 - margin) {
                 return -1;
             }
 
-            // Ender Drawer is X_1 type - single slot
             return 0;
         }
         return -1;
@@ -156,11 +172,12 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         ItemStack stack = new ItemStack(this);
         BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof EnderDrawerTile tile) {
-            if (!tile.isEverythingEmpty()) {
-                stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
+            if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
+                stack.set(FSAttachments.TILE,
+                        com.koudesuk.functionalstorage.util.ItemStackHelper.saveBlockEntityData(tile));
             }
             if (tile.isLocked()) {
-                stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
+                stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
         stacks.add(stack);
@@ -172,19 +189,18 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
             ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         BlockEntity entity = level.getBlockEntity(pos);
-        if (stack.hasTag()) {
-            if (stack.getTag().contains("Tile")) {
-                if (entity instanceof ControllableDrawerTile tile) {
-                    entity.load(stack.getTag().getCompound("Tile"));
+        if (entity instanceof ControllableDrawerTile tile) {
+            if (stack.has(FSAttachments.LOCKED)) {
+                tile.setLocked(stack.getOrDefault(FSAttachments.LOCKED, false));
+            }
+            if (stack.has(FSAttachments.TILE)) {
+                CompoundTag tileData = stack.get(FSAttachments.TILE);
+                if (tileData != null) {
+                    tile.loadFromTag(tileData, level.registryAccess());
                     tile.setChanged();
                     if (!level.isClientSide) {
                         level.sendBlockUpdated(pos, state, state, 3);
                     }
-                }
-            }
-            if (stack.getTag().contains("Locked")) {
-                if (entity instanceof ControllableDrawerTile tile) {
-                    tile.setLocked(stack.getTag().getBoolean("Locked"));
                 }
             }
         }
@@ -218,10 +234,10 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         if (blockEntity instanceof EnderDrawerTile tile) {
             net.minecraft.world.SimpleContainer utilityUpgrades = tile.getUtilityUpgrades();
             for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
-                net.minecraft.world.item.ItemStack stack = utilityUpgrades.getItem(i);
+                ItemStack stack = utilityUpgrades.getItem(i);
                 if (stack
                         .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
-                    int redstoneSlot = stack.getOrCreateTag().getInt("Slot");
+                    int redstoneSlot = stack.getOrDefault(FSAttachments.SLOT, 0);
                     var handler = tile.getHandler();
                     if (handler != null) {
                         var storedStacks = handler.getStoredStacks();

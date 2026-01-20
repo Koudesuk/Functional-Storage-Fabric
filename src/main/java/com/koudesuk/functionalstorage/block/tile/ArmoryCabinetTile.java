@@ -26,17 +26,25 @@ public class ArmoryCabinetTile extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("handler")) {
-            this.handler.deserializeNBT(tag.getCompound("handler"));
+            this.handler.deserializeNBT(tag.getCompound("handler"), registries);
         }
     }
 
+    /**
+     * Public method for loading tile data from an ItemStack's component data.
+     * This is used in Block.setPlacedBy() to restore tile state.
+     */
+    public void loadFromTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        this.loadAdditional(tag, registries);
+    }
+
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("handler", this.handler.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("handler", this.handler.serializeNBT(registries));
     }
 
     @Nullable
@@ -46,8 +54,8 @@ public class ArmoryCabinetTile extends BlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     public boolean isEverythingEmpty() {

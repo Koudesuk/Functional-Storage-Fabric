@@ -1,6 +1,8 @@
 package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.FramedCompactingDrawerTile;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
@@ -8,10 +10,11 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -33,13 +36,34 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+            BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide)
+            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof FramedCompactingDrawerTile tile) {
+            InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
+                    hit.getLocation().z, getHit(state, pos, hit));
+            return switch (result) {
+                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
         if (level.isClientSide)
             return InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedCompactingDrawerTile tile) {
-            return tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x, hit.getLocation().y,
+            return tile.onSlotActivated(player, InteractionHand.MAIN_HAND, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
                     hit.getLocation().z, getHit(state, pos, hit));
         }
         return InteractionResult.PASS;
@@ -74,14 +98,16 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
         ItemStack stack = new ItemStack(this);
         BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FramedCompactingDrawerTile framedDrawerTile) {
-            if (!framedDrawerTile.isEverythingEmpty()) {
-                stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
+            if (!framedDrawerTile.isEverythingEmpty() && framedDrawerTile.getLevel() != null) {
+                stack.set(FSAttachments.TILE,
+                        com.koudesuk.functionalstorage.util.ItemStackHelper.saveBlockEntityData(framedDrawerTile));
             }
             if (framedDrawerTile.getFramedDrawerModelData() != null) {
-                stack.getOrCreateTag().put("Style", framedDrawerTile.getFramedDrawerModelData().serializeNBT());
+                stack.set(FSAttachments.STYLE, framedDrawerTile.getFramedDrawerModelData()
+                        .serializeNBT(framedDrawerTile.getLevel().registryAccess()));
             }
             if (framedDrawerTile.isLocked()) {
-                stack.getOrCreateTag().putBoolean("Locked", framedDrawerTile.isLocked());
+                stack.set(FSAttachments.LOCKED, framedDrawerTile.isLocked());
             }
         }
         stacks.add(stack);
@@ -89,28 +115,28 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity instanceof FramedCompactingDrawerTile framedDrawerTile
                 && framedDrawerTile.getFramedDrawerModelData() != null
                 && !framedDrawerTile.getFramedDrawerModelData().getDesign().isEmpty()) {
             ItemStack stack = new ItemStack(this);
-            stack.getOrCreateTag().put("Style", framedDrawerTile.getFramedDrawerModelData().serializeNBT());
+            stack.set(FSAttachments.STYLE,
+                    framedDrawerTile.getFramedDrawerModelData().serializeNBT(level.registryAccess()));
             return stack;
         }
-        return super.getCloneItemStack(level, pos, state);
+        return new ItemStack(this);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
-        // Parse newlines in frameddrawer.use and add each line as a separate Component
         String useText = Component.translatable("frameddrawer.use").getString();
         for (String line : useText.split("\n")) {
             if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
+                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

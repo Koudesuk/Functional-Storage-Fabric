@@ -31,8 +31,10 @@ import org.joml.Matrix4f;
 import java.util.List;
 import java.util.OptionalDouble;
 
-import static com.koudesuk.functionalstorage.item.LinkingToolItem.NBT_CONTROLLER;
-import static com.koudesuk.functionalstorage.item.LinkingToolItem.NBT_FIRST;
+import org.joml.Vector3f;
+
+import static com.koudesuk.functionalstorage.registry.FSAttachments.CONTROLLER;
+import static com.koudesuk.functionalstorage.registry.FSAttachments.FIRST_POSITION;
 
 /**
  * Renders the linking tool's visual feedback:
@@ -49,6 +51,7 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
     private static void renderShape(PoseStack poseStack, VertexConsumer vertexConsumer, VoxelShape shape,
             double x, double y, double z, float red, float green, float blue, float alpha) {
         PoseStack.Pose pose = poseStack.last();
+        Matrix4f matrix = pose.pose();
         shape.forAllEdges((x1, y1, z1, x2, y2, z2) -> {
             float dx = (float) (x2 - x1);
             float dy = (float) (y2 - y1);
@@ -57,10 +60,10 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
             dx /= length;
             dy /= length;
             dz /= length;
-            vertexConsumer.vertex(pose.pose(), (float) (x1 + x), (float) (y1 + y), (float) (z1 + z))
-                    .color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz).endVertex();
-            vertexConsumer.vertex(pose.pose(), (float) (x2 + x), (float) (y2 + y), (float) (z2 + z))
-                    .color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz).endVertex();
+            addTransformedVertex(vertexConsumer, matrix, (float) (x1 + x), (float) (y1 + y), (float) (z1 + z),
+                    red, green, blue, alpha, pose, dx, dy, dz);
+            addTransformedVertex(vertexConsumer, matrix, (float) (x2 + x), (float) (y2 + y), (float) (z2 + z),
+                    red, green, blue, alpha, pose, dx, dy, dz);
         });
     }
 
@@ -74,16 +77,15 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
         if (stack.isEmpty())
             return;
         if (stack.getItem() instanceof LinkingToolItem) {
-            CompoundTag controllerNBT = stack.getOrCreateTag().getCompound(NBT_CONTROLLER);
-            BlockPos controller = new BlockPos(controllerNBT.getInt("X"), controllerNBT.getInt("Y"),
-                    controllerNBT.getInt("Z"));
+            if (!stack.has(CONTROLLER))
+                return;
+            BlockPos controller = stack.get(CONTROLLER);
             if (!controller.equals(tile.getBlockPos()))
                 return;
 
             // Render selection box for MULTIPLE mode
-            if (stack.getOrCreateTag().contains(NBT_FIRST)) {
-                CompoundTag firstpos = stack.getOrCreateTag().getCompound(NBT_FIRST);
-                BlockPos firstPos = new BlockPos(firstpos.getInt("X"), firstpos.getInt("Y"), firstpos.getInt("Z"));
+            if (stack.has(FIRST_POSITION)) {
+                BlockPos firstPos = stack.get(FIRST_POSITION);
 
                 // Simple ray trace - get block player is looking at
                 HitResult result = Minecraft.getInstance().hitResult;
@@ -162,39 +164,59 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
         VertexConsumer buffer = renderTypeBuffer.getBuffer(AREA_TYPE);
 
         // Front face (z1)
-        buffer.vertex(matrix, x1, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y2, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y1, z1).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
 
         // Back face (z2)
-        buffer.vertex(matrix, x1, y1, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y1, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y2, z2).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y1, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
 
         // Bottom face (y1)
-        buffer.vertex(matrix, x1, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y1, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y1, z2).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y1, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
 
         // Top face (y2)
-        buffer.vertex(matrix, x1, y2, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z1).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
 
         // Left face (x1)
-        buffer.vertex(matrix, x1, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y1, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x1, y2, z1).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
 
         // Right face (x2)
-        buffer.vertex(matrix, x2, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(matrix, x2, y2, z1).color(red, green, blue, alpha).endVertex();
+        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+    }
+
+    /**
+     * Helper method to add a vertex with matrix transformation for MC 1.21.
+     * For use with normal vectors.
+     */
+    private static void addTransformedVertex(VertexConsumer vc, Matrix4f matrix, float x, float y, float z,
+            float r, float g, float b, float a, PoseStack.Pose pose, float nx, float ny, float nz) {
+        Vector3f pos = matrix.transformPosition(new Vector3f(x, y, z));
+        vc.addVertex(pos.x, pos.y, pos.z).setColor(r, g, b, a).setNormal(nx, ny, nz);
+    }
+
+    /**
+     * Helper method to add a vertex with matrix transformation for MC 1.21.
+     * Simple version without normal.
+     */
+    private static void addTransformedVertexSimple(VertexConsumer vc, Matrix4f matrix, float x, float y, float z,
+            float r, float g, float b, float a) {
+        Vector3f pos = matrix.transformPosition(new Vector3f(x, y, z));
+        vc.addVertex(pos.x, pos.y, pos.z).setColor(r, g, b, a);
     }
 }

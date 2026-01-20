@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.HolderLookup;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class FramedDrawerModelData {
         return design;
     }
 
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(HolderLookup.Provider registries) {
         CompoundTag compoundTag = new CompoundTag();
         design.forEach((s, item) -> compoundTag.putString(s, BuiltInRegistries.ITEM.getKey(item).toString()));
         return compoundTag;
@@ -33,7 +34,7 @@ public class FramedDrawerModelData {
     public void deserializeNBT(CompoundTag nbt) {
         design = new HashMap<>();
         for (String allKey : nbt.getAllKeys()) {
-            design.put(allKey, BuiltInRegistries.ITEM.get(new ResourceLocation(nbt.getString(allKey))));
+            design.put(allKey, BuiltInRegistries.ITEM.get(ResourceLocation.parse(nbt.getString(allKey))));
         }
         this.generateCode();
     }
@@ -41,7 +42,7 @@ public class FramedDrawerModelData {
     public static FramedDrawerModelData fromNBT(CompoundTag nbt) {
         HashMap<String, Item> design = new HashMap<>();
         for (String allKey : nbt.getAllKeys()) {
-            design.put(allKey, BuiltInRegistries.ITEM.get(new ResourceLocation(nbt.getString(allKey))));
+            design.put(allKey, BuiltInRegistries.ITEM.get(ResourceLocation.parse(nbt.getString(allKey))));
         }
         return new FramedDrawerModelData(design);
     }

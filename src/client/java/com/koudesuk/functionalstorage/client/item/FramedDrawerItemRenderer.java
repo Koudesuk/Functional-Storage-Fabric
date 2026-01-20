@@ -22,6 +22,9 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import java.util.List;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+
 /**
  * Fabric client-side item renderer for framed drawers.
  * Equivalent to Forge's DrawerISTER (BlockEntityWithoutLevelRenderer).
@@ -50,10 +53,11 @@ public class FramedDrawerItemRenderer implements BuiltinItemRendererRegistry.Dyn
         // Get the block model
         BakedModel model = blockRenderer.getBlockModel(blockState);
 
-        // Read NBT data if present
+        // Read NBT data if present - using Data Components API for MC 1.21
         FramedDrawerModelData modelData = null;
-        if (stack.hasTag() && stack.getTag().contains("Style")) {
-            modelData = FramedDrawerModelData.fromNBT(stack.getTag().getCompound("Style"));
+        if (stack.has(com.koudesuk.functionalstorage.registry.FSAttachments.STYLE)) {
+            modelData = FramedDrawerModelData
+                    .fromNBT(stack.get(com.koudesuk.functionalstorage.registry.FSAttachments.STYLE));
         }
 
         matrices.pushPose();
@@ -107,8 +111,8 @@ public class FramedDrawerItemRenderer implements BuiltinItemRendererRegistry.Dyn
                     // Render with retextured quad
                     renderRetexturedQuad(pose, vertexConsumer, quad, newSprite, light, overlay);
                 } else {
-                    // Render original quad
-                    vertexConsumer.putBulkData(pose, quad, 1.0f, 1.0f, 1.0f, light, overlay);
+                    // Render original quad - MC 1.21 putBulkData requires alpha parameter
+                    vertexConsumer.putBulkData(pose, quad, 1.0f, 1.0f, 1.0f, 1.0f, light, overlay);
                 }
             }
         }
@@ -224,18 +228,18 @@ public class FramedDrawerItemRenderer implements BuiltinItemRendererRegistry.Dyn
             float newU = newU0 + normalizedU * newUScale;
             float newV = newV0 + normalizedV * newVScale;
 
-            // Add vertex with new UV coordinates
+            // Add vertex with new UV coordinates - MC 1.21 requires manual transformation
+            Matrix4f matrix = pose.pose();
+            Vector3f transformedPos = matrix.transformPosition(new Vector3f(x, y, z));
             vertexConsumer
-                    .vertex(pose.pose(), x, y, z)
-                    .color(255, 255, 255, 255)
-                    .uv(newU, newV)
-                    .overlayCoords(overlay)
-                    .uv2(light)
-                    .normal(pose.normal(),
-                            originalQuad.getDirection().getStepX(),
+                    .addVertex(transformedPos.x, transformedPos.y, transformedPos.z)
+                    .setColor(255, 255, 255, 255)
+                    .setUv(newU, newV)
+                    .setOverlay(overlay)
+                    .setLight(light)
+                    .setNormal(originalQuad.getDirection().getStepX(),
                             originalQuad.getDirection().getStepY(),
-                            originalQuad.getDirection().getStepZ())
-                    .endVertex();
+                            originalQuad.getDirection().getStepZ());
         }
     }
 }

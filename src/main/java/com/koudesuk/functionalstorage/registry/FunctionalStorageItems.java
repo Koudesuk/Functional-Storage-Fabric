@@ -89,7 +89,8 @@ public class FunctionalStorageItems {
         }
 
         private static <T extends Item> T registerItem(String name, T item) {
-                return Registry.register(BuiltInRegistries.ITEM, new ResourceLocation(FunctionalStorage.MOD_ID, name),
+                return Registry.register(BuiltInRegistries.ITEM,
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, name),
                                 item);
         }
 }

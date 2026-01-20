@@ -15,7 +15,8 @@ public class FunctionalStorageGroup {
 
         public static void register() {
                 TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
-                                new ResourceLocation(FunctionalStorage.MOD_ID, "main"), FabricItemGroup.builder()
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "main"),
+                                FabricItemGroup.builder()
                                                 .icon(() -> new ItemStack(FunctionalStorageBlocks.DRAWER_CONTROLLER))
                                                 .title(Component.translatable("itemGroup.functionalstorage"))
                                                 .displayItems((displayContext, entries) -> {

@@ -48,11 +48,30 @@ public class ControllerExtensionBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+    public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof ControllerExtensionTile tile) {
+            InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
+                    hit.getLocation().z);
+            return switch (result) {
+                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof ControllerExtensionTile tile) {
-            return tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x, hit.getLocation().y,
+            return tile.onSlotActivated(player, InteractionHand.MAIN_HAND, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
                     hit.getLocation().z);
         }
         return InteractionResult.PASS;

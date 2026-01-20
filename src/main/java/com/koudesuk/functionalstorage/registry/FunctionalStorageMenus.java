@@ -9,10 +9,14 @@ import net.minecraft.world.inventory.MenuType;
 
 public class FunctionalStorageMenus {
 
-    public static MenuType<DrawerMenu> DRAWER;
+        public static MenuType<DrawerMenu> DRAWER;
 
-    public static void register() {
-        DRAWER = Registry.register(BuiltInRegistries.MENU, new ResourceLocation(FunctionalStorage.MOD_ID, "drawer"),
-                new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(DrawerMenu::new));
-    }
+        public static void register() {
+                DRAWER = Registry.register(BuiltInRegistries.MENU,
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "drawer"),
+                                new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                                                (syncId, inventory, payload) -> new DrawerMenu(syncId, inventory,
+                                                                payload.pos()),
+                                                com.koudesuk.functionalstorage.network.BlockPosPayload.STREAM_CODEC));
+        }
 }

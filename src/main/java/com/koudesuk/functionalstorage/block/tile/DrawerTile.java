@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.util.DrawerType;
@@ -14,7 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory {
+        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     private final DrawerType type;
     private final IWoodType woodType;
@@ -77,17 +78,17 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"));
+            handler.deserializeNBT(tag.getCompound("Handler"), registries);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Handler", handler.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Handler", handler.serializeNBT(registries));
     }
 
     private java.util.UUID lastClickUUID;
@@ -250,7 +251,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
                     .openOuter()) {
                 net.fabricmc.fabric.api.transfer.v1.item.ItemVariant resource = handler.getResource(slot);
                 if (!resource.isBlank()) {
-                    int maxExtract = player.isShiftKeyDown() ? resource.getItem().getMaxStackSize() : 1;
+                    int maxExtract = player.isShiftKeyDown() ? resource.toStack().getMaxStackSize() : 1;
                     long extracted = handler.extractFromSlot(slot, resource, maxExtract, transaction);
                     if (extracted > 0) {
                         net.minecraft.world.item.ItemStack stack = resource.toStack((int) extracted);
@@ -301,9 +302,8 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
     }
 
     @Override
-    public void writeScreenOpeningData(net.minecraft.server.level.ServerPlayer player,
-            net.minecraft.network.FriendlyByteBuf buf) {
-        buf.writeBlockPos(getBlockPos());
+    public BlockPosPayload getScreenOpeningData(net.minecraft.server.level.ServerPlayer player) {
+        return new BlockPosPayload(this.getBlockPos());
     }
 
     public boolean isEverythingEmpty() {

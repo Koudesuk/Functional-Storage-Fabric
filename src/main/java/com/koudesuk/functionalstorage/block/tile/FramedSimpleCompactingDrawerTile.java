@@ -29,16 +29,16 @@ public class FramedSimpleCompactingDrawerTile extends SimpleCompactingDrawerTile
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         this.framedDrawerModelData = FramedDrawerModelData.fromNBT(tag.getCompound("Style"));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         if (this.framedDrawerModelData != null) {
-            tag.put("Style", this.framedDrawerModelData.serializeNBT());
+            tag.put("Style", this.framedDrawerModelData.serializeNBT(registries));
         }
     }
 

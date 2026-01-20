@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -152,31 +153,39 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
         return totalBuckets * 81000; // droplets per bucket
     }
 
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag compoundTag = new CompoundTag();
         CompoundTag items = new CompoundTag();
         for (int i = 0; i < this.slots.size(); i++) {
             CompoundTag bigStack = new CompoundTag();
-            bigStack.put(FLUID, this.slots.get(i).getResource().toNbt());
+            bigStack.put(FLUID, FluidVariant.CODEC.encodeStart(NbtOps.INSTANCE, this.slots.get(i).getResource())
+                    .result().orElse(new CompoundTag()));
             bigStack.putLong(AMOUNT, this.slots.get(i).getAmount());
-            bigStack.put(LOCKED, this.filterStack[i].toNbt());
+            bigStack.put(LOCKED, FluidVariant.CODEC.encodeStart(NbtOps.INSTANCE, this.filterStack[i]).result()
+                    .orElse(new CompoundTag()));
             items.put(i + "", bigStack);
         }
         compoundTag.put(BIG_FLUIDS, items);
         return compoundTag;
     }
 
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
         for (String allKey : nbt.getCompound(BIG_FLUIDS).getAllKeys()) {
             int i = Integer.parseInt(allKey);
             if (i < this.slots.size()) {
                 CompoundTag slotTag = nbt.getCompound(BIG_FLUIDS).getCompound(allKey);
-                CompoundTag stackTag = slotTag.getCompound(FLUID);
                 long amount = slotTag.getLong(AMOUNT);
-                this.slots.get(i).variant = FluidVariant.fromNbt(stackTag);
+                if (slotTag.contains(FLUID)) {
+                    this.slots.get(i).variant = FluidVariant.CODEC.parse(NbtOps.INSTANCE, slotTag.get(FLUID)).result()
+                            .orElse(FluidVariant.blank());
+                } else {
+                    this.slots.get(i).variant = FluidVariant.blank();
+                }
+
                 this.slots.get(i).amount = amount;
                 if (slotTag.contains(LOCKED)) {
-                    this.filterStack[i] = FluidVariant.fromNbt(slotTag.getCompound(LOCKED));
+                    this.filterStack[i] = FluidVariant.CODEC.parse(NbtOps.INSTANCE, slotTag.get(LOCKED)).result()
+                            .orElse(FluidVariant.blank());
                 }
             }
         }

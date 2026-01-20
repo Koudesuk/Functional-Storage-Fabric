@@ -25,13 +25,13 @@ public class FunctionalStorageRenderTypes extends RenderType {
                 .setDepthTestState(new RenderStateShard.DepthTestStateShard("always", 519))
                 .setLineState(new RenderStateShard.LineStateShard(OptionalDouble.empty()))
                 .setLayeringState(new RenderStateShard.LayeringStateShard("view_offset_z_layering", () -> {
-                    com.mojang.blaze3d.vertex.PoseStack posestack = RenderSystem.getModelViewStack();
-                    posestack.pushPose();
-                    posestack.scale(0.99975586F, 0.99975586F, 0.99975586F);
+                    org.joml.Matrix4fStack matrixStack = RenderSystem.getModelViewStack();
+                    matrixStack.pushMatrix();
+                    matrixStack.scale(0.99975586F, 0.99975586F, 0.99975586F);
                     RenderSystem.applyModelViewMatrix();
                 }, () -> {
-                    com.mojang.blaze3d.vertex.PoseStack posestack = RenderSystem.getModelViewStack();
-                    posestack.popPose();
+                    org.joml.Matrix4fStack matrixStack = RenderSystem.getModelViewStack();
+                    matrixStack.popMatrix();
                     RenderSystem.applyModelViewMatrix();
                 }))
                 .setCullState(new RenderStateShard.CullStateShard(false))

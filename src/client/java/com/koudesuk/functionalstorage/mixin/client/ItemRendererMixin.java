@@ -77,12 +77,10 @@ public class ItemRendererMixin {
     }
 
     /**
-     * Checks if the ItemStack has custom texture data in the "Style" NBT tag.
+     * Checks if the ItemStack has custom texture data using Data Components API (MC
+     * 1.21).
      */
     private boolean hasCustomTextureData(ItemStack stack) {
-        if (!stack.hasTag()) {
-            return false;
-        }
-        return stack.getTag().contains("Style");
+        return stack.has(com.koudesuk.functionalstorage.registry.FSAttachments.STYLE);
     }
 }

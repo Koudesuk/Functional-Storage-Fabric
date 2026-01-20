@@ -1,13 +1,16 @@
 package com.koudesuk.functionalstorage.item;
 
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
 import net.minecraft.world.inventory.Slot;
+
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -39,14 +42,8 @@ public class UpgradeItem extends Item {
     }
 
     public static Direction getDirection(ItemStack stack) {
-        if (stack.hasTag() && stack.getTag().contains("Direction")) {
-            Item item = stack.getItem();
-            if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PULLING_UPGRADE ||
-                    item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PUSHING_UPGRADE ||
-                    item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.COLLECTOR_UPGRADE) {
-                var direction = Direction.byName(stack.getOrCreateTag().getString("Direction"));
-                return direction == null ? Direction.NORTH : direction;
-            }
+        if (stack.has(FSAttachments.DIRECTION)) {
+            return stack.get(FSAttachments.DIRECTION);
         }
         return Direction.NORTH;
     }
@@ -62,10 +59,10 @@ public class UpgradeItem extends Item {
         if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PULLING_UPGRADE ||
                 item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PUSHING_UPGRADE ||
                 item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.COLLECTOR_UPGRADE) {
-            stack.getOrCreateTag().putString("Direction", Direction.values()[0].getName());
+            stack.set(FSAttachments.DIRECTION, Direction.values()[0]);
         }
         if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
-            stack.getOrCreateTag().putInt("Slot", 0);
+            stack.set(FSAttachments.SLOT, 0);
         }
         return stack;
     }
@@ -82,14 +79,14 @@ public class UpgradeItem extends Item {
                 Direction direction = getDirection(first);
                 Direction next = Direction.values()[(Arrays.asList(Direction.values()).indexOf(direction) + 1)
                         % Direction.values().length];
-                first.getOrCreateTag().putString("Direction", next.getName());
+                first.set(FSAttachments.DIRECTION, next);
                 player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 1);
                 return true;
             }
             // Handle slot cycling for redstone upgrade
             if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
-                int currentSlot = first.getOrCreateTag().getInt("Slot");
-                first.getOrCreateTag().putInt("Slot", (currentSlot + 1) % MAX_SLOT);
+                int currentSlot = first.has(FSAttachments.SLOT) ? first.get(FSAttachments.SLOT) : 0;
+                first.set(FSAttachments.SLOT, (currentSlot + 1) % MAX_SLOT);
                 player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 1);
                 return true;
             }
@@ -98,9 +95,8 @@ public class UpgradeItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltip, isAdvanced);
         tooltip.add(Component.translatable("upgrade.type").withStyle(ChatFormatting.YELLOW)
                 .append(Component.translatable("upgrade.type." + getType().name().toLowerCase(Locale.ROOT))
                         .withStyle(ChatFormatting.WHITE)));
@@ -121,7 +117,7 @@ public class UpgradeItem extends Item {
         // Slot tooltip for redstone upgrade
         if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
             tooltip.add(Component.translatable("item.utility.slot").withStyle(ChatFormatting.YELLOW)
-                    .append(Component.literal(stack.getOrCreateTag().getInt("Slot") + "")
+                    .append(Component.literal((stack.has(FSAttachments.SLOT) ? stack.get(FSAttachments.SLOT) : 0) + "")
                             .withStyle(ChatFormatting.WHITE)));
             tooltip.add(Component.literal(""));
             tooltip.add(Component.translatable("item.utility.slot.desc").withStyle(ChatFormatting.GRAY));

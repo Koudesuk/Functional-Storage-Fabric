@@ -11,6 +11,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.world.item.Item;
 import java.util.List;
 
 public class StorageUpgradeItem extends UpgradeItem {
@@ -81,9 +82,10 @@ public class StorageUpgradeItem extends UpgradeItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+            List<Component> tooltip,
             TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltip, isAdvanced);
+        super.appendHoverText(stack, context, tooltip, isAdvanced);
         if (storageTier == StorageTier.IRON) {
             tooltip.add(Component.translatable("item.utility.downgrade").withStyle(ChatFormatting.GRAY));
         } else {

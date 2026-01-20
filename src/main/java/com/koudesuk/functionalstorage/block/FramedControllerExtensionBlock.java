@@ -1,12 +1,13 @@
 package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -48,8 +49,9 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
 
         if (blockEntity instanceof FramedControllerExtensionTile framedTile) {
-            if (framedTile.getFramedDrawerModelData() != null) {
-                stack.getOrCreateTag().put("Style", framedTile.getFramedDrawerModelData().serializeNBT());
+            if (framedTile.getFramedDrawerModelData() != null && framedTile.getLevel() != null) {
+                stack.set(FSAttachments.STYLE,
+                        framedTile.getFramedDrawerModelData().serializeNBT(framedTile.getLevel().registryAccess()));
             }
         }
 
@@ -58,17 +60,18 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedControllerExtensionTile framedTile) {
             if (framedTile.getFramedDrawerModelData() != null) {
                 if (!framedTile.getFramedDrawerModelData().getDesign().isEmpty()) {
                     ItemStack stack = new ItemStack(this);
-                    stack.getOrCreateTag().put("Style", framedTile.getFramedDrawerModelData().serializeNBT());
+                    stack.set(FSAttachments.STYLE,
+                            framedTile.getFramedDrawerModelData().serializeNBT(level.registryAccess()));
                     return stack;
                 }
             }
         }
-        return super.getCloneItemStack(level, pos, state);
+        return new ItemStack(this);
     }
 }

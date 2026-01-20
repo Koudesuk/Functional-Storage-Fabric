@@ -35,7 +35,7 @@ import java.util.Optional;
 
 public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/dispenser.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.parse("textures/gui/container/dispenser.png");
 
     public DrawerScreen(DrawerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -70,21 +70,22 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
 
         // Draw Drawer Face Background
         if (this.menu.getTile() instanceof DrawerTile tile) {
-            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID, "textures/block/"
-                    + tile.getWoodType().getName() + "_front_" + tile.getDrawerType().getSlots() + ".png");
+            ResourceLocation drawerFace = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                    "textures/block/"
+                            + tile.getWoodType().getName() + "_front_" + tile.getDrawerType().getSlots() + ".png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         } else if (this.menu.getTile() instanceof FluidDrawerTile fluidTile) {
             // Draw Fluid Drawer Face Background
             String slotSuffix = fluidTile.getDrawerType().getSlots() == 1 ? ""
                     : "_" + fluidTile.getDrawerType().getSlots();
-            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+            ResourceLocation drawerFace = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                     "textures/block/fluid_front" + slotSuffix + ".png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         } else if (this.menu.getTile() instanceof CompactingDrawerTile) {
             // Draw Compacting Drawer Face Background (3-slot)
             boolean isFramed = this.menu
                     .getTile() instanceof com.koudesuk.functionalstorage.block.tile.FramedCompactingDrawerTile;
-            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+            ResourceLocation drawerFace = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                     isFramed ? "textures/block/framed_front_compacting.png"
                             : "textures/block/compacting_drawer_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
@@ -92,13 +93,13 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
             // Draw Simple Compacting Drawer Face Background (2-slot)
             boolean isFramed = this.menu
                     .getTile() instanceof com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile;
-            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+            ResourceLocation drawerFace = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                     isFramed ? "textures/block/framed_front_compacting.png"
                             : "textures/block/simple_compacting_drawer_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         } else if (this.menu.getTile() instanceof EnderDrawerTile) {
             // Draw Ender Drawer Face Background
-            ResourceLocation drawerFace = new ResourceLocation(FunctionalStorage.MOD_ID,
+            ResourceLocation drawerFace = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                     "textures/block/ender_front.png");
             guiGraphics.blit(drawerFace, i + 64, j + 16, 0, 0, 48, 48, 48, 48);
         }
@@ -148,7 +149,6 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(guiGraphics);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
         // Render Item Drawer Contents
@@ -252,7 +252,7 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
                     // to bypass Fabric's biome-dependent coloring
                     TextureAtlasSprite waterSprite = net.minecraft.client.Minecraft.getInstance()
                             .getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS)
-                            .apply(new ResourceLocation("minecraft", "block/water_still"));
+                            .apply(ResourceLocation.parse("minecraft:block/water_still"));
                     if (waterSprite != null) {
                         float alpha = resource.isBlank() ? 0.4f : 1.0f;
                         // Water texture is grayscale - with white tint = white result

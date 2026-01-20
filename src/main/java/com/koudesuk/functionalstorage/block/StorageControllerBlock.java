@@ -2,7 +2,7 @@ package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
-import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -46,11 +46,30 @@ public class StorageControllerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+    public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof StorageControllerTile tile) {
+            InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
+                    hit.getLocation().z, -1);
+            return switch (result) {
+                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof StorageControllerTile tile) {
-            return tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x, hit.getLocation().y,
+            return tile.onSlotActivated(player, InteractionHand.MAIN_HAND, hit.getDirection(), hit.getLocation().x,
+                    hit.getLocation().y,
                     hit.getLocation().z, -1);
         }
         return InteractionResult.PASS;
@@ -63,10 +82,10 @@ public class StorageControllerBlock extends Block implements EntityBlock {
             if (blockEntity instanceof StorageControllerTile tile) {
                 if (!tile.isEverythingEmpty()) {
                     net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
-                    net.minecraft.nbt.CompoundTag tag = tile.saveWithoutMetadata();
-                    stack.getOrCreateTag().put("Tile", tag);
+                    stack.set(FSAttachments.TILE,
+                            com.koudesuk.functionalstorage.util.ItemStackHelper.saveBlockEntityData(tile));
                     if (tile.isLocked()) {
-                        stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
+                        stack.set(FSAttachments.LOCKED, tile.isLocked());
                     }
                     Block.popResource(level, pos, stack);
                 }

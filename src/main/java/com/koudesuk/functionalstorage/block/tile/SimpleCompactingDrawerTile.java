@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.CompactingUtil;
@@ -16,7 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<SimpleCompactingDrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory {
+        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     public CompactingInventoryHandler handler;
     private boolean hasCheckedRecipes;
@@ -203,7 +204,7 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
                     .openOuter()) {
                 net.fabricmc.fabric.api.transfer.v1.item.ItemVariant resource = handler.getResource(slot);
                 if (!resource.isBlank()) {
-                    int maxExtract = player.isShiftKeyDown() ? resource.getItem().getMaxStackSize() : 1;
+                    int maxExtract = player.isShiftKeyDown() ? resource.toStack().getMaxStackSize() : 1;
                     long extracted = handler.extractFromSlot(slot, resource, maxExtract, transaction);
                     if (extracted > 0) {
                         ItemStack extractedStack = resource.toStack((int) extracted);
@@ -231,17 +232,17 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"));
+            handler.deserializeNBT(tag.getCompound("Handler"), registries);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Handler", handler.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Handler", handler.serializeNBT(registries));
     }
 
     public boolean isEverythingEmpty() {
@@ -278,8 +279,7 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
     }
 
     @Override
-    public void writeScreenOpeningData(net.minecraft.server.level.ServerPlayer player,
-            net.minecraft.network.FriendlyByteBuf buf) {
-        buf.writeBlockPos(getBlockPos());
+    public BlockPosPayload getScreenOpeningData(net.minecraft.server.level.ServerPlayer player) {
+        return new BlockPosPayload(this.getBlockPos());
     }
 }

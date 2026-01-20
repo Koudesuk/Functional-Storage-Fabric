@@ -166,12 +166,13 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
         return stacks;
     }
 
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag compoundTag = new CompoundTag();
         CompoundTag items = new CompoundTag();
         for (int i = 0; i < this.slots.size(); i++) {
             CompoundTag bigStack = new CompoundTag();
-            bigStack.put(STACK, this.slots.get(i).getResource().toStack().save(new CompoundTag()));
+            bigStack.put(STACK,
+                    this.slots.get(i).getResource().toStack().save(registries, new CompoundTag()));
             bigStack.putInt(AMOUNT, (int) this.slots.get(i).getAmount());
             items.put(i + "", bigStack);
         }
@@ -179,13 +180,18 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
         return compoundTag;
     }
 
-    public void deserializeNBT(CompoundTag nbt) {
+    public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
         for (String allKey : nbt.getCompound(BIG_ITEMS).getAllKeys()) {
             int i = Integer.parseInt(allKey);
             if (i < this.slots.size()) {
                 CompoundTag stackTag = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getCompound(STACK);
                 int amount = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getInt(AMOUNT);
-                this.slots.get(i).variant = ItemVariant.of(ItemStack.of(stackTag));
+                this.slots
+                        .get(i).variant = ItemVariant
+                                .of(ItemStack.CODEC
+                                        .parse(net.minecraft.resources.RegistryOps
+                                                .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), stackTag)
+                                        .result().orElse(ItemStack.EMPTY));
                 this.slots.get(i).amount = amount;
             }
         }

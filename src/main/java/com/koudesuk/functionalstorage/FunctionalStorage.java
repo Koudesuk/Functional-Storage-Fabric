@@ -35,8 +35,9 @@ public class FunctionalStorage implements ModInitializer {
                 LOGGER.info("Functional Storage initializing...");
 
                 // Register milk fluid (equivalent to ForgeMod.enableMilkFluid())
-                Registry.register(BuiltInRegistries.FLUID, new ResourceLocation(MOD_ID, "milk"), MILK);
-                Registry.register(BuiltInRegistries.FLUID, new ResourceLocation(MOD_ID, "milk_flowing"), MILK_FLOWING);
+                Registry.register(BuiltInRegistries.FLUID, ResourceLocation.fromNamespaceAndPath(MOD_ID, "milk"), MILK);
+                Registry.register(BuiltInRegistries.FLUID,
+                                ResourceLocation.fromNamespaceAndPath(MOD_ID, "milk_flowing"), MILK_FLOWING);
 
                 // Register milk fluid attribute handler for proper display name
                 FluidVariantAttributes.register(MILK, new FluidVariantAttributeHandler() {
@@ -71,6 +72,9 @@ public class FunctionalStorage implements ModInitializer {
 
                 FunctionalStorageBlocks.register();
                 com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
+                // Register Data Component Types first
+                com.koudesuk.functionalstorage.registry.FSAttachments.register();
+
                 com.koudesuk.functionalstorage.registry.FunctionalStorageRecipes.register();
                 FunctionalStorageBlockEntities.register();
                 FunctionalStorageItems.register();
@@ -153,8 +157,7 @@ public class FunctionalStorage implements ModInitializer {
                                                                 .getBlockEntity(pos);
                                                 if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.EnderDrawerTile enderTile) {
                                                         if (!world.isClientSide()) {
-                                                                heldItem.getOrCreateTag().putString(
-                                                                                com.koudesuk.functionalstorage.item.LinkingToolItem.NBT_ENDER,
+                                                                heldItem.set(com.koudesuk.functionalstorage.registry.FSAttachments.ENDER_FREQUENCY,
                                                                                 enderTile.getFrequency());
                                                                 player.displayClientMessage(
                                                                                 net.minecraft.network.chat.Component

@@ -41,13 +41,12 @@ public class FramedDrawerModel implements UnbakedModel {
     }
 
     @Override
-    public BakedModel bake(ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState state,
-            ResourceLocation location) {
+    public BakedModel bake(ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState state) {
         ImmutableMap.Builder<String, BakedModel> bakedChildren = ImmutableMap.builder();
         BakedModel baseModel = null;
 
         for (Map.Entry<String, UnbakedModel> entry : children.entrySet()) {
-            BakedModel baked = entry.getValue().bake(baker, spriteGetter, state, location);
+            BakedModel baked = entry.getValue().bake(baker, spriteGetter, state);
             if (baked != null) {
                 bakedChildren.put(entry.getKey(), baked);
                 // Store the first "base" model to get transforms from
@@ -60,7 +59,7 @@ public class FramedDrawerModel implements UnbakedModel {
         ImmutableMap<String, BakedModel> bakedMap = bakedChildren.build();
 
         TextureAtlasSprite particle = spriteGetter
-                .apply(new Material(TextureAtlas.LOCATION_BLOCKS, new ResourceLocation("minecraft", "missingno")));
+                .apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.withDefaultNamespace("missingno")));
         if (bakedMap.containsKey("particle")) {
             particle = bakedMap.get("particle").getParticleIcon();
         } else if (!bakedMap.isEmpty()) {

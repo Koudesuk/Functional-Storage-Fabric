@@ -159,14 +159,23 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
         return amount;
     }
 
-    public CompoundTag serializeNBT() {
+    public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag compoundTag = new CompoundTag();
-        compoundTag.put(PARENT, this.getParent().save(new CompoundTag()));
+        compoundTag.put(PARENT,
+                ItemStack.CODEC
+                        .encodeStart(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE,
+                                registries), this.getParent())
+                        .result()
+                        .orElse(new CompoundTag()));
         compoundTag.putInt(AMOUNT, this.amount);
         CompoundTag items = new CompoundTag();
         for (int i = 0; i < this.resultList.size(); i++) {
             CompoundTag bigStack = new CompoundTag();
-            bigStack.put(STACK, this.resultList.get(i).getResult().save(new CompoundTag()));
+            bigStack.put(STACK, ItemStack.CODEC
+                    .encodeStart(
+                            net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
+                            this.resultList.get(i).getResult())
+                    .result().orElse(new CompoundTag()));
             bigStack.putInt(AMOUNT, this.resultList.get(i).getNeeded());
             items.put(i + "", bigStack);
         }
@@ -174,14 +183,21 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
         return compoundTag;
     }
 
-    public void deserializeNBT(CompoundTag nbt) {
-        this.parent = ItemStack.of(nbt.getCompound(PARENT));
+    public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+        this.parent = ItemStack.CODEC
+                .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
+                        nbt.getCompound(PARENT))
+                .result().orElse(ItemStack.EMPTY);
         this.amount = nbt.getInt(AMOUNT);
         for (String allKey : nbt.getCompound(BIG_ITEMS).getAllKeys()) {
             int index = Integer.parseInt(allKey);
             if (index < this.resultList.size()) {
+                CompoundTag itemTag = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getCompound(STACK);
                 this.resultList.get(index)
-                        .setResult(ItemStack.of(nbt.getCompound(BIG_ITEMS).getCompound(allKey).getCompound(STACK)));
+                        .setResult(ItemStack.CODEC
+                                .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE,
+                                        registries), itemTag)
+                                .result().orElse(ItemStack.EMPTY));
                 this.resultList.get(index)
                         .setNeeded(Math.max(1, nbt.getCompound(BIG_ITEMS).getCompound(allKey).getInt(AMOUNT)));
             }

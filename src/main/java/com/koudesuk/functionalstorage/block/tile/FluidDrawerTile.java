@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
@@ -22,7 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory {
+        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     private final DrawerType type;
     private final FluidInventoryHandler handler;
@@ -102,17 +103,17 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"));
+            handler.deserializeNBT(tag.getCompound("Handler"), registries);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Handler", handler.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Handler", handler.serializeNBT(registries));
     }
 
     @Override
@@ -214,8 +215,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     @Override
-    public void writeScreenOpeningData(net.minecraft.server.level.ServerPlayer player,
-            net.minecraft.network.FriendlyByteBuf buf) {
-        buf.writeBlockPos(getBlockPos());
+    public BlockPosPayload getScreenOpeningData(net.minecraft.server.level.ServerPlayer player) {
+        return new BlockPosPayload(this.getBlockPos());
     }
 }

@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.EnderInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
-        implements ExtendedScreenHandlerFactory {
+        implements ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     private String frequency;
     private java.util.UUID lastClickUUID;
@@ -267,7 +268,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         try (Transaction transaction = Transaction.openOuter()) {
             ItemVariant resource = handler.getResource(slot);
             if (!resource.isBlank()) {
-                int maxExtract = player.isShiftKeyDown() ? resource.getItem().getMaxStackSize() : 1;
+                int maxExtract = player.isShiftKeyDown() ? resource.toStack().getMaxStackSize() : 1;
                 long extracted = handler.extractFromSlot(slot, resource, maxExtract, transaction);
                 if (extracted > 0) {
                     ItemStack extractedStack = resource.toStack((int) extracted);
@@ -334,8 +335,8 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Frequency")) {
             this.frequency = tag.getString("Frequency");
         }
@@ -344,22 +345,22 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
             if (cachedHandler == null) {
                 cachedHandler = new EnderInventoryHandler(this.frequency, null);
             }
-            cachedHandler.deserializeNBT(tag.getCompound("Handler"));
+            cachedHandler.deserializeNBT(tag.getCompound("Handler"), registries);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         if (this.frequency != null) {
             tag.putString("Frequency", this.frequency);
         }
         // Save handler data for client sync
         if (level != null && !level.isClientSide) {
             EnderInventoryHandler handler = EnderSavedData.getInstance(level).getFrequency(frequency);
-            tag.put("Handler", handler.serializeNBT());
+            tag.put("Handler", handler.serializeNBT(registries));
         } else if (cachedHandler != null) {
-            tag.put("Handler", cachedHandler.serializeNBT());
+            tag.put("Handler", cachedHandler.serializeNBT(registries));
         }
     }
 
@@ -376,7 +377,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
     }
 
     @Override
-    public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-        buf.writeBlockPos(getBlockPos());
+    public BlockPosPayload getScreenOpeningData(ServerPlayer player) {
+        return new BlockPosPayload(this.getBlockPos());
     }
 }

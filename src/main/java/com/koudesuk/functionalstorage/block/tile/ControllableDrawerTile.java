@@ -7,7 +7,9 @@ import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
@@ -378,27 +380,33 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         this.storageUpgrades.clearContent();
         this.utilityUpgrades.clearContent();
         if (tag.contains("StorageUpgrades")) {
-            net.minecraft.nbt.ListTag list = tag.getList("StorageUpgrades", net.minecraft.nbt.Tag.TAG_COMPOUND);
+            net.minecraft.nbt.ListTag list = tag.getList("StorageUpgrades", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag itemTag = list.getCompound(i);
                 int slot = itemTag.getInt("Slot");
                 if (slot >= 0 && slot < storageUpgrades.getContainerSize()) {
-                    storageUpgrades.setItem(slot, ItemStack.of(itemTag));
+                    storageUpgrades.setItem(slot,
+                            ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
+                                    .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag).result()
+                                    .orElse(ItemStack.EMPTY));
                 }
             }
         }
         if (tag.contains("UtilityUpgrades")) {
-            net.minecraft.nbt.ListTag list = tag.getList("UtilityUpgrades", net.minecraft.nbt.Tag.TAG_COMPOUND);
+            net.minecraft.nbt.ListTag list = tag.getList("UtilityUpgrades", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag itemTag = list.getCompound(i);
                 int slot = itemTag.getInt("Slot");
                 if (slot >= 0 && slot < utilityUpgrades.getContainerSize()) {
-                    utilityUpgrades.setItem(slot, ItemStack.of(itemTag));
+                    utilityUpgrades.setItem(slot,
+                            ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
+                                    .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag).result()
+                                    .orElse(ItemStack.EMPTY));
                 }
             }
         }
@@ -411,17 +419,28 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         this.needsUpgradeCache = true;
     }
 
+    /**
+     * Public method for loading tile data from an ItemStack's component data.
+     * This is used in Block.setPlacedBy() to restore tile state.
+     */
+    public void loadFromTag(CompoundTag tag, HolderLookup.Provider registries) {
+        this.loadAdditional(tag, registries);
+    }
+
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         net.minecraft.nbt.ListTag storageList = new net.minecraft.nbt.ListTag();
         for (int i = 0; i < storageUpgrades.getContainerSize(); i++) {
             ItemStack stack = storageUpgrades.getItem(i);
             if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                itemTag.putInt("Slot", i);
-                stack.save(itemTag);
-                storageList.add(itemTag);
+                Tag encoded = ItemStack.CODEC.encodeStart(
+                        net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
+                        stack).result().orElse(null);
+                if (encoded instanceof CompoundTag itemTag) {
+                    itemTag.putInt("Slot", i);
+                    storageList.add(itemTag);
+                }
             }
         }
         tag.put("StorageUpgrades", storageList);
@@ -430,10 +449,13 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
             ItemStack stack = utilityUpgrades.getItem(i);
             if (!stack.isEmpty()) {
-                CompoundTag itemTag = new CompoundTag();
-                itemTag.putInt("Slot", i);
-                stack.save(itemTag);
-                utilityList.add(itemTag);
+                Tag encoded = ItemStack.CODEC.encodeStart(
+                        net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
+                        stack).result().orElse(null);
+                if (encoded instanceof CompoundTag itemTag) {
+                    itemTag.putInt("Slot", i);
+                    utilityList.add(itemTag);
+                }
             }
         }
         tag.put("UtilityUpgrades", utilityList);
@@ -449,8 +471,8 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
-        return this.saveWithoutMetadata();
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return this.saveWithoutMetadata(registries);
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, ControllableDrawerTile<?> blockEntity) {

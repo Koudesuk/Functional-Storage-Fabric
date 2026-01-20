@@ -1,41 +1,37 @@
 package com.koudesuk.functionalstorage.recipe;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
-import com.google.gson.JsonObject;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.network.FriendlyByteBuf;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
 
-public class CustomCompactingRecipe implements Recipe<Container> {
+public class CustomCompactingRecipe implements Recipe<CraftingInput> {
 
-    private final ResourceLocation id;
     private final Ingredient lowerInput;
     private final ItemStack higherOutput;
     private final int needed;
 
-    public CustomCompactingRecipe(ResourceLocation id, Ingredient lowerInput, ItemStack higherOutput, int needed) {
-        this.id = id;
+    public CustomCompactingRecipe(Ingredient lowerInput, ItemStack higherOutput, int needed) {
         this.lowerInput = lowerInput;
         this.higherOutput = higherOutput;
         this.needed = needed;
     }
 
     @Override
-    public boolean matches(Container container, Level level) {
+    public boolean matches(CraftingInput container, Level level) {
         return false; // Not used in standard crafting
     }
 
     @Override
-    public ItemStack assemble(Container container, RegistryAccess registryAccess) {
+    public ItemStack assemble(CraftingInput container, HolderLookup.Provider registryAccess) {
         return higherOutput.copy();
     }
 
@@ -45,13 +41,8 @@ public class CustomCompactingRecipe implements Recipe<Container> {
     }
 
     @Override
-    public ItemStack getResultItem(RegistryAccess registryAccess) {
+    public ItemStack getResultItem(HolderLookup.Provider registryAccess) {
         return higherOutput;
-    }
-
-    @Override
-    public ResourceLocation getId() {
-        return id;
     }
 
     @Override
@@ -86,29 +77,32 @@ public class CustomCompactingRecipe implements Recipe<Container> {
 
     public static class Serializer implements RecipeSerializer<CustomCompactingRecipe> {
         public static final Serializer INSTANCE = new Serializer();
-        public static final ResourceLocation ID = new ResourceLocation(FunctionalStorage.MOD_ID, "compacting");
+        public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                "compacting");
+
+        public static final MapCodec<CustomCompactingRecipe> CODEC = RecordCodecBuilder.mapCodec(
+                instance -> instance.group(
+                        Ingredient.CODEC.fieldOf("lower_input")
+                                .forGetter(CustomCompactingRecipe::getLowerInput),
+                        ItemStack.CODEC.fieldOf("higher_output").forGetter(CustomCompactingRecipe::getHigherOutput),
+                        Codec.INT.fieldOf("needed").forGetter(CustomCompactingRecipe::getNeeded))
+                        .apply(instance, CustomCompactingRecipe::new));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, CustomCompactingRecipe> STREAM_CODEC = StreamCodec
+                .composite(
+                        Ingredient.CONTENTS_STREAM_CODEC, CustomCompactingRecipe::getLowerInput,
+                        ItemStack.STREAM_CODEC, CustomCompactingRecipe::getHigherOutput,
+                        net.minecraft.network.codec.ByteBufCodecs.INT, CustomCompactingRecipe::getNeeded,
+                        CustomCompactingRecipe::new);
 
         @Override
-        public CustomCompactingRecipe fromJson(ResourceLocation id, JsonObject json) {
-            Ingredient lowerInput = Ingredient.fromJson(GsonHelper.getAsJsonObject(json, "lower_input"));
-            ItemStack higherOutput = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "higher_output"));
-            int needed = GsonHelper.getAsInt(json, "needed");
-            return new CustomCompactingRecipe(id, lowerInput, higherOutput, needed);
+        public MapCodec<CustomCompactingRecipe> codec() {
+            return CODEC;
         }
 
         @Override
-        public CustomCompactingRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
-            Ingredient lowerInput = Ingredient.fromNetwork(buf);
-            ItemStack higherOutput = buf.readItem();
-            int needed = buf.readInt();
-            return new CustomCompactingRecipe(id, lowerInput, higherOutput, needed);
-        }
-
-        @Override
-        public void toNetwork(FriendlyByteBuf buf, CustomCompactingRecipe recipe) {
-            recipe.lowerInput.toNetwork(buf);
-            buf.writeItem(recipe.higherOutput);
-            buf.writeInt(recipe.needed);
+        public StreamCodec<RegistryFriendlyByteBuf, CustomCompactingRecipe> streamCodec() {
+            return STREAM_CODEC;
         }
     }
 }

@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -19,7 +20,7 @@ public class FunctionalStorageBlockTagProvider extends FabricTagProvider.BlockTa
     protected void addTags(HolderLookup.Provider arg) {
         FabricTagProvider<Block>.FabricTagBuilder drawerBuilder = getOrCreateTagBuilder(
                 net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK,
-                        new net.minecraft.resources.ResourceLocation("functionalstorage", "drawer")));
+                        ResourceLocation.fromNamespaceAndPath("functionalstorage", "drawer")));
 
         // Add wooden drawers to drawer tag and MINEABLE_WITH_AXE
         for (java.util.List<Block> blocks : FunctionalStorageBlocks.DRAWER_TYPES.values()) {

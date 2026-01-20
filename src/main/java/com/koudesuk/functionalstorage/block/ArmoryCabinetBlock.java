@@ -1,8 +1,10 @@
 package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.ArmoryCabinetTile;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -16,7 +18,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.nbt.CompoundTag;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -52,11 +53,14 @@ public class ArmoryCabinetBlock extends Block implements EntityBlock {
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
             ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (stack.hasTag() && stack.getTag().contains("Tile")) {
-            BlockEntity entity = level.getBlockEntity(pos);
-            if (entity instanceof ArmoryCabinetTile tile) {
-                tile.load(stack.getTag().getCompound("Tile"));
-                tile.setChanged();
+        BlockEntity entity = level.getBlockEntity(pos);
+        if (entity instanceof ArmoryCabinetTile tile) {
+            if (stack.has(FSAttachments.TILE)) {
+                CompoundTag tileData = stack.get(FSAttachments.TILE);
+                if (tileData != null) {
+                    tile.loadFromTag(tileData, level.registryAccess());
+                    tile.setChanged();
+                }
             }
         }
     }
@@ -66,9 +70,8 @@ public class ArmoryCabinetBlock extends Block implements EntityBlock {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         ItemStack stack = new ItemStack(this);
         if (blockEntity instanceof ArmoryCabinetTile tile) {
-            if (!tile.isEverythingEmpty()) {
-                CompoundTag tag = tile.saveWithoutMetadata();
-                stack.getOrCreateTag().put("Tile", tag);
+            if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
+                stack.set(FSAttachments.TILE, tile.saveWithoutMetadata(tile.getLevel().registryAccess()));
             }
         }
         return Collections.singletonList(stack);

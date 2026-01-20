@@ -21,16 +21,16 @@ public class EnderInventoryHandler extends BigInventoryHandler {
     }
 
     @Override
-    public CompoundTag serializeNBT() {
-        CompoundTag compoundTag = super.serializeNBT();
+    public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
+        CompoundTag compoundTag = super.serializeNBT(registries);
         compoundTag.putBoolean(NBT_LOCKED, this.locked);
         compoundTag.putBoolean(NBT_VOID, this.voidItems);
         return compoundTag;
     }
 
     @Override
-    public void deserializeNBT(CompoundTag nbt) {
-        super.deserializeNBT(nbt);
+    public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+        super.deserializeNBT(nbt, registries);
         this.locked = nbt.getBoolean(NBT_LOCKED);
         this.voidItems = nbt.getBoolean(NBT_VOID);
     }

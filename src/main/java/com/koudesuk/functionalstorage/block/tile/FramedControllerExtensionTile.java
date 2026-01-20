@@ -4,6 +4,7 @@ import com.koudesuk.functionalstorage.client.model.FramedDrawerModelData;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -29,18 +30,18 @@ public class FramedControllerExtensionTile extends ControllerExtensionTile imple
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Style")) {
             this.framedDrawerModelData = FramedDrawerModelData.fromNBT(tag.getCompound("Style"));
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         if (this.framedDrawerModelData != null) {
-            tag.put("Style", this.framedDrawerModelData.serializeNBT());
+            tag.put("Style", this.framedDrawerModelData.serializeNBT(registries));
         }
     }
 

@@ -47,21 +47,22 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 matrixStack.pushPose();
 
                 Direction facing = tile.getFacingDirection();
-                matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
+                matrixStack.last().pose()
+                                .mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
 
                 if (facing == Direction.NORTH) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(-1, 0, 0), new Vector3f(0), 1));
                 } else if (facing == Direction.EAST) {
-                        matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(-1, 0, -1),
+                        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(-1, 0, -1),
                                         new Vector3f(0, -90, 0),
                                         1));
                 } else if (facing == Direction.SOUTH) {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0, 0, -1), new Vector3f(0, 180, 0),
                                                         1));
                 } else if (facing == Direction.WEST) {
-                        matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0, 0, 0),
+                        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0, 0, 0),
                                         new Vector3f(0, 90, 0), 1));
                 }
                 matrixStack.translate(0, 0, -0.5 / 16D);
@@ -99,7 +100,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
                 if (tile.isVoid()) {
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0.969f, 0.031f, 0.469f / 16.0f),
                                                         new Vector3f(0), scale));
                         Minecraft.getInstance().getItemRenderer().renderStatic(
@@ -115,7 +116,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 var indicatorValue = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
                 if (indicatorValue != 0) {
                         TextureAtlasSprite still = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                                        .apply(new ResourceLocation(
+                                        .apply(ResourceLocation.fromNamespaceAndPath(
                                                         com.koudesuk.functionalstorage.FunctionalStorage.MOD_ID,
                                                         "block/indicator"));
                         VertexConsumer builder = bufferIn.getBuffer(RenderType.translucent());
@@ -133,43 +134,35 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                         double bx2 = 8;
                         double bz1 = 0;
                         double bz2 = 2;
-                        float u1 = still.getU(bx1);
-                        float u2 = still.getU(bx2);
-                        float v1 = still.getV(bz1);
-                        float v2 = still.getV(bz2);
+                        float u1 = still.getU((float) bx1);
+                        float u2 = still.getU((float) bx2);
+                        float v1 = still.getV((float) bz1);
+                        float v2 = still.getV((float) bz2);
                         if (indicatorValue != 3) { // hide background in mode 3
-                                builder.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).uv(u2, v1)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).uv(u2, v2)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).uv(u1, v2)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).uv(u1, v1)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
+                                addTransformedVertex(builder, posMat, x2, y1, z2, red, green, blue, alpha, u2, v1,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x1, y2, z2, red, green, blue, alpha, u1, v2,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x1, y1, z2, red, green, blue, alpha, u1, v1,
+                                                combinedOverlayIn, combinedLightIn);
                         }
 
-                        u2 = still.getU(bx2 * progress);
+                        u2 = still.getU((float) (bx2 * progress));
                         x2 = x1 + 0.5f * progress;
                         z2 = 0.0001f;
-                        v1 = still.getV(8);
-                        v2 = still.getV(10);
+                        v1 = still.getV(8f);
+                        v2 = still.getV(10f);
                         if (indicatorValue == 1 || progress >= 1) {
-                                builder.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).uv(u2, v1)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).uv(u2, v2)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).uv(u1, v2)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
-                                builder.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).uv(u1, v1)
-                                                .overlayCoords(combinedOverlayIn).uv2(combinedLightIn)
-                                                .normal(0f, 0f, 1f).endVertex();
+                                addTransformedVertex(builder, posMat, x2, y1, z2, red, green, blue, alpha, u2, v1,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x1, y2, z2, red, green, blue, alpha, u1, v2,
+                                                combinedOverlayIn, combinedLightIn);
+                                addTransformedVertex(builder, posMat, x1, y1, z2, red, green, blue, alpha, u1, v1,
+                                                combinedOverlayIn, combinedLightIn);
                         }
                 }
         }
@@ -192,7 +185,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 BigInventoryHandler inventoryHandler = (BigInventoryHandler) tile.getStorage();
                 if (!inventoryHandler.getStoredStacks().get(0).getStack().isEmpty()) {
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0.5f, 0.27f, 0.0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -205,7 +198,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
                 if (!inventoryHandler.getStoredStacks().get(1).getStack().isEmpty()) {
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0.5f, 0.77f, 0.0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -223,7 +216,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 BigInventoryHandler inventoryHandler = (BigInventoryHandler) tile.getStorage();
                 if (!inventoryHandler.getStoredStacks().get(0).getStack().isEmpty()) { // bottom right
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(.75f, .27f, .0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -236,7 +229,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
                 if (!inventoryHandler.getStoredStacks().get(1).getStack().isEmpty()) { // bottom left
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(.25f, .27f, .0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -249,7 +242,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
                 if (!inventoryHandler.getStoredStacks().get(2).getStack().isEmpty()) { // top right
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(.75f, .77f, .0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -262,7 +255,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
                 if (!inventoryHandler.getStoredStacks().get(3).getStack().isEmpty()) { // top left
                         matrixStack.pushPose();
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(.25f, .77f, .0005f),
                                                         new Vector3f(0),
                                                         new Vector3f(.5f, .5f, 1.0f)));
@@ -288,10 +281,10 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 if (model.isGui3d()) {
                         float thickness = (float) FunctionalStorageClientConfig.DRAWER_RENDER_THICKNESS;
                         // Avoid scaling normal matrix by using mulPoseMatrix instead of scale()
-                        matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
+                        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
                                         new Vector3f(.75f, .75f, thickness)));
                 } else {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0), .4f));
                 }
 
@@ -300,12 +293,13 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemDisplayContext.FIXED, combinedLightIn,
                                 combinedOverlayIn, matrixStack, bufferIn, level, 0);
 
-                matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
+                matrixStack.last().pose()
+                                .mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
                 if (!model.isGui3d()) {
-                        matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
+                        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
                                         new Vector3f(0.5f / 0.4f, 0.5f / 0.4f, 1)));
                 } else {
-                        matrixStack.mulPoseMatrix(
+                        matrixStack.last().pose().mul(
                                         MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0), .665f));
                 }
 
@@ -343,5 +337,20 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 int offsetY = (realHeight - requiredHeight) / 2;
                 font.drawInBatch(text, offsetX - realWidth / 2, 3 + offsetY - realHeight / 2, overlayLight, false,
                                 matrix.last().pose(), renderer, Font.DisplayMode.NORMAL, 0, 0xF000F0);
+        }
+
+        /**
+         * Helper method to add a vertex with matrix transformation for MC 1.21 Fabric.
+         * Transforms the position using the given matrix then adds the vertex.
+         */
+        private static void addTransformedVertex(VertexConsumer builder, Matrix4f matrix, float x, float y, float z,
+                        float r, float g, float b, float a, float u, float v, int overlay, int light) {
+                Vector3f pos = matrix.transformPosition(new Vector3f(x, y, z));
+                builder.addVertex(pos.x, pos.y, pos.z)
+                                .setColor(r, g, b, a)
+                                .setUv(u, v)
+                                .setOverlay(overlay)
+                                .setLight(light)
+                                .setNormal(0f, 0f, 1f);
         }
 }

@@ -282,10 +282,11 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
 
     @Override
     public void emitItemQuads(ItemStack stack, Supplier<RandomSource> randomSupplier, RenderContext context) {
-        // Check if item has custom texture data
+        // Check if item has custom texture data - MC 1.21 Data Components API
         FramedDrawerModelData data = null;
-        if (stack.hasTag() && stack.getTag().contains("Style")) {
-            data = FramedDrawerModelData.fromNBT(stack.getTag().getCompound("Style"));
+        if (stack.has(com.koudesuk.functionalstorage.registry.FSAttachments.STYLE)) {
+            data = FramedDrawerModelData
+                    .fromNBT(stack.get(com.koudesuk.functionalstorage.registry.FSAttachments.STYLE));
         }
 
         // If no Style tag or empty data, render base models without retexturing

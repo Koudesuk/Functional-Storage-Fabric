@@ -29,19 +29,19 @@ public class EnderDrawerRenderer implements BlockEntityRenderer<EnderDrawerTile>
         matrixStack.pushPose();
 
         Direction facing = tile.getFacingDirection();
-        matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
+        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
 
         if (facing == Direction.NORTH) {
-            matrixStack.mulPoseMatrix(
+            matrixStack.last().pose().mul(
                     MathUtils.createTransformMatrix(new Vector3f(-1, 0, 0), new Vector3f(0), 1));
         } else if (facing == Direction.EAST) {
-            matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(-1, 0, -1),
+            matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(-1, 0, -1),
                     new Vector3f(0, -90, 0), 1));
         } else if (facing == Direction.SOUTH) {
-            matrixStack.mulPoseMatrix(
+            matrixStack.last().pose().mul(
                     MathUtils.createTransformMatrix(new Vector3f(0, 0, -1), new Vector3f(0, 180, 0), 1));
         } else if (facing == Direction.WEST) {
-            matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0, 0, 0),
+            matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0, 0, 0),
                     new Vector3f(0, 90, 0), 1));
         }
 

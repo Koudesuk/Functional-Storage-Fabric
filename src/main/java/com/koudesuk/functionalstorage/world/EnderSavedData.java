@@ -17,30 +17,33 @@ public class EnderSavedData extends SavedData {
     public EnderSavedData(Level level) {
         this.level = level;
     }
-    
+
     public EnderSavedData() {
         this(null);
     }
 
-    public static EnderSavedData getInstance(Level level){
-        if (level instanceof ServerLevel serverLevel){
+    public static EnderSavedData getInstance(Level level) {
+        if (level instanceof ServerLevel serverLevel) {
             return serverLevel.getDataStorage().computeIfAbsent(
-                tag -> load(tag, serverLevel),
-                () -> new EnderSavedData(serverLevel),
-                NAME
-            );
+                    new net.minecraft.world.level.saveddata.SavedData.Factory<>(
+                            () -> new EnderSavedData(serverLevel),
+                            (tag, registries) -> load(tag, registries, serverLevel),
+                            null // No data fixer
+                    ),
+                    NAME);
         }
         return new EnderSavedData(level);
     }
 
-    public static EnderSavedData load(CompoundTag compoundTag, Level level) {
+    public static EnderSavedData load(CompoundTag compoundTag, net.minecraft.core.HolderLookup.Provider registries,
+            Level level) {
         EnderSavedData manager = new EnderSavedData(level);
         manager.itemHandlers = new HashMap<>();
         if (compoundTag.contains("Ender")) {
             CompoundTag backpacks = compoundTag.getCompound("Ender");
             for (String s : backpacks.getAllKeys()) {
                 EnderInventoryHandler hander = new EnderInventoryHandler(s, manager);
-                hander.deserializeNBT(backpacks.getCompound(s));
+                hander.deserializeNBT(backpacks.getCompound(s), registries);
                 manager.itemHandlers.put(s, hander);
             }
         }
@@ -48,14 +51,14 @@ public class EnderSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         CompoundTag nbt = new CompoundTag();
-        itemHandlers.forEach((s, iItemHandler) -> nbt.put(s, iItemHandler.serializeNBT()));
+        itemHandlers.forEach((s, iItemHandler) -> nbt.put(s, iItemHandler.serializeNBT(registries)));
         tag.put("Ender", nbt);
         return tag;
     }
 
-    public EnderInventoryHandler getFrequency(String string){
+    public EnderInventoryHandler getFrequency(String string) {
         return itemHandlers.computeIfAbsent(string, s -> new EnderInventoryHandler(s, this));
     }
 }

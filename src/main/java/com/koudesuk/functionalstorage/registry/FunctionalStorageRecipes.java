@@ -8,13 +8,15 @@ import net.minecraft.resources.ResourceLocation;
 
 public class FunctionalStorageRecipes {
 
-    public static void register() {
-        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, CustomCompactingRecipe.Serializer.ID,
-                CustomCompactingRecipe.Serializer.INSTANCE);
-        Registry.register(BuiltInRegistries.RECIPE_TYPE,
-                new ResourceLocation(FunctionalStorage.MOD_ID, CustomCompactingRecipe.Type.ID),
-                CustomCompactingRecipe.Type.INSTANCE);
-        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, new ResourceLocation(FunctionalStorage.MOD_ID, "framed_recipe"),
-                com.koudesuk.functionalstorage.recipe.FramedDrawerRecipe.SERIALIZER);
-    }
+        public static void register() {
+                Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, CustomCompactingRecipe.Serializer.ID,
+                                CustomCompactingRecipe.Serializer.INSTANCE);
+                Registry.register(BuiltInRegistries.RECIPE_TYPE,
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                                                CustomCompactingRecipe.Type.ID),
+                                CustomCompactingRecipe.Type.INSTANCE);
+                Registry.register(BuiltInRegistries.RECIPE_SERIALIZER,
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_recipe"),
+                                com.koudesuk.functionalstorage.recipe.FramedDrawerRecipe.SERIALIZER);
+        }
 }

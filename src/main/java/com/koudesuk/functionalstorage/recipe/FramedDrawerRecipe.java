@@ -1,30 +1,35 @@
 package com.koudesuk.functionalstorage.recipe;
 
-import com.koudesuk.functionalstorage.FunctionalStorage;
-import com.koudesuk.functionalstorage.block.CompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingBookCategory;
-import net.minecraft.world.item.crafting.CustomRecipe;
+import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.item.crafting.RecipeSerializer;
-import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
 
 public class FramedDrawerRecipe extends CustomRecipe {
 
-    public static RecipeSerializer<FramedDrawerRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<>(
-            (p_250892_, p_249920_) -> new FramedDrawerRecipe(p_250892_, p_249920_));
+    public static final RecipeSerializer<FramedDrawerRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<>(
+            FramedDrawerRecipe::new);
 
-    public FramedDrawerRecipe(ResourceLocation idIn, CraftingBookCategory category) {
-        super(idIn, category);
+    public FramedDrawerRecipe(CraftingBookCategory category) {
+        super(category);
+    }
+
+    @Override
+    public CraftingBookCategory category() {
+        return CraftingBookCategory.MISC; // Default category
+    }
+
+    @Override
+    public ItemStack getResultItem(HolderLookup.Provider registries) {
+        return ItemStack.EMPTY; // Dynamic recipe
     }
 
     public static boolean matches(ItemStack first, ItemStack second, ItemStack drawer) {
@@ -63,8 +68,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean matches(CraftingContainer inv, Level worldIn) {
-        if (inv.getContainerSize() < 3)
+    public boolean matches(CraftingInput inv, Level worldIn) {
+        if (inv.size() < 3)
             return false;
         return matches(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
@@ -74,7 +79,7 @@ public class FramedDrawerRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer inv, RegistryAccess registryAccess) {
+    public ItemStack assemble(CraftingInput inv, HolderLookup.Provider registryAccess) {
         if (matches(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesSimpleCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
@@ -83,7 +88,7 @@ public class FramedDrawerRecipe extends CustomRecipe {
             ItemStack drawer = inv.getItem(2);
             ItemStack first = inv.getItem(0);
             ItemStack second = inv.getItem(1);
-            ItemStack divider = inv.getContainerSize() > 3 ? inv.getItem(3) : ItemStack.EMPTY;
+            ItemStack divider = inv.size() > 3 ? inv.getItem(3) : ItemStack.EMPTY;
 
             return FramedDrawerBlock.fill(first, second, drawer, divider);
         }

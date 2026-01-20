@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 
 public class DrawerBlock extends Block implements EntityBlock {
 
@@ -44,14 +45,36 @@ public class DrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public net.minecraft.world.InteractionResult use(BlockState state, net.minecraft.world.level.Level level,
-            BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand,
+    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
+            net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        if (level.isClientSide)
+            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
+            net.minecraft.world.InteractionResult result = drawerTile.onSlotActivated(player, hand, hit.getDirection(),
+                    hit.getLocation().x,
+                    hit.getLocation().y, hit.getLocation().z, getHit(state, pos, hit));
+            return switch (result) {
+                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
+                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
+                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
+                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    public net.minecraft.world.InteractionResult useWithoutItem(BlockState state, net.minecraft.world.level.Level level,
+            BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.phys.BlockHitResult hit) {
         if (level.isClientSide)
             return net.minecraft.world.InteractionResult.SUCCESS;
         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-            return drawerTile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
+            return drawerTile.onSlotActivated(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit.getDirection(),
+                    hit.getLocation().x,
                     hit.getLocation().y, hit.getLocation().z, getHit(state, pos, hit));
         }
         return net.minecraft.world.InteractionResult.PASS;
@@ -145,6 +168,15 @@ public class DrawerBlock extends Block implements EntityBlock {
                 // Index 1 = Bottom, high block X = visual LEFT
                 // Index 2 = Top, low block X = visual RIGHT
                 // Index 3 = Top, high block X = visual LEFT
+                //
+                // Fabric fix: Swap indices to match visual layout if needed, OR fix getHit to
+                // match proper visual quadrants.
+                // The current visual check:
+                // hitX > 0.5, hitY < 0.5 (Right Bottom) -> 0
+                // hitX < 0.5, hitY < 0.5 (Left Bottom) -> 1
+                // hitX > 0.5, hitY > 0.5 (Right Top) -> 2
+                // hitX < 0.5, hitY > 0.5 (Left Top) -> 3
+                // If specific quadrant issues arise, swap these returns.
                 if (hitX > 0.5 && hitY < 0.5)
                     return 0; // visual RIGHT, BOTTOM
                 if (hitX < 0.5 && hitY < 0.5)
@@ -165,11 +197,11 @@ public class DrawerBlock extends Block implements EntityBlock {
         BlockEntity drawerTile = builder
                 .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile tile) {
-            if (!tile.isEverythingEmpty()) {
-                stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
+            if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
+                stack.set(FSAttachments.TILE, tile.saveWithoutMetadata(tile.getLevel().registryAccess()));
             }
             if (tile.isLocked()) {
-                stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
+                stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
         stacks.add(stack);
@@ -199,19 +231,20 @@ public class DrawerBlock extends Block implements EntityBlock {
             @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         BlockEntity entity = level.getBlockEntity(pos);
-        if (stack.hasTag()) {
-            if (stack.getTag().contains("Tile")) {
-                if (entity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile tile) {
-                    entity.load(stack.getTag().getCompound("Tile"));
+        if (entity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile tile) {
+            // Load locked state
+            if (stack.has(FSAttachments.LOCKED)) {
+                tile.setLocked(stack.getOrDefault(FSAttachments.LOCKED, false));
+            }
+            // Load tile data
+            if (stack.has(FSAttachments.TILE)) {
+                CompoundTag tileData = stack.get(FSAttachments.TILE);
+                if (tileData != null) {
+                    tile.loadFromTag(tileData, level.registryAccess());
                     tile.setChanged();
                     if (!level.isClientSide) {
                         level.sendBlockUpdated(pos, state, state, 3);
                     }
-                }
-            }
-            if (stack.getTag().contains("Locked")) {
-                if (entity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile tile) {
-                    tile.setLocked(stack.getTag().getBoolean("Locked"));
                 }
             }
         }
@@ -258,7 +291,7 @@ public class DrawerBlock extends Block implements EntityBlock {
                 net.minecraft.world.item.ItemStack stack = utilityUpgrades.getItem(i);
                 if (stack
                         .getItem() == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
-                    int redstoneSlot = stack.getOrCreateTag().getInt("Slot");
+                    int redstoneSlot = stack.getOrDefault(FSAttachments.SLOT, 0);
                     var storedStacks = tile.getHandler().getStoredStacks();
                     if (redstoneSlot < storedStacks.size()) {
                         int slotLimit = tile.getHandler().getSlotLimit(redstoneSlot);

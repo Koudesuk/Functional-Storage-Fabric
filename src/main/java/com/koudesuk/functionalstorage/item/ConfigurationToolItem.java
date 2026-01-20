@@ -1,9 +1,10 @@
 package com.koudesuk.functionalstorage.item;
 
-import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
@@ -12,6 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
+
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -25,8 +27,6 @@ import java.util.List;
 import java.util.Locale;
 
 public class ConfigurationToolItem extends Item {
-
-    public static final String NBT_MODE = "Mode";
 
     public static enum ConfigurationAction {
         LOCKING(TextColor.fromRgb(getIntColorFromRgb(40, 131, 250)), 1),
@@ -58,8 +58,8 @@ public class ConfigurationToolItem extends Item {
     }
 
     public static ConfigurationAction getAction(ItemStack stack) {
-        if (stack.hasTag()) {
-            return ConfigurationAction.valueOf(stack.getOrCreateTag().getString(NBT_MODE));
+        if (stack.has(FSAttachments.CONFIGURATION_ACTION)) {
+            return ConfigurationAction.valueOf(stack.get(FSAttachments.CONFIGURATION_ACTION));
         }
         return ConfigurationAction.LOCKING;
     }
@@ -71,7 +71,7 @@ public class ConfigurationToolItem extends Item {
     }
 
     private ItemStack initNbt(ItemStack stack) {
-        stack.getOrCreateTag().putString(NBT_MODE, ConfigurationAction.LOCKING.name());
+        stack.set(FSAttachments.CONFIGURATION_ACTION, ConfigurationAction.LOCKING.name());
         return stack;
     }
 
@@ -111,7 +111,7 @@ public class ConfigurationToolItem extends Item {
                 ConfigurationAction newAction = ConfigurationAction
                         .values()[(Arrays.asList(ConfigurationAction.values()).indexOf(action) + 1)
                                 % ConfigurationAction.values().length];
-                stack.getOrCreateTag().putString(NBT_MODE, newAction.name());
+                stack.set(FSAttachments.CONFIGURATION_ACTION, newAction.name());
                 player.displayClientMessage(
                         Component.translatable("configurationtool.configmode.swapped")
                                 .setStyle(Style.EMPTY.withColor(newAction.getColor()))
@@ -126,9 +126,8 @@ public class ConfigurationToolItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltip, isAdvanced);
         ConfigurationAction linkingMode = getAction(stack);
         tooltip.add(Component.translatable("configurationtool.configmode").withStyle(ChatFormatting.YELLOW)
                 .append(Component
