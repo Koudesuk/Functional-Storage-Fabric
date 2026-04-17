@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.client;
 
+import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.client.gui.DrawerScreen;
 import com.koudesuk.functionalstorage.client.model.FramedDrawerModelLoader;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
@@ -7,6 +8,8 @@ import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageMenus;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
+import net.fabricmc.fabric.api.client.render.fluid.v1.SimpleFluidRenderHandler;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.minecraft.client.renderer.RenderType;
@@ -78,6 +81,10 @@ public class FunctionalStorageClient implements ClientModInitializer {
                                 ctx -> new ControllerRenderer<>());
                 BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER,
                                 ctx -> new ControllerRenderer<>());
+
+                var milkRenderHandler = SimpleFluidRenderHandler.coloredWater(0xFFFFFFFF);
+                FluidRenderHandlerRegistry.INSTANCE.register(FunctionalStorage.MILK, milkRenderHandler);
+                FluidRenderHandlerRegistry.INSTANCE.register(FunctionalStorage.MILK_FLOWING, milkRenderHandler);
 
                 FramedColors.register();
 

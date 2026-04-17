@@ -281,15 +281,26 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
     }
 
     public boolean isLocked() {
-        return this.getBlockState().hasProperty(com.koudesuk.functionalstorage.block.DrawerBlock.LOCKED)
-                && this.getBlockState().getValue(com.koudesuk.functionalstorage.block.DrawerBlock.LOCKED);
+        net.minecraft.world.level.block.state.properties.BooleanProperty lockedProperty = this.getLockedProperty();
+        return lockedProperty != null && this.getBlockState().getValue(lockedProperty);
     }
 
     public void setLocked(boolean locked) {
-        if (this.getBlockState().hasProperty(com.koudesuk.functionalstorage.block.DrawerBlock.LOCKED)) {
+        net.minecraft.world.level.block.state.properties.BooleanProperty lockedProperty = this.getLockedProperty();
+        if (lockedProperty != null && this.level != null) {
             this.level.setBlock(this.getBlockPos(),
-                    this.getBlockState().setValue(com.koudesuk.functionalstorage.block.DrawerBlock.LOCKED, locked), 3);
+                    this.getBlockState().setValue(lockedProperty, locked), 3);
         }
+    }
+
+    private net.minecraft.world.level.block.state.properties.BooleanProperty getLockedProperty() {
+        for (net.minecraft.world.level.block.state.properties.Property<?> property : this.getBlockState().getProperties()) {
+            if (property instanceof net.minecraft.world.level.block.state.properties.BooleanProperty booleanProperty
+                    && "locked".equals(booleanProperty.getName())) {
+                return booleanProperty;
+            }
+        }
+        return null;
     }
 
     public SimpleContainer getStorageUpgrades() {

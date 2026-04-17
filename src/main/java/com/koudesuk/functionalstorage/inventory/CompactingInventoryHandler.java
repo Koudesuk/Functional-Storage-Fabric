@@ -64,6 +64,9 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
             if (amount == 0)
                 break;
         }
+        if (amount > 0 && isVoid() && isVoidValid(resource)) {
+            return maxAmount;
+        }
         return maxAmount - amount;
     }
 
@@ -108,7 +111,7 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
             return Integer.MAX_VALUE;
         int total = totalAmount;
         if (hasDowngrade())
-            total = 64 * 9 * 9;
+            total = slots == 2 ? 64 * 9 : 64 * 9 * 9;
         if (this.resultList.get(slot).getNeeded() == 0)
             return 0;
         return (int) Math.min(Integer.MAX_VALUE, Math.floor(
@@ -120,7 +123,7 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
             return Integer.MAX_VALUE;
         int total = totalAmount;
         if (hasDowngrade())
-            total = 64 * 9 * 9;
+            total = slots == 2 ? 64 * 9 : 64 * 9 * 9;
         if (this.resultList.get(slot).getNeeded() == 0)
             return 0;
         return (int) Math.min(Integer.MAX_VALUE, Math.floor(total / this.resultList.get(slot).getNeeded()));
@@ -224,6 +227,18 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
 
     public abstract boolean isLocked();
 
+    private boolean isVoidValid(ItemVariant resource) {
+        if (!isSetup() || resource.isBlank()) {
+            return false;
+        }
+        for (CompactingUtil.Result result : resultList) {
+            if (!result.getResult().isEmpty() && resource.matches(result.getResult())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Get the ItemVariant stored in the specified slot.
      * For compacting drawers, this returns the compacted item at that tier.
@@ -258,7 +273,11 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
     public long insertIntoSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
         if (slot < 0 || slot >= storageSlots.size())
             return 0;
-        return storageSlots.get(slot).insert(resource, maxAmount, transaction);
+        long inserted = storageSlots.get(slot).insert(resource, maxAmount, transaction);
+        if (inserted < maxAmount && isVoid() && isItemValid(slot, resource)) {
+            return maxAmount;
+        }
+        return inserted;
     }
 
     /**

@@ -171,8 +171,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                 int tintColor = -1;
 
                 if (data != null && !data.getDesign().isEmpty()) {
-                    String spriteName = originalSprite.contents().name().toString();
-                    String part = determineModelPart(spriteName);
+                    String part = determineModelPart(quad);
 
                     if (part != null && data.getDesign().containsKey(part)) {
                         Item item = data.getDesign().get(part);
@@ -342,8 +341,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                 int tintColor = -1;
 
                 if (data != null && !data.getDesign().isEmpty()) {
-                    String spriteName = originalSprite.contents().name().toString();
-                    String part = determineModelPart(spriteName);
+                    String part = determineModelPart(quad);
 
                     if (part != null && data.getDesign().containsKey(part)) {
                         Item item = data.getDesign().get(part);
@@ -431,6 +429,15 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         }
     }
 
+    private String determineModelPart(BakedQuad quad) {
+        String spriteName = quad.getSprite().contents().name().toString();
+        String spritePart = determineModelPart(spriteName);
+        if (isDividerQuad(quad)) {
+            return "front_divider";
+        }
+        return spritePart;
+    }
+
     private String determineModelPart(String spriteName) {
         String lowerName = spriteName.toLowerCase();
 
@@ -460,6 +467,57 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
         }
 
         return null;
+    }
+
+    private boolean isDividerQuad(BakedQuad quad) {
+        float minX = Float.POSITIVE_INFINITY;
+        float minY = Float.POSITIVE_INFINITY;
+        float minZ = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY;
+        float maxY = Float.NEGATIVE_INFINITY;
+        float maxZ = Float.NEGATIVE_INFINITY;
+        int[] vertices = quad.getVertices();
+
+        for (int i = 0; i < 4; i++) {
+            int offset = i * 8;
+            float x = Float.intBitsToFloat(vertices[offset]);
+            float y = Float.intBitsToFloat(vertices[offset + 1]);
+            float z = Float.intBitsToFloat(vertices[offset + 2]);
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            minZ = Math.min(minZ, z);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            maxZ = Math.max(maxZ, z);
+        }
+
+        float[] spans = {
+                maxX - minX,
+                maxY - minY,
+                maxZ - minZ
+        };
+        float zeroSpan = 0.001f;
+        float thinMin = 0.10f;
+        float thinMax = 0.13f;
+        float wideMin = 0.30f;
+        float wideMax = 0.90f;
+        int flatAxes = 0;
+        int thinAxes = 0;
+        int wideAxes = 0;
+
+        for (float span : spans) {
+            if (span <= zeroSpan) {
+                flatAxes++;
+            } else if (span >= thinMin && span <= thinMax) {
+                thinAxes++;
+            } else if (span >= wideMin && span <= wideMax) {
+                wideAxes++;
+            }
+        }
+
+        boolean flushOuterFace = minX <= zeroSpan || minY <= zeroSpan || minZ <= zeroSpan ||
+                maxX >= 1.0f - zeroSpan || maxY >= 1.0f - zeroSpan || maxZ >= 1.0f - zeroSpan;
+        return flushOuterFace && flatAxes == 1 && thinAxes == 1 && wideAxes == 1;
     }
 
     /**

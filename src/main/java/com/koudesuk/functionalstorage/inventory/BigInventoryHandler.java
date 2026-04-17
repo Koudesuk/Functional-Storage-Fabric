@@ -53,7 +53,19 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
             if (amount == 0)
                 break;
         }
+        if (amount > 0 && isVoid() && isVoidValid(resource)) {
+            return maxAmount;
+        }
         return maxAmount - amount;
+    }
+
+    private boolean isVoidValid(ItemVariant resource) {
+        for (BigStackStorage slot : slots) {
+            if (!slot.getResource().isBlank() && slot.getResource().equals(resource)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -171,8 +183,10 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
         CompoundTag items = new CompoundTag();
         for (int i = 0; i < this.slots.size(); i++) {
             CompoundTag bigStack = new CompoundTag();
-            bigStack.put(STACK,
-                    this.slots.get(i).getResource().toStack().save(registries, new CompoundTag()));
+            ItemStack stack = this.slots.get(i).getResource().toStack();
+            if (!stack.isEmpty()) {
+                bigStack.put(STACK, stack.save(registries, new CompoundTag()));
+            }
             bigStack.putInt(AMOUNT, (int) this.slots.get(i).getAmount());
             items.put(i + "", bigStack);
         }

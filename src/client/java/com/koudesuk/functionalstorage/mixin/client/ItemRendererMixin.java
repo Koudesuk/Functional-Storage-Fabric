@@ -1,6 +1,7 @@
 package com.koudesuk.functionalstorage.mixin.client;
 
 import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
+import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
@@ -73,7 +74,8 @@ public class ItemRendererMixin {
         return block instanceof FramedDrawerBlock
                 || block instanceof FramedCompactingDrawerBlock
                 || block instanceof FramedSimpleCompactingDrawerBlock
-                || block instanceof FramedDrawerControllerBlock;
+                || block instanceof FramedDrawerControllerBlock
+                || block instanceof FramedControllerExtensionBlock;
     }
 
     /**

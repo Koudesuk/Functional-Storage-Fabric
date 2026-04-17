@@ -11,7 +11,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FramedDrawerRecipe extends CustomRecipe {
 
@@ -67,30 +69,65 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 ((BlockItem) drawer.getItem()).getBlock() instanceof FramedControllerExtensionBlock;
     }
 
+    private static Ingredients getIngredients(CraftingInput inv) {
+        List<ItemStack> nonEmpty = new ArrayList<>();
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (!stack.isEmpty()) {
+                nonEmpty.add(stack);
+            }
+        }
+
+        if (nonEmpty.size() < 3 || nonEmpty.size() > 4) {
+            return null;
+        }
+
+        ItemStack first = nonEmpty.get(0);
+        ItemStack second = nonEmpty.get(1);
+        ItemStack drawer = nonEmpty.get(2);
+        ItemStack divider = nonEmpty.size() == 4 ? nonEmpty.get(3) : ItemStack.EMPTY;
+
+        if (!first.isEmpty() && !(first.getItem() instanceof BlockItem)) {
+            return null;
+        }
+        if (!second.isEmpty() && !(second.getItem() instanceof BlockItem)) {
+            return null;
+        }
+        if (!divider.isEmpty() && !(divider.getItem() instanceof BlockItem)) {
+            return null;
+        }
+
+        return new Ingredients(first, second, drawer, divider);
+    }
+
     @Override
     public boolean matches(CraftingInput inv, Level worldIn) {
-        if (inv.size() < 3)
+        Ingredients ingredients = getIngredients(inv);
+        if (ingredients == null) {
             return false;
-        return matches(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesSimpleCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesController(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2));
+        }
+
+        return matches(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer());
     }
 
     @Override
     public ItemStack assemble(CraftingInput inv, HolderLookup.Provider registryAccess) {
-        if (matches(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesSimpleCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesController(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2))) {
-            ItemStack drawer = inv.getItem(2);
-            ItemStack first = inv.getItem(0);
-            ItemStack second = inv.getItem(1);
-            ItemStack divider = inv.size() > 3 ? inv.getItem(3) : ItemStack.EMPTY;
+        Ingredients ingredients = getIngredients(inv);
+        if (ingredients == null) {
+            return ItemStack.EMPTY;
+        }
 
-            return FramedDrawerBlock.fill(first, second, drawer, divider);
+        if (matches(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer())) {
+            return FramedDrawerBlock.fill(ingredients.first(), ingredients.second(), ingredients.drawer(),
+                    ingredients.divider());
         }
 
         return ItemStack.EMPTY;
@@ -104,5 +141,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
     @Override
     public RecipeSerializer<?> getSerializer() {
         return SERIALIZER;
+    }
+
+    private record Ingredients(ItemStack first, ItemStack second, ItemStack drawer, ItemStack divider) {
     }
 }

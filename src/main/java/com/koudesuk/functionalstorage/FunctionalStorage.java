@@ -156,9 +156,9 @@ public class FunctionalStorage implements ModInitializer {
                                                 net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
                                                                 .getBlockEntity(pos);
                                                 if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.EnderDrawerTile enderTile) {
+                                                        heldItem.set(com.koudesuk.functionalstorage.registry.FSAttachments.ENDER_FREQUENCY,
+                                                                        enderTile.getFrequency());
                                                         if (!world.isClientSide()) {
-                                                                heldItem.set(com.koudesuk.functionalstorage.registry.FSAttachments.ENDER_FREQUENCY,
-                                                                                enderTile.getFrequency());
                                                                 player.displayClientMessage(
                                                                                 net.minecraft.network.chat.Component
                                                                                                 .translatable("linkingtool.ender.stored")

@@ -245,9 +245,11 @@ public class LinkingToolItem extends Item {
             TooltipFlag isAdvanced) {
         LinkingMode linkingMode = getLinkingMode(stack);
         ActionMode linkingAction = getActionMode(stack);
+        String frequency = stack.get(FSAttachments.ENDER_FREQUENCY);
 
-        if (stack.has(FSAttachments.ENDER_FREQUENCY)) {
-            MutableComponent text = Component.translatable("linkingtool.ender.frequency");
+        if (frequency != null && !frequency.isBlank()) {
+            MutableComponent text = Component.translatable("linkingtool.ender.frequency")
+                    .append(Component.literal(frequency).withStyle(ChatFormatting.DARK_AQUA));
             tooltip.add(text.withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.literal(""));
             tooltip.add(Component.literal(""));

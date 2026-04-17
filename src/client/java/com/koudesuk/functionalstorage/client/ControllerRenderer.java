@@ -164,40 +164,60 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
         VertexConsumer buffer = renderTypeBuffer.getBuffer(AREA_TYPE);
 
         // Front face (z1)
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x1, y1, z1,
+                x1, y2, z1,
+                x2, y2, z1,
+                x2, y1, z1);
 
         // Back face (z2)
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y1, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x1, y1, z2,
+                x2, y1, z2,
+                x2, y2, z2,
+                x1, y2, z2);
 
         // Bottom face (y1)
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y1, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x1, y1, z1,
+                x2, y1, z1,
+                x2, y1, z2,
+                x1, y1, z2);
 
         // Top face (y2)
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x1, y2, z1,
+                x1, y2, z2,
+                x2, y2, z2,
+                x2, y2, z1);
 
         // Left face (x1)
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y1, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x1, y2, z1, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x1, y1, z1,
+                x1, y1, z2,
+                x1, y2, z2,
+                x1, y2, z1);
 
         // Right face (x2)
-        addTransformedVertexSimple(buffer, matrix, x2, y1, z1, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+        addFace(buffer, matrix, red, green, blue, alpha,
+                x2, y1, z1,
+                x2, y2, z1,
+                x2, y2, z2,
+                x2, y1, z2);
+    }
+
+    private static void addFace(VertexConsumer buffer, Matrix4f matrix, float red, float green, float blue,
+            float alpha, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3,
+            float x4, float y4, float z4) {
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
         addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
-        addTransformedVertexSimple(buffer, matrix, x2, y2, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x3, y3, z3, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x4, y4, z4, red, green, blue, alpha);
+
+        addTransformedVertexSimple(buffer, matrix, x1, y1, z1, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x4, y4, z4, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x3, y3, z3, red, green, blue, alpha);
+        addTransformedVertexSimple(buffer, matrix, x2, y2, z2, red, green, blue, alpha);
     }
 
     /**

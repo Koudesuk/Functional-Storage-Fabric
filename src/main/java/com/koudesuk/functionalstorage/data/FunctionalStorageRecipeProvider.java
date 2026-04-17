@@ -9,6 +9,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
+import net.minecraft.data.recipes.SpecialRecipeBuilder;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -24,11 +25,15 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
         // convention tag JSON files
         // c:stones includes stone, granite, diorite, andesite, deepslate, tuff,
         // calcite, etc.
-        // c:wooden_chests includes chest and trapped_chest (excludes ender_chest)
+        // c:chests/wooden includes chest and trapped_chest (excludes ender chest)
         private static final TagKey<Item> STONES = TagKey.create(Registries.ITEM,
                         ResourceLocation.fromNamespaceAndPath("c", "stones"));
         private static final TagKey<Item> WOODEN_CHESTS = TagKey.create(Registries.ITEM,
-                        ResourceLocation.fromNamespaceAndPath("c", "wooden_chests"));
+                        ResourceLocation.fromNamespaceAndPath("c", "chests/wooden"));
+        private static final TagKey<Item> IRON_NUGGETS = TagKey.create(Registries.ITEM,
+                        ResourceLocation.fromNamespaceAndPath("c", "nuggets/iron"));
+        private static final TagKey<Item> IRON_INGOTS = TagKey.create(Registries.ITEM,
+                        ResourceLocation.fromNamespaceAndPath("c", "ingots/iron"));
 
         public FunctionalStorageRecipeProvider(FabricDataOutput output,
                         CompletableFuture<HolderLookup.Provider> registriesFuture) {
@@ -39,6 +44,9 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
         public void buildRecipes(RecipeOutput exporter) {
                 TagKey<Item> DRAWER = TagKey.create(Registries.ITEM,
                                 ResourceLocation.fromNamespaceAndPath("functionalstorage", "drawer"));
+
+                SpecialRecipeBuilder.special(com.koudesuk.functionalstorage.recipe.FramedDrawerRecipe::new)
+                                .save(exporter, ResourceLocation.fromNamespaceAndPath("functionalstorage", "framed"));
 
                 // ===== UPGRADES =====
 
@@ -247,29 +255,29 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                                 .unlockedBy("has_bucket", has(Items.BUCKET))
                                 .save(exporter);
 
-                // ===== FRAMED DRAWERS (uses WOODEN_CHESTS tag) =====
+                // ===== FRAMED DRAWERS =====
                 for (net.minecraft.world.level.block.Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
                         if (block instanceof com.koudesuk.functionalstorage.block.FramedDrawerBlock framedDrawerBlock) {
                                 if (framedDrawerBlock.getType() == com.koudesuk.functionalstorage.util.DrawerType.X_1) {
-                                        ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, block)
+                                        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, block)
                                                         .pattern("PPP").pattern("PCP").pattern("PPP")
-                                                        .define('P', Items.IRON_NUGGET)
+                                                        .define('P', IRON_NUGGETS)
                                                         .define('C', WOODEN_CHESTS)
                                                         .unlockedBy("has_iron_nugget", has(Items.IRON_NUGGET))
                                                         .save(exporter);
                                 } else if (framedDrawerBlock
                                                 .getType() == com.koudesuk.functionalstorage.util.DrawerType.X_2) {
-                                        ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, block, 2)
+                                        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, block, 2)
                                                         .pattern("PCP").pattern("PPP").pattern("PCP")
-                                                        .define('P', Items.IRON_NUGGET)
+                                                        .define('P', IRON_NUGGETS)
                                                         .define('C', WOODEN_CHESTS)
                                                         .unlockedBy("has_iron_nugget", has(Items.IRON_NUGGET))
                                                         .save(exporter);
                                 } else if (framedDrawerBlock
                                                 .getType() == com.koudesuk.functionalstorage.util.DrawerType.X_4) {
-                                        ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, block, 4)
+                                        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, block, 4)
                                                         .pattern("CPC").pattern("PPP").pattern("CPC")
-                                                        .define('P', Items.IRON_NUGGET)
+                                                        .define('P', IRON_NUGGETS)
                                                         .define('C', WOODEN_CHESTS)
                                                         .unlockedBy("has_iron_nugget", has(Items.IRON_NUGGET))
                                                         .save(exporter);
@@ -297,26 +305,25 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                                 .unlockedBy("has_drawer", has(DRAWER))
                                 .save(exporter);
 
-                // ===== FRAMED COMPACTING DRAWER (pattern: SSS/PDP/SIS with iron nugget) =====
-                ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER)
+                // ===== FRAMED COMPACTING DRAWER =====
+                ShapedRecipeBuilder.shaped(RecipeCategory.MISC, FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER)
                                 .pattern("SSS").pattern("PDP").pattern("SIS")
                                 .define('S', Items.IRON_NUGGET)
                                 .define('P', Blocks.PISTON)
                                 .define('D', DRAWER)
-                                .define('I', Items.IRON_INGOT)
+                                .define('I', IRON_INGOTS)
                                 .unlockedBy("has_drawer", has(DRAWER))
                                 .save(exporter);
 
-                // ===== FRAMED SIMPLE COMPACTING DRAWER (pattern: SSS/SDP/SIS with iron nugget)
-                // =====
+                // ===== FRAMED SIMPLE COMPACTING DRAWER =====
                 ShapedRecipeBuilder
-                                .shaped(RecipeCategory.DECORATIONS,
+                                .shaped(RecipeCategory.MISC,
                                                 FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER)
                                 .pattern("SSS").pattern("SDP").pattern("SIS")
-                                .define('S', Items.IRON_NUGGET)
+                                .define('S', IRON_NUGGETS)
                                 .define('P', Blocks.PISTON)
                                 .define('D', DRAWER)
-                                .define('I', Items.IRON_INGOT)
+                                .define('I', IRON_INGOTS)
                                 .unlockedBy("has_drawer", has(DRAWER))
                                 .save(exporter);
 
@@ -341,9 +348,9 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
                                 .save(exporter);
 
                 // ===== FRAMED STORAGE CONTROLLER =====
-                ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER)
+                ShapedRecipeBuilder.shaped(RecipeCategory.MISC, FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER)
                                 .pattern("IBI").pattern("CDC").pattern("IBI")
-                                .define('I', Items.IRON_NUGGET)
+                                .define('I', IRON_NUGGETS)
                                 .define('B', Blocks.QUARTZ_BLOCK)
                                 .define('C', DRAWER)
                                 .define('D', Items.COMPARATOR)
@@ -352,9 +359,9 @@ public class FunctionalStorageRecipeProvider extends FabricRecipeProvider {
 
                 // ===== FRAMED CONTROLLER EXTENSION (Access Point) =====
                 ShapedRecipeBuilder
-                                .shaped(RecipeCategory.DECORATIONS, FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION)
+                                .shaped(RecipeCategory.MISC, FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION)
                                 .pattern("IBI").pattern("CDC").pattern("IBI")
-                                .define('I', Items.IRON_NUGGET)
+                                .define('I', IRON_NUGGETS)
                                 .define('B', Blocks.QUARTZ_BLOCK)
                                 .define('C', DRAWER)
                                 .define('D', Items.REPEATER)

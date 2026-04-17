@@ -23,6 +23,8 @@ public class DrawerBlockItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+
         // Check standard BlockEntity data component first
         if (stack.has(DataComponents.BLOCK_ENTITY_DATA)) {
             CustomData customData = stack.get(DataComponents.BLOCK_ENTITY_DATA);

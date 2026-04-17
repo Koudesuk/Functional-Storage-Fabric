@@ -298,20 +298,20 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                                 float y2 = (float) bounds.maxY;
                                 float z1 = (float) bounds.minZ;
                                 float z2 = (float) bounds.maxZ;
-                                double bx1 = bounds.minX * 16;
-                                double bx2 = bounds.maxX * 16;
-                                double by1 = bounds.minY * 16;
-                                double by2 = bounds.maxY * 16;
-                                double bz1 = bounds.minZ * 16;
-                                double bz2 = bounds.maxZ * 16;
+                                float bx1 = (float) bounds.minX;
+                                float bx2 = (float) bounds.maxX;
+                                float by1 = (float) bounds.minY;
+                                float by2 = (float) bounds.maxY;
+                                float bz1 = (float) bounds.minZ;
+                                float bz2 = (float) bounds.maxZ;
 
                                 Matrix4f posMat = matrixStack.last().pose();
 
                                 // TOP face
-                                float u1 = sprite.getU((float) bx1);
-                                float u2 = sprite.getU((float) bx2);
-                                float v1 = sprite.getV((float) bz1);
-                                float v2 = sprite.getV((float) bz2);
+                                float u1 = sprite.getU(bx1);
+                                float u2 = sprite.getU(bx2);
+                                float v1 = sprite.getV(bz1);
+                                float v2 = sprite.getV(bz2);
                                 addTransformedVertex(builder, posMat, x1, y2, z2, red, green, blue, alpha, u1, v2,
                                                 combinedOverlay, combinedLight, 0f, 1f, 0f);
                                 addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,
@@ -322,10 +322,10 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                                                 combinedOverlay, combinedLight, 0f, 1f, 0f);
 
                                 // FRONT face
-                                u1 = sprite.getU((float) bx1);
-                                u2 = sprite.getU((float) bx2);
-                                v1 = sprite.getV((float) by1);
-                                v2 = sprite.getV((float) by2);
+                                u1 = sprite.getU(bx1);
+                                u2 = sprite.getU(bx2);
+                                v1 = sprite.getV(by1);
+                                v2 = sprite.getV(by2);
                                 addTransformedVertex(builder, posMat, x2, y1, z2, red, green, blue, alpha, u2, v1,
                                                 combinedOverlay, combinedLight, 0f, 0f, 1f);
                                 addTransformedVertex(builder, posMat, x2, y2, z2, red, green, blue, alpha, u2, v2,

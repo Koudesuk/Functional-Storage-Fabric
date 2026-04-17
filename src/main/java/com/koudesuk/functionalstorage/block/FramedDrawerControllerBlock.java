@@ -5,8 +5,11 @@ import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -90,5 +93,17 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
             }
         }
         return new ItemStack(this);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
+            TooltipFlag flag) {
+        String useText = Component.translatable("frameddrawer.use").getString();
+        for (String line : useText.split("\n")) {
+            if (!line.trim().isEmpty()) {
+                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+        }
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

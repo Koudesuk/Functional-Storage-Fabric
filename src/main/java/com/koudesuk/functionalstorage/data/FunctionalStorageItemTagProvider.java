@@ -19,7 +19,7 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
     public static final TagKey<Item> STONES = TagKey.create(Registries.ITEM,
             ResourceLocation.parse("c:stones"));
     public static final TagKey<Item> WOODEN_CHESTS = TagKey.create(Registries.ITEM,
-            ResourceLocation.parse("c:wooden_chests"));
+            ResourceLocation.parse("c:chests/wooden"));
 
     public FunctionalStorageItemTagProvider(FabricDataOutput output,
             CompletableFuture<HolderLookup.Provider> registriesFuture) {
@@ -36,6 +36,18 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
             for (Block block : blocks) {
                 drawerBuilder.add(block.asItem());
             }
+        }
+        drawerBuilder
+                .add(FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_1.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_2.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_4.asItem());
+
+        for (Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
+            drawerBuilder.add(block.asItem());
         }
 
         // === C:STONES TAG ===
@@ -54,8 +66,8 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
                 .add(Items.TUFF)
                 .add(Items.CALCITE);
 
-        // === C:WOODEN_CHESTS TAG ===
-        // Populate c:wooden_chests with wooden chests only (excludes ender_chest)
+        // === C:CHESTS/WOODEN TAG ===
+        // Populate c:chests/wooden with wooden chests only (excludes ender chest)
         // This matches Forge Tags.Items.CHESTS_WOODEN
         getOrCreateTagBuilder(WOODEN_CHESTS)
                 .add(Items.CHEST)

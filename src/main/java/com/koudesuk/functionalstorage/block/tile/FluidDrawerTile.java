@@ -5,12 +5,18 @@ import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.DrawerType;
+import net.fabricmc.fabric.api.transfer.v1.context.ContainerItemContext;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Inventory;
@@ -133,9 +139,12 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
             // with ANY fluid)
             Storage<FluidVariant> slotStorage = handler.getSlotStorage(slot);
             if (slotStorage != null) {
+                FluidVariant beforeResource = handler.getResource(slot);
+                long beforeAmount = handler.getAmount(slot);
                 boolean transferred = net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorageUtil
                         .interactWithFluidStorage(slotStorage, player, hand);
                 if (transferred) {
+                    playTransferSound(slot, player, hand, beforeResource, beforeAmount);
                     return InteractionResult.SUCCESS;
                 }
             }
@@ -156,8 +165,12 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
             // For extraction we need fill behavior (drawer -> bucket)
             Storage<FluidVariant> slotStorage = handler.getSlotStorage(slot);
             if (slotStorage != null) {
-                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorageUtil
-                        .interactWithFluidStorage(slotStorage, player, InteractionHand.MAIN_HAND);
+                FluidVariant beforeResource = handler.getResource(slot);
+                long beforeAmount = handler.getAmount(slot);
+                if (net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorageUtil
+                        .interactWithFluidStorage(slotStorage, player, InteractionHand.MAIN_HAND)) {
+                    playTransferSound(slot, player, InteractionHand.MAIN_HAND, beforeResource, beforeAmount);
+                }
             }
         }
     }
@@ -188,6 +201,60 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
 
     public DrawerType getDrawerType() {
         return type;
+    }
+
+    private void playTransferSound(int slot, Player player, InteractionHand hand, FluidVariant beforeResource,
+            long beforeAmount) {
+        if (level == null || level.isClientSide || slot < 0) {
+            return;
+        }
+
+        FluidVariant afterResource = handler.getResource(slot);
+        long afterAmount = handler.getAmount(slot);
+
+        if (afterAmount > beforeAmount) {
+            playFluidSound(afterResource.isBlank() ? beforeResource : afterResource, true);
+            return;
+        }
+        if (afterAmount < beforeAmount) {
+            playFluidSound(beforeResource.isBlank() ? afterResource : beforeResource, false);
+            return;
+        }
+
+        FluidVariant heldFluid = getHeldFluid(player, hand);
+        if (!beforeResource.isBlank()) {
+            playFluidSound(beforeResource, false);
+        } else if (!afterResource.isBlank()) {
+            playFluidSound(afterResource, true);
+        } else if (!heldFluid.isBlank()) {
+            playFluidSound(heldFluid, true);
+        }
+    }
+
+    private void playFluidSound(FluidVariant fluid, boolean storingIntoDrawer) {
+        if (level == null || fluid.isBlank()) {
+            return;
+        }
+
+        SoundEvent sound = storingIntoDrawer ? FluidVariantAttributes.getEmptySound(fluid)
+                : FluidVariantAttributes.getFillSound(fluid);
+        level.playSound(null, worldPosition, sound, SoundSource.BLOCKS, 1.0f, 1.0f);
+    }
+
+    private FluidVariant getHeldFluid(Player player, InteractionHand hand) {
+        ContainerItemContext context = ContainerItemContext.ofPlayerHand(player, hand);
+        Storage<FluidVariant> storage = context.find(FluidStorage.ITEM);
+        if (storage == null) {
+            return FluidVariant.blank();
+        }
+
+        for (StorageView<FluidVariant> view : storage) {
+            if (!view.isResourceBlank() && view.getAmount() > 0) {
+                return view.getResource();
+            }
+        }
+
+        return FluidVariant.blank();
     }
 
     @Override

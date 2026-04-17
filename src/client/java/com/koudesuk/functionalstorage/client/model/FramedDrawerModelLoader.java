@@ -61,12 +61,14 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
 
                         ImmutableMap.Builder<String, UnbakedModel> children = ImmutableMap.builder();
                         List<String> itemPasses = new ArrayList<>();
+                        List<String> childKeys = new ArrayList<>();
 
                         if (json.has("parent")) {
                             // "parent": "..." is syntactic sugar for a child named "base"
                             String parentJson = "{\"parent\":\"" + json.get("parent").getAsString() + "\"}";
                             children.put("base",
                                     BlockModel.fromString(parentJson));
+                            childKeys.add("base");
                             itemPasses.add("base");
                         }
 
@@ -79,11 +81,13 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
                                     String childJson = "{\"parent\":\"" + value.getAsString() + "\"}";
                                     children.put(entry.getKey(),
                                             BlockModel.fromString(childJson));
+                                    childKeys.add(entry.getKey());
                                     itemPasses.add(entry.getKey());
                                 } else if (value.isJsonObject()) {
                                     // Full model definition (parent + textures) -> pass raw JSON string
                                     children.put(entry.getKey(),
                                             BlockModel.fromString(value.toString()));
+                                    childKeys.add(entry.getKey());
                                     itemPasses.add(entry.getKey());
                                 }
                             }
@@ -96,12 +100,19 @@ public class FramedDrawerModelLoader implements ModelLoadingPlugin {
                             String particleJson = "{\"parent\":\"minecraft:block/block\",\"textures\":{\"particle\":\""
                                     + particleTex + "\"}}";
                             children.put("particle", BlockModel.fromString(particleJson));
+                            childKeys.add("particle");
                         }
 
                         if (json.has("item_render_order")) {
                             itemPasses.clear();
                             for (JsonElement e : json.getAsJsonArray("item_render_order")) {
                                 itemPasses.add(e.getAsString());
+                            }
+                        }
+
+                        for (String childKey : childKeys) {
+                            if (!itemPasses.contains(childKey) && !childKey.equals("particle")) {
+                                itemPasses.add(childKey);
                             }
                         }
 
