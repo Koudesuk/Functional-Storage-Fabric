@@ -7,6 +7,10 @@ This is an unofficial Fabric port of the [Functional Storage](https://github.com
 *   **Original Author:** [Buuz135](https://github.com/Buuz135)
 *   **Fabric Port Maintainer:** [Koudesuk](https://github.com/Koudesuk)
 
+## Support
+
+If you find this Fabric port useful, you can support me on [Ko-fi](https://ko-fi.com/koudesuk).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

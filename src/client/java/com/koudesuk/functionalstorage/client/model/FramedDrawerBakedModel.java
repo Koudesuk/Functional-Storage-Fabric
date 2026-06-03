@@ -2,6 +2,9 @@ package com.koudesuk.functionalstorage.client.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import net.fabricmc.fabric.api.renderer.v1.Renderer;
+import net.fabricmc.fabric.api.renderer.v1.RendererAccess;
+import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView;
@@ -39,6 +42,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
     private final ItemOverrides overrides;
     private final ImmutableMap<String, BakedModel> children;
     private final ImmutableList<String> itemPassKeys;
+    private static volatile RenderMaterial defaultMaterial;
 
     public FramedDrawerBakedModel(boolean isGui3d, boolean useBlockLight, boolean useAmbientOcclusion,
             TextureAtlasSprite particle, ItemTransforms transforms,
@@ -200,7 +204,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                     }
                 }
 
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
 
                 if (newSprite != originalSprite) {
                     emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
@@ -264,7 +268,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                     newSprite = frameModel.getParticleIcon();
                 }
 
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
 
                 if (newSprite != originalSprite) {
                     emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
@@ -364,7 +368,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                     }
                 }
 
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
 
                 if (newSprite != originalSprite) {
                     emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
@@ -414,7 +418,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                     newSprite = frameModel.getParticleIcon();
                 }
 
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
 
                 if (newSprite != originalSprite) {
                     emitter.spriteBake(newSprite, MutableQuadView.BAKE_LOCK_UV);
@@ -533,7 +537,7 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                 Direction.WEST, Direction.EAST }) {
             List<BakedQuad> quads = model.getQuads(state, dir, rand);
             for (BakedQuad quad : quads) {
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
                 emitter.emit();
             }
         }
@@ -551,10 +555,30 @@ public class FramedDrawerBakedModel implements BakedModel, FabricBakedModel {
                 Direction.WEST, Direction.EAST }) {
             List<BakedQuad> quads = model.getQuads(null, dir, rand);
             for (BakedQuad quad : quads) {
-                emitter.fromVanilla(quad, null, dir);
+                emitVanillaQuad(emitter, quad, dir);
                 emitter.emit();
             }
         }
+    }
+
+    private static void emitVanillaQuad(QuadEmitter emitter, BakedQuad quad, @Nullable Direction cullFace) {
+        emitter.fromVanilla(quad, getDefaultMaterial(), cullFace);
+    }
+
+    private static RenderMaterial getDefaultMaterial() {
+        RenderMaterial material = defaultMaterial;
+        if (material != null) {
+            return material;
+        }
+
+        Renderer renderer = RendererAccess.INSTANCE.getRenderer();
+        if (renderer == null) {
+            throw new IllegalStateException("Fabric Renderer API is not available for framed drawer model rendering");
+        }
+
+        material = renderer.materialFinder().find();
+        defaultMaterial = material;
+        return material;
     }
 
     @Override
