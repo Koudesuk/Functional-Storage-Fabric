@@ -2,18 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": {
-      "item": "minecraft:quartz_block"
-    },
-    "C": {
-      "tag": "functionalstorage:drawer"
-    },
-    "D": {
-      "item": "minecraft:repeater"
-    },
-    "I": {
-      "tag": "c:nuggets/iron"
-    }
+    "B": "minecraft:quartz_block",
+    "C": "#functionalstorage:drawer",
+    "D": "minecraft:repeater",
+    "I": "#c:nuggets/iron"
   },
   "pattern": [
     "IBI",
@@ -21,7 +13,6 @@
     "IBI"
   ],
   "result": {
-    "count": 1,
     "id": "functionalstorage:framed_controller_extension"
   }
 }

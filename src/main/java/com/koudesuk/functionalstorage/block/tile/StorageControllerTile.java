@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class StorageControllerTile extends ItemControllableDrawerTile<StorageControllerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
+        implements net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider<BlockPosPayload> {
 
     protected static HashMap<UUID, Long> INTERACTION_LOGGER = new HashMap<>();
 
@@ -64,7 +64,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         super.setLevel(level);
         this.connectedDrawers.setLevel(level);
         if (level != null) {
-            if (level.isClientSide) {
+            if (level.isClientSide()) {
                 this.connectedDrawers.rebuildShapes();
             }
         }
@@ -81,7 +81,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StorageControllerTile blockEntity) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
 
         if (blockEntity.connectedDrawers.getConnectedDrawers()
@@ -104,17 +104,16 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                 || stack.getItem() instanceof LinkingToolItem)
             return InteractionResult.PASS;
 
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             // Open GUI when sneaking
             if (playerIn.isCrouching()) {
                 openGui(playerIn);
                 return InteractionResult.SUCCESS;
             } else {
                 // Display "Sneak to open GUI" message
-                playerIn.displayClientMessage(
+                playerIn.sendOverlayMessage(
                         net.minecraft.network.chat.Component.translatable("gui.functionalstorage.open_gui")
-                                .withStyle(net.minecraft.ChatFormatting.GRAY),
-                        true);
+                                .withStyle(net.minecraft.ChatFormatting.GRAY));
             }
 
             long now = System.currentTimeMillis();
@@ -367,7 +366,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     public void onUpgradeChanged() {
         this.connectedDrawers.rebuild();
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
@@ -433,24 +432,22 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         }
         this.connectedDrawers.rebuild();
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
         return didWork;
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("ConnectedDrawers")) {
-            connectedDrawers.deserializeNBT(tag.getCompound("ConnectedDrawers"));
-        }
+    public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("ConnectedDrawers", CompoundTag.CODEC).ifPresent(connectedDrawers::deserializeNBT);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("ConnectedDrawers", connectedDrawers.serializeNBT());
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        output.store("ConnectedDrawers", CompoundTag.CODEC, connectedDrawers.serializeNBT());
     }
 
     public ControllerInventoryHandler getInventoryHandler() {

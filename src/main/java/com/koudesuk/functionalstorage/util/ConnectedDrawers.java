@@ -118,11 +118,11 @@ public class ConnectedDrawers {
 
     public void deserializeNBT(CompoundTag nbt) {
         this.connectedDrawers = new ArrayList<>();
-        for (String allKey : nbt.getAllKeys()) {
-            connectedDrawers.add(nbt.getLong(allKey));
+        for (String allKey : nbt.keySet()) {
+            connectedDrawers.add(nbt.getLongOr(allKey, 0L));
         }
         rebuild();
-        if (controllerTile.getLevel() != null && controllerTile.getLevel().isClientSide) {
+        if (controllerTile.getLevel() != null && controllerTile.getLevel().isClientSide()) {
             rebuildShapes();
         }
     }

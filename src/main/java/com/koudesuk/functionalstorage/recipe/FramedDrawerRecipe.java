@@ -5,7 +5,9 @@ import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
-import net.minecraft.core.HolderLookup;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
@@ -17,21 +19,19 @@ import java.util.List;
 
 public class FramedDrawerRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<FramedDrawerRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<>(
-            FramedDrawerRecipe::new);
+    public static final FramedDrawerRecipe INSTANCE = new FramedDrawerRecipe();
+    public static final MapCodec<FramedDrawerRecipe> MAP_CODEC = MapCodec.unit(INSTANCE);
+    public static final StreamCodec<RegistryFriendlyByteBuf, FramedDrawerRecipe> STREAM_CODEC = StreamCodec
+            .unit(INSTANCE);
+    public static final RecipeSerializer<FramedDrawerRecipe> SERIALIZER = new RecipeSerializer<>(MAP_CODEC,
+            STREAM_CODEC);
 
-    public FramedDrawerRecipe(CraftingBookCategory category) {
-        super(category);
+    public FramedDrawerRecipe() {
     }
 
     @Override
     public CraftingBookCategory category() {
         return CraftingBookCategory.MISC; // Default category
-    }
-
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return ItemStack.EMPTY; // Dynamic recipe
     }
 
     public static boolean matches(ItemStack first, ItemStack second, ItemStack drawer) {
@@ -115,7 +115,7 @@ public class FramedDrawerRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput inv, HolderLookup.Provider registryAccess) {
+    public ItemStack assemble(CraftingInput inv) {
         Ingredients ingredients = getIngredients(inv);
         if (ingredients == null) {
             return ItemStack.EMPTY;
@@ -133,13 +133,12 @@ public class FramedDrawerRecipe extends CustomRecipe {
         return ItemStack.EMPTY;
     }
 
-    @Override
     public boolean canCraftInDimensions(int width, int height) {
         return width * height >= 2;
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<FramedDrawerRecipe> getSerializer() {
         return SERIALIZER;
     }
 

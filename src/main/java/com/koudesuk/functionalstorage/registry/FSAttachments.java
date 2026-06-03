@@ -8,7 +8,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.function.UnaryOperator;
 
@@ -68,7 +68,7 @@ public class FSAttachments {
                         UnaryOperator<DataComponentType.Builder<T>> builder) {
                 return Registry.register(
                                 BuiltInRegistries.DATA_COMPONENT_TYPE,
-                                ResourceLocation.parse(FunctionalStorage.MOD_ID + ":" + name),
+                                Identifier.parse(FunctionalStorage.MOD_ID + ":" + name),
                                 builder.apply(DataComponentType.builder()).build());
         }
 

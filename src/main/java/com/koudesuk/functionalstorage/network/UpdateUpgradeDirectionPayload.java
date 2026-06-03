@@ -4,11 +4,11 @@ import com.koudesuk.functionalstorage.FunctionalStorage;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public record UpdateUpgradeDirectionPayload(int slot, int direction) implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<UpdateUpgradeDirectionPayload> ID = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "update_upgrade_direction"));
+            Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "update_upgrade_direction"));
 
     public static final StreamCodec<FriendlyByteBuf, UpdateUpgradeDirectionPayload> STREAM_CODEC = StreamCodec
             .composite(

@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
+        implements net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider<BlockPosPayload> {
 
     private final DrawerType type;
     private final IWoodType woodType;
@@ -40,7 +40,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             @Override
             public void onChange() {
                 DrawerTile.this.setChanged();
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
             }
@@ -78,17 +78,17 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"), registries);
-        }
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("Handler", CompoundTag.CODEC).ifPresent(tag -> handler.deserializeNBT(tag, input.lookup()));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("Handler", handler.serializeNBT(registries));
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        if (this.level != null) {
+            output.store("Handler", CompoundTag.CODEC, handler.serializeNBT(this.level.registryAccess()));
+        }
     }
 
     private java.util.UUID lastClickUUID;
@@ -113,7 +113,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
                         net.minecraft.world.item.ItemStack temp = stack.split(1);
                         container.setItem(i, temp);
                         this.setChanged();
-                        if (level != null && !level.isClientSide) {
+                        if (level != null && !level.isClientSide()) {
                             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                         }
                         return net.minecraft.world.InteractionResult.SUCCESS;
@@ -126,7 +126,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
                         net.minecraft.world.item.ItemStack temp = stack.split(1);
                         container.setItem(i, temp);
                         this.setChanged();
-                        if (level != null && !level.isClientSide) {
+                        if (level != null && !level.isClientSide()) {
                             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                         }
                         return net.minecraft.world.InteractionResult.SUCCESS;
@@ -236,7 +236,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             }
         } else if (slot == -1 || player.isShiftKeyDown()) {
             // Open GUI
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 player.openMenu(this);
             }
             return net.minecraft.world.InteractionResult.SUCCESS;

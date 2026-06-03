@@ -1,8 +1,9 @@
 package com.koudesuk.functionalstorage.client.model;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.HolderLookup;
 
@@ -25,26 +26,34 @@ public class FramedDrawerModelData {
         return design;
     }
 
-    public CompoundTag serializeNBT(HolderLookup.Provider registries) {
+    public CompoundTag serializeNBT() {
         CompoundTag compoundTag = new CompoundTag();
         design.forEach((s, item) -> compoundTag.putString(s, BuiltInRegistries.ITEM.getKey(item).toString()));
         return compoundTag;
     }
 
+    public CompoundTag serializeNBT(HolderLookup.Provider registries) {
+        return serializeNBT();
+    }
+
     public void deserializeNBT(CompoundTag nbt) {
         design = new HashMap<>();
-        for (String allKey : nbt.getAllKeys()) {
-            design.put(allKey, BuiltInRegistries.ITEM.get(ResourceLocation.parse(nbt.getString(allKey))));
+        for (String allKey : nbt.keySet()) {
+            design.put(allKey, itemFromId(nbt.getStringOr(allKey, "minecraft:air")));
         }
         this.generateCode();
     }
 
     public static FramedDrawerModelData fromNBT(CompoundTag nbt) {
         HashMap<String, Item> design = new HashMap<>();
-        for (String allKey : nbt.getAllKeys()) {
-            design.put(allKey, BuiltInRegistries.ITEM.get(ResourceLocation.parse(nbt.getString(allKey))));
+        for (String allKey : nbt.keySet()) {
+            design.put(allKey, itemFromId(nbt.getStringOr(allKey, "minecraft:air")));
         }
         return new FramedDrawerModelData(design);
+    }
+
+    private static Item itemFromId(String id) {
+        return BuiltInRegistries.ITEM.get(Identifier.parse(id)).map(holder -> holder.value()).orElse(Items.AIR);
     }
 
     private void generateCode() {

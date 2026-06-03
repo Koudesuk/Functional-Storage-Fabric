@@ -15,7 +15,7 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.base.FullItemFluidStorage;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
@@ -35,9 +35,9 @@ public class FunctionalStorage implements ModInitializer {
                 LOGGER.info("Functional Storage initializing...");
 
                 // Register milk fluid (equivalent to ForgeMod.enableMilkFluid())
-                Registry.register(BuiltInRegistries.FLUID, ResourceLocation.fromNamespaceAndPath(MOD_ID, "milk"), MILK);
+                Registry.register(BuiltInRegistries.FLUID, Identifier.fromNamespaceAndPath(MOD_ID, "milk"), MILK);
                 Registry.register(BuiltInRegistries.FLUID,
-                                ResourceLocation.fromNamespaceAndPath(MOD_ID, "milk_flowing"), MILK_FLOWING);
+                                Identifier.fromNamespaceAndPath(MOD_ID, "milk_flowing"), MILK_FLOWING);
 
                 // Register milk fluid attribute handler for proper display name
                 FluidVariantAttributes.register(MILK, new FluidVariantAttributeHandler() {
@@ -70,14 +70,14 @@ public class FunctionalStorage implements ModInitializer {
 
                 LOGGER.info("Registered fluid handlers for bucket interactions");
 
-                FunctionalStorageBlocks.register();
-                com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
                 // Register Data Component Types first
                 com.koudesuk.functionalstorage.registry.FSAttachments.register();
 
+                FunctionalStorageBlocks.register();
+                FunctionalStorageItems.register();
+                com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
                 com.koudesuk.functionalstorage.registry.FunctionalStorageRecipes.register();
                 FunctionalStorageBlockEntities.register();
-                FunctionalStorageItems.register();
                 com.koudesuk.functionalstorage.registry.FunctionalStorageMenus.register();
 
                 net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
@@ -159,14 +159,13 @@ public class FunctionalStorage implements ModInitializer {
                                                         heldItem.set(com.koudesuk.functionalstorage.registry.FSAttachments.ENDER_FREQUENCY,
                                                                         enderTile.getFrequency());
                                                         if (!world.isClientSide()) {
-                                                                player.displayClientMessage(
+                                                                player.sendOverlayMessage(
                                                                                 net.minecraft.network.chat.Component
                                                                                                 .translatable("linkingtool.ender.stored")
                                                                                                 .setStyle(net.minecraft.network.chat.Style.EMPTY
                                                                                                                 .withColor(
                                                                                                                                 com.koudesuk.functionalstorage.item.LinkingToolItem.LinkingMode.SINGLE
-                                                                                                                                                .getColor())),
-                                                                                true);
+                                                                                                                                                .getColor())));
                                                         }
                                                         return net.minecraft.world.InteractionResult.SUCCESS;
                                                 }

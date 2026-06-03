@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
+        implements net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider<BlockPosPayload> {
 
     private final DrawerType type;
     private final FluidInventoryHandler handler;
@@ -41,7 +41,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
             @Override
             public void onChange() {
                 FluidDrawerTile.this.setChanged();
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
             }
@@ -74,7 +74,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, FluidDrawerTile tile) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
 
         // Redstone update - check every 20 ticks like original Forge version
@@ -109,17 +109,17 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"), registries);
-        }
+    public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("Handler", CompoundTag.CODEC).ifPresent(tag -> handler.deserializeNBT(tag, input.lookup()));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("Handler", handler.serializeNBT(registries));
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        if (this.level != null) {
+            output.store("Handler", CompoundTag.CODEC, handler.serializeNBT(this.level.registryAccess()));
+        }
     }
 
     @Override
@@ -150,7 +150,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
             }
             return InteractionResult.SUCCESS;
         } else if (slot == -1 || player.isShiftKeyDown()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 player.openMenu(this);
             }
             return InteractionResult.SUCCESS;
@@ -205,7 +205,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
 
     private void playTransferSound(int slot, Player player, InteractionHand hand, FluidVariant beforeResource,
             long beforeAmount) {
-        if (level == null || level.isClientSide || slot < 0) {
+        if (level == null || level.isClientSide() || slot < 0) {
             return;
         }
 
@@ -265,7 +265,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         if (locked) {
             handler.lockHandler();
         }
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }

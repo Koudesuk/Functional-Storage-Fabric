@@ -9,7 +9,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -22,14 +21,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 public class CompactingDrawerBlock extends Block implements EntityBlock {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
 
     public CompactingDrawerBlock(Properties properties) {
@@ -66,29 +65,24 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    public net.minecraft.world.InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
             BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (level.isClientSide)
-            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        if (level.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof CompactingDrawerTile tile) {
             InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
                     hit.getLocation().y,
                     hit.getLocation().z, getHit(state, pos, hit));
-            return switch (result) {
-                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
-                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
-                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
-                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            };
+            return result == net.minecraft.world.InteractionResult.PASS ? net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND : result;
         }
-        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof CompactingDrawerTile tile) {
@@ -101,7 +95,7 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
 
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof CompactingDrawerTile tile) {
@@ -113,20 +107,18 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof CompactingDrawerTile tile) {
-                if (tile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                    if (controller instanceof StorageControllerTile controllerTile) {
-                        controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
+            BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof CompactingDrawerTile tile) {
+            if (tile.getControllerPos() != null) {
+                BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
+                if (controller instanceof StorageControllerTile controllerTile) {
+                    controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
                 }
             }
         }
-        super.onRemove(state, level, pos, newState, isMoving);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
@@ -145,7 +137,7 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
                 if (tileData != null) {
                     tile.loadFromTag(tileData, level.registryAccess());
                     tile.setChanged();
-                    if (!level.isClientSide) {
+                    if (!level.isClientSide()) {
                         level.sendBlockUpdated(pos, state, state, 3);
                     }
                 }

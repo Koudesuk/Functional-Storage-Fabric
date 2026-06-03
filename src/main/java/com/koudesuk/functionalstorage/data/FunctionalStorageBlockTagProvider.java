@@ -1,43 +1,43 @@
 package com.koudesuk.functionalstorage.data;
 
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.concurrent.CompletableFuture;
 
-public class FunctionalStorageBlockTagProvider extends FabricTagProvider.BlockTagProvider {
-    public FunctionalStorageBlockTagProvider(FabricDataOutput output,
+public class FunctionalStorageBlockTagProvider extends FabricTagsProvider.BlockTagsProvider {
+    public FunctionalStorageBlockTagProvider(FabricPackOutput output,
             CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output, registriesFuture);
     }
 
     @Override
     protected void addTags(HolderLookup.Provider arg) {
-        FabricTagProvider<Block>.FabricTagBuilder drawerBuilder = getOrCreateTagBuilder(
+        var drawerBuilder = valueLookupBuilder(
                 net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK,
-                        ResourceLocation.fromNamespaceAndPath("functionalstorage", "drawer")));
+                        Identifier.fromNamespaceAndPath("functionalstorage", "drawer")));
 
         // Add wooden drawers to drawer tag and MINEABLE_WITH_AXE
         for (java.util.List<Block> blocks : FunctionalStorageBlocks.DRAWER_TYPES.values()) {
             for (Block block : blocks) {
                 drawerBuilder.add(block);
-                getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_AXE).add(block);
+                valueLookupBuilder(BlockTags.MINEABLE_WITH_AXE).add(block);
             }
         }
 
         // Add framed drawers to MINEABLE_WITH_AXE (they are wood-based)
         for (Block framedDrawer : FunctionalStorageBlocks.FRAMED_DRAWER) {
-            getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_AXE).add(framedDrawer);
+            valueLookupBuilder(BlockTags.MINEABLE_WITH_AXE).add(framedDrawer);
         }
 
         // Add pickaxe-mineable blocks (metal/stone-based) - matches Forge
         // implementation
-        getOrCreateTagBuilder(BlockTags.MINEABLE_WITH_PICKAXE)
+        valueLookupBuilder(BlockTags.MINEABLE_WITH_PICKAXE)
                 .add(FunctionalStorageBlocks.COMPACTING_DRAWER)
                 .add(FunctionalStorageBlocks.DRAWER_CONTROLLER)
                 .add(FunctionalStorageBlocks.ARMORY_CABINET)

@@ -170,11 +170,12 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
     }
 
     public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
-        for (String allKey : nbt.getCompound(BIG_FLUIDS).getAllKeys()) {
+        CompoundTag bigFluids = nbt.getCompoundOrEmpty(BIG_FLUIDS);
+        for (String allKey : bigFluids.keySet()) {
             int i = Integer.parseInt(allKey);
             if (i < this.slots.size()) {
-                CompoundTag slotTag = nbt.getCompound(BIG_FLUIDS).getCompound(allKey);
-                long amount = slotTag.getLong(AMOUNT);
+                CompoundTag slotTag = bigFluids.getCompoundOrEmpty(allKey);
+                long amount = slotTag.getLongOr(AMOUNT, 0L);
                 if (slotTag.contains(FLUID)) {
                     this.slots.get(i).variant = FluidVariant.CODEC.parse(NbtOps.INSTANCE, slotTag.get(FLUID)).result()
                             .orElse(FluidVariant.blank());

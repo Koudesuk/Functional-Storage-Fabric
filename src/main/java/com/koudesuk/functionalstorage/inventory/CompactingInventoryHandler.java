@@ -189,20 +189,22 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
     public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
         this.parent = ItemStack.CODEC
                 .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
-                        nbt.getCompound(PARENT))
+                        nbt.getCompoundOrEmpty(PARENT))
                 .result().orElse(ItemStack.EMPTY);
-        this.amount = nbt.getInt(AMOUNT);
-        for (String allKey : nbt.getCompound(BIG_ITEMS).getAllKeys()) {
+        this.amount = nbt.getIntOr(AMOUNT, 0);
+        CompoundTag bigItems = nbt.getCompoundOrEmpty(BIG_ITEMS);
+        for (String allKey : bigItems.keySet()) {
             int index = Integer.parseInt(allKey);
             if (index < this.resultList.size()) {
-                CompoundTag itemTag = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getCompound(STACK);
+                CompoundTag bigStackTag = bigItems.getCompoundOrEmpty(allKey);
+                CompoundTag itemTag = bigStackTag.getCompoundOrEmpty(STACK);
                 this.resultList.get(index)
                         .setResult(ItemStack.CODEC
                                 .parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE,
                                         registries), itemTag)
                                 .result().orElse(ItemStack.EMPTY));
                 this.resultList.get(index)
-                        .setNeeded(Math.max(1, nbt.getCompound(BIG_ITEMS).getCompound(allKey).getInt(AMOUNT)));
+                        .setNeeded(Math.max(1, bigStackTag.getIntOr(AMOUNT, 1)));
             }
         }
     }

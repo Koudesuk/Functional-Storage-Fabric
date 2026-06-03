@@ -1,11 +1,11 @@
 package com.koudesuk.functionalstorage.registry;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 
@@ -15,8 +15,8 @@ public class FunctionalStorageGroup {
 
         public static void register() {
                 TAB = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "main"),
-                                FabricItemGroup.builder()
+                                Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "main"),
+                                FabricCreativeModeTab.builder()
                                                 .icon(() -> new ItemStack(FunctionalStorageBlocks.DRAWER_CONTROLLER))
                                                 .title(Component.translatable("itemGroup.functionalstorage"))
                                                 .displayItems((displayContext, entries) -> {

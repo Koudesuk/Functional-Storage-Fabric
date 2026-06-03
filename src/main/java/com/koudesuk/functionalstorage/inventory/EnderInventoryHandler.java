@@ -31,8 +31,8 @@ public class EnderInventoryHandler extends BigInventoryHandler {
     @Override
     public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
         super.deserializeNBT(nbt, registries);
-        this.locked = nbt.getBoolean(NBT_LOCKED);
-        this.voidItems = nbt.getBoolean(NBT_VOID);
+        this.locked = nbt.getBooleanOr(NBT_LOCKED, false);
+        this.voidItems = nbt.getBooleanOr(NBT_VOID, false);
     }
 
     @Override

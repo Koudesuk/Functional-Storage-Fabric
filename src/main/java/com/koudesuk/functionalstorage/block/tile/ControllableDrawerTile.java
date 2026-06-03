@@ -9,7 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
@@ -19,6 +19,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>> extends BlockEntity {
 
@@ -112,7 +115,7 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
                 super.setChanged();
                 ControllableDrawerTile.this.onUpgradeChanged();
                 ControllableDrawerTile.this.setChanged();
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
             }
@@ -149,7 +152,7 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
                 super.setChanged();
                 ControllableDrawerTile.this.onUpgradeChanged();
                 ControllableDrawerTile.this.setChanged();
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                     // Notify neighbors that redstone signal might have changed (for Redstone
                     // Upgrade add/remove)
@@ -238,7 +241,7 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         this.setChanged();
 
         // Force sync to client - this is critical for front face icon update
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
 
             // Force update all open containers (for GUI capacity display)
@@ -352,15 +355,15 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         }
 
         public void deserializeNBT(CompoundTag nbt) {
-            for (String allKey : nbt.getAllKeys()) {
+            for (String allKey : nbt.keySet()) {
                 if (allKey.startsWith("Advanced: ")) {
                     this.advancedOptions.put(
                             ConfigurationToolItem.ConfigurationAction.valueOf(allKey.replace("Advanced: ", "")),
-                            nbt.getInt(allKey));
+                            nbt.getIntOr(allKey, 0));
                 } else {
                     try {
                         this.options.put(ConfigurationToolItem.ConfigurationAction.valueOf(allKey),
-                                nbt.getBoolean(allKey));
+                                nbt.getBooleanOr(allKey, true));
                     } catch (IllegalArgumentException e) {
                         // Ignore
                     }
@@ -385,48 +388,30 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
                     (this.drawerOptions.getAdvancedValue(action) + 1) % (action.getMax() + 1));
         }
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
         this.storageUpgrades.clearContent();
         this.utilityUpgrades.clearContent();
-        if (tag.contains("StorageUpgrades")) {
-            net.minecraft.nbt.ListTag list = tag.getList("StorageUpgrades", Tag.TAG_COMPOUND);
-            for (int i = 0; i < list.size(); i++) {
-                CompoundTag itemTag = list.getCompound(i);
-                int slot = itemTag.getInt("Slot");
-                if (slot >= 0 && slot < storageUpgrades.getContainerSize()) {
-                    storageUpgrades.setItem(slot,
-                            ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
-                                    .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag).result()
-                                    .orElse(ItemStack.EMPTY));
-                }
+        for (ValueInput itemInput : input.childrenListOrEmpty("StorageUpgrades")) {
+            int slot = itemInput.getIntOr("Slot", -1);
+            if (slot >= 0 && slot < storageUpgrades.getContainerSize()) {
+                storageUpgrades.setItem(slot, itemInput.read(ItemStack.MAP_CODEC).orElse(ItemStack.EMPTY));
             }
         }
-        if (tag.contains("UtilityUpgrades")) {
-            net.minecraft.nbt.ListTag list = tag.getList("UtilityUpgrades", Tag.TAG_COMPOUND);
-            for (int i = 0; i < list.size(); i++) {
-                CompoundTag itemTag = list.getCompound(i);
-                int slot = itemTag.getInt("Slot");
-                if (slot >= 0 && slot < utilityUpgrades.getContainerSize()) {
-                    utilityUpgrades.setItem(slot,
-                            ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
-                                    .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag).result()
-                                    .orElse(ItemStack.EMPTY));
-                }
+        for (ValueInput itemInput : input.childrenListOrEmpty("UtilityUpgrades")) {
+            int slot = itemInput.getIntOr("Slot", -1);
+            if (slot >= 0 && slot < utilityUpgrades.getContainerSize()) {
+                utilityUpgrades.setItem(slot, itemInput.read(ItemStack.MAP_CODEC).orElse(ItemStack.EMPTY));
             }
         }
-        if (tag.contains("DrawerOptions")) {
-            drawerOptions.deserializeNBT(tag.getCompound("DrawerOptions"));
-        }
-        if (tag.contains("ControllerPos")) {
-            this.controllerPos = BlockPos.of(tag.getLong("ControllerPos"));
-        }
+        input.read("DrawerOptions", CompoundTag.CODEC).ifPresent(drawerOptions::deserializeNBT);
+        input.getLong("ControllerPos").ifPresent(pos -> this.controllerPos = BlockPos.of(pos));
         this.needsUpgradeCache = true;
     }
 
@@ -435,44 +420,34 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
      * This is used in Block.setPlacedBy() to restore tile state.
      */
     public void loadFromTag(CompoundTag tag, HolderLookup.Provider registries) {
-        this.loadAdditional(tag, registries);
+        this.loadAdditional(TagValueInput.create(ProblemReporter.DISCARDING, registries, tag));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        net.minecraft.nbt.ListTag storageList = new net.minecraft.nbt.ListTag();
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        ValueOutput.ValueOutputList storageList = output.childrenList("StorageUpgrades");
         for (int i = 0; i < storageUpgrades.getContainerSize(); i++) {
             ItemStack stack = storageUpgrades.getItem(i);
             if (!stack.isEmpty()) {
-                Tag encoded = ItemStack.CODEC.encodeStart(
-                        net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
-                        stack).result().orElse(null);
-                if (encoded instanceof CompoundTag itemTag) {
-                    itemTag.putInt("Slot", i);
-                    storageList.add(itemTag);
-                }
+                ValueOutput itemOutput = storageList.addChild();
+                itemOutput.store(ItemStack.MAP_CODEC, stack);
+                itemOutput.putInt("Slot", i);
             }
         }
-        tag.put("StorageUpgrades", storageList);
 
-        net.minecraft.nbt.ListTag utilityList = new net.minecraft.nbt.ListTag();
+        ValueOutput.ValueOutputList utilityList = output.childrenList("UtilityUpgrades");
         for (int i = 0; i < utilityUpgrades.getContainerSize(); i++) {
             ItemStack stack = utilityUpgrades.getItem(i);
             if (!stack.isEmpty()) {
-                Tag encoded = ItemStack.CODEC.encodeStart(
-                        net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, registries),
-                        stack).result().orElse(null);
-                if (encoded instanceof CompoundTag itemTag) {
-                    itemTag.putInt("Slot", i);
-                    utilityList.add(itemTag);
-                }
+                ValueOutput itemOutput = utilityList.addChild();
+                itemOutput.store(ItemStack.MAP_CODEC, stack);
+                itemOutput.putInt("Slot", i);
             }
         }
-        tag.put("UtilityUpgrades", utilityList);
-        tag.put("DrawerOptions", drawerOptions.serializeNBT());
+        output.store("DrawerOptions", CompoundTag.CODEC, drawerOptions.serializeNBT());
         if (controllerPos != null) {
-            tag.putLong("ControllerPos", controllerPos.asLong());
+            output.putLong("ControllerPos", controllerPos.asLong());
         }
     }
 
@@ -487,7 +462,7 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, ControllableDrawerTile<?> blockEntity) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         // Tick logic if needed
     }

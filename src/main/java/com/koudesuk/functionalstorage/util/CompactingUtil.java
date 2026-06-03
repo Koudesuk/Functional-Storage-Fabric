@@ -1,7 +1,7 @@
 package com.koudesuk.functionalstorage.util;
 
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
@@ -62,12 +62,17 @@ public class CompactingUtil {
         return results;
     }
 
+    private Optional<RecipeManager> recipeManager() {
+        return level.recipeAccess() instanceof RecipeManager manager ? Optional.of(manager) : Optional.empty();
+    }
+
     private Result findUpperTier(ItemStack stack) {
         // Custom recipes
-        for (RecipeHolder<com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe> holder : level
-                .getRecipeManager()
-                .getAllRecipesFor(com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)) {
-            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe = holder.value();
+        for (RecipeHolder<?> holder : recipeManager().map(RecipeManager::getRecipes).orElse(List.of())) {
+            if (holder.value().getType() != com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)
+                continue;
+            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe =
+                    (com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe) holder.value();
             if (recipe.getLowerInput().test(stack)) {
                 return new Result(recipe.getHigherOutput(), recipe.getNeeded());
             }
@@ -111,26 +116,33 @@ public class CompactingUtil {
 
     private Result findLowerTier(ItemStack stack) {
         // Custom recipes
-        for (RecipeHolder<com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe> holder : level
-                .getRecipeManager()
-                .getAllRecipesFor(com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)) {
-            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe = holder.value();
+        for (RecipeHolder<?> holder : recipeManager().map(RecipeManager::getRecipes).orElse(List.of())) {
+            if (holder.value().getType() != com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe.Type.INSTANCE)
+                continue;
+            com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe recipe =
+                    (com.koudesuk.functionalstorage.recipe.CustomCompactingRecipe) holder.value();
             if (ItemStack.isSameItemSameComponents(recipe.getHigherOutput(), stack)) {
-                ItemStack input = recipe.getLowerInput().getItems()[0]; // Assuming simple ingredient
+                ItemStack input = recipe.getLowerInput().items()
+                        .findFirst()
+                        .map(holderItem -> new ItemStack(holderItem.value()))
+                        .orElse(ItemStack.EMPTY);
                 return new Result(input, recipe.getNeeded());
             }
         }
 
         List<ItemStack> candidates = new ArrayList<>();
         Map<ItemStack, Integer> candidatesRate = new HashMap<>();
-        for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
-            CraftingRecipe craftingRecipe = holder.value();
-            ItemStack output = craftingRecipe.getResultItem(this.level.registryAccess());
+        for (RecipeHolder<?> holder : recipeManager().map(RecipeManager::getRecipes).orElse(List.of())) {
+            if (holder.value().getType() != RecipeType.CRAFTING)
+                continue;
+            CraftingRecipe craftingRecipe = (CraftingRecipe) holder.value();
+            List<Ingredient> ingredients = craftingRecipe.placementInfo().ingredients();
+            ItemStack output = craftingRecipe.assemble(CraftingInput.EMPTY);
             if (!ItemStack.isSameItem(stack, output))
                 continue;
-            ItemStack match = tryMatch(stack, craftingRecipe.getIngredients());
+            ItemStack match = tryMatch(stack, ingredients);
             if (!match.isEmpty()) {
-                int recipeSize = craftingRecipe.getIngredients().size();
+                int recipeSize = ingredients.size();
                 if (stack.is(StorageTags.IGNORE_CRAFTING_CHECK)) {
                     candidates.add(match);
                     candidatesRate.put(match, recipeSize);
@@ -160,11 +172,12 @@ public class CompactingUtil {
     private List<ItemStack> findAllMatchingRecipes(CraftingContainer crafting) {
         List<ItemStack> candidates = new ArrayList<>();
         CraftingInput input = CraftingInput.of(crafting.getWidth(), crafting.getHeight(), crafting.getItems());
-        for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, input,
-                level)) {
-            CraftingRecipe recipe = holder.value();
+        for (RecipeHolder<?> holder : recipeManager().map(RecipeManager::getRecipes).orElse(List.of())) {
+            if (holder.value().getType() != RecipeType.CRAFTING)
+                continue;
+            CraftingRecipe recipe = (CraftingRecipe) holder.value();
             if (recipe.matches(input, level)) {
-                ItemStack result = recipe.assemble(input, this.level.registryAccess());
+                ItemStack result = recipe.assemble(input);
                 if (!result.isEmpty())
                     candidates.add(result);
             }
@@ -173,10 +186,10 @@ public class CompactingUtil {
     }
 
     private ItemStack findSimilar(ItemStack reference, List<ItemStack> candidates) {
-        ResourceLocation referenceName = BuiltInRegistries.ITEM.getKey(reference.getItem());
+        Identifier referenceName = BuiltInRegistries.ITEM.getKey(reference.getItem());
         if (referenceName != null) {
             for (ItemStack candidate : candidates) {
-                ResourceLocation matchName = BuiltInRegistries.ITEM.getKey(candidate.getItem());
+                Identifier matchName = BuiltInRegistries.ITEM.getKey(candidate.getItem());
                 if (matchName != null) {
                     if (referenceName.getNamespace().equals(matchName.getNamespace()))
                         return candidate;
@@ -186,12 +199,14 @@ public class CompactingUtil {
         return candidates.size() > 0 ? candidates.get(0) : ItemStack.EMPTY;
     }
 
-    private ItemStack tryMatch(ItemStack stack, NonNullList<Ingredient> ingredients) {
+    private ItemStack tryMatch(ItemStack stack, List<Ingredient> ingredients) {
         if (ingredients.size() != 9 && ingredients.size() != 4)
             return ItemStack.EMPTY;
 
         Ingredient refIngredient = ingredients.get(0);
-        ItemStack[] refMatchingStacks = refIngredient.getItems();
+        ItemStack[] refMatchingStacks = refIngredient.items()
+                .map(holder -> new ItemStack(holder.value()))
+                .toArray(ItemStack[]::new);
         if (refMatchingStacks.length == 0)
             return ItemStack.EMPTY;
 

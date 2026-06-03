@@ -45,7 +45,7 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
 
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedSimpleCompactingDrawerTile tile) {
@@ -79,7 +79,7 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity instanceof FramedSimpleCompactingDrawerTile framedDrawerTile
                 && framedDrawerTile.getFramedDrawerModelData() != null
@@ -92,7 +92,6 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
         return new ItemStack(this);
     }
 
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
         String useText = Component.translatable("frameddrawer.use").getString();
@@ -101,6 +100,5 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
                 tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

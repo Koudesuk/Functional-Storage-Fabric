@@ -7,8 +7,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueInput;
 import org.jetbrains.annotations.Nullable;
 
 public class ArmoryCabinetTile extends BlockEntity {
@@ -26,11 +28,9 @@ public class ArmoryCabinetTile extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("handler")) {
-            this.handler.deserializeNBT(tag.getCompound("handler"), registries);
-        }
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("handler", CompoundTag.CODEC).ifPresent(tag -> this.handler.deserializeNBT(tag, input.lookup()));
     }
 
     /**
@@ -38,13 +38,15 @@ public class ArmoryCabinetTile extends BlockEntity {
      * This is used in Block.setPlacedBy() to restore tile state.
      */
     public void loadFromTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        this.loadAdditional(tag, registries);
+        this.loadAdditional(TagValueInput.create(ProblemReporter.DISCARDING, registries, tag));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("handler", this.handler.serializeNBT(registries));
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        if (this.level != null) {
+            output.store("handler", CompoundTag.CODEC, this.handler.serializeNBT(this.level.registryAccess()));
+        }
     }
 
     @Nullable

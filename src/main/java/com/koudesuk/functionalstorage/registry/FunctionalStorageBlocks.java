@@ -1,20 +1,36 @@
 package com.koudesuk.functionalstorage.registry;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
-import com.koudesuk.functionalstorage.block.*;
+import com.koudesuk.functionalstorage.block.ArmoryCabinetBlock;
+import com.koudesuk.functionalstorage.block.CompactingDrawerBlock;
+import com.koudesuk.functionalstorage.block.ControllerExtensionBlock;
+import com.koudesuk.functionalstorage.block.DrawerBlock;
+import com.koudesuk.functionalstorage.block.DrawerControllerBlock;
+import com.koudesuk.functionalstorage.block.EnderDrawerBlock;
+import com.koudesuk.functionalstorage.block.FluidDrawerBlock;
+import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
+import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
+import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
+import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
+import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
+import com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock;
+import com.koudesuk.functionalstorage.item.DrawerBlockItem;
 import com.koudesuk.functionalstorage.util.DrawerType;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import com.koudesuk.functionalstorage.util.DrawerWoodType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.function.Function;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 
 public class FunctionalStorageBlocks {
 
@@ -37,219 +53,137 @@ public class FunctionalStorageBlocks {
         public static List<Block> FRAMED_DRAWER = new ArrayList<>();
 
         public static void register() {
-                // Register Drawer Types
                 for (DrawerType type : DrawerType.values()) {
                         List<Block> blocks = new ArrayList<>();
-                        for (com.koudesuk.functionalstorage.util.DrawerWoodType woodType : com.koudesuk.functionalstorage.util.DrawerWoodType
-                                        .values()) {
-                                if (woodType == com.koudesuk.functionalstorage.util.DrawerWoodType.FRAMED)
+                        for (DrawerWoodType woodType : DrawerWoodType.values()) {
+                                if (woodType == DrawerWoodType.FRAMED) {
                                         continue;
-                                Block block = new DrawerBlock(woodType, type,
-                                                FabricBlockSettings.copyOf(Blocks.OAK_PLANKS));
+                                }
+
+                                String name = woodType.getName() + "_drawer_" + type.getSlots();
+                                Block block = registerBlock(name,
+                                                properties -> new DrawerBlock(woodType, type, properties),
+                                                BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS));
                                 blocks.add(block);
-                                Registry.register(BuiltInRegistries.BLOCK,
-                                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                                woodType.getName() + "_drawer_" + type.getSlots()),
-                                                block);
-                                Registry.register(BuiltInRegistries.ITEM,
-                                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                                woodType.getName() + "_drawer_" + type.getSlots()),
-                                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(block,
-                                                                new Item.Properties()));
+                                registerDrawerBlockItem(name, block);
                         }
                         DRAWER_TYPES.put(type, blocks);
                 }
 
-                // Register Armory Cabinet
-                ARMORY_CABINET = new ArmoryCabinetBlock(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "armory_cabinet"),
-                                ARMORY_CABINET);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "armory_cabinet"),
-                                new BlockItem(ARMORY_CABINET, new Item.Properties()));
+                ARMORY_CABINET = registerBlock("armory_cabinet", ArmoryCabinetBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK));
+                registerBlockItem("armory_cabinet", ARMORY_CABINET);
 
-                // Register Controller Extension
-                CONTROLLER_EXTENSION = new ControllerExtensionBlock(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "controller_extension"),
-                                CONTROLLER_EXTENSION);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "controller_extension"),
-                                new BlockItem(CONTROLLER_EXTENSION, new Item.Properties()));
+                CONTROLLER_EXTENSION = registerBlock("controller_extension", ControllerExtensionBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK));
+                registerBlockItem("controller_extension", CONTROLLER_EXTENSION);
 
-                // Register Simple Compacting Drawer
-                SIMPLE_COMPACTING_DRAWER = new SimpleCompactingDrawerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "simple_compacting_drawer"),
-                                SIMPLE_COMPACTING_DRAWER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "simple_compacting_drawer"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(SIMPLE_COMPACTING_DRAWER,
-                                                new Item.Properties()));
+                SIMPLE_COMPACTING_DRAWER = registerBlock("simple_compacting_drawer", SimpleCompactingDrawerBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK));
+                registerDrawerBlockItem("simple_compacting_drawer", SIMPLE_COMPACTING_DRAWER);
 
-                // Register Framed Simple Compacting Drawer
-                FRAMED_SIMPLE_COMPACTING_DRAWER = new FramedSimpleCompactingDrawerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
-                                                .isViewBlocking((state, level, pos) -> false));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_simple_compacting_drawer"),
-                                FRAMED_SIMPLE_COMPACTING_DRAWER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_simple_compacting_drawer"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(FRAMED_SIMPLE_COMPACTING_DRAWER,
-                                                new Item.Properties()));
+                FRAMED_SIMPLE_COMPACTING_DRAWER = registerBlock("framed_simple_compacting_drawer",
+                                FramedSimpleCompactingDrawerBlock::new,
+                                framedIronProperties());
+                registerDrawerBlockItem("framed_simple_compacting_drawer", FRAMED_SIMPLE_COMPACTING_DRAWER);
 
-                // Register Compacting Drawer
-                COMPACTING_DRAWER = new CompactingDrawerBlock(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "compacting_drawer"),
-                                COMPACTING_DRAWER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "compacting_drawer"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(COMPACTING_DRAWER,
-                                                new Item.Properties()));
+                COMPACTING_DRAWER = registerBlock("compacting_drawer", CompactingDrawerBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK));
+                registerDrawerBlockItem("compacting_drawer", COMPACTING_DRAWER);
 
-                // Register Framed Compacting Drawer
-                // The provided Code Edit seems to be for a different registration system (e.g.,
-                // Forge)
-                // and introduces new methods/classes not present in the original Fabric code.
-                // Applying the change faithfully means only renaming the string if it existed,
-                // or replacing the block with the provided one if it's a direct replacement.
-                // Given the instruction "Rename compacting_framed_drawer to
-                // framed_compacting_drawer"
-                // and the fact that "compacting_framed_drawer" does not exist in the original,
-                // but "framed_compacting_drawer" does, and the Code Edit also uses
-                // "framed_compacting_drawer",
-                // it implies a replacement of the registration logic for
-                // FRAMED_COMPACTING_DRAWER.
-                // However, the provided Code Edit is syntactically incorrect for this Fabric
-                // context.
-                // I will assume the intent was to ensure the name is "framed_compacting_drawer"
-                // and that the provided Code Edit was an example of a desired *new*
-                // registration
-                // method, which cannot be directly applied here without significant refactoring
-                // to introduce `getRegistries().registerBlockWithTileItem` and related classes.
-                // Since the instruction is to "rename" and the target name is already present,
-                // and the Code Edit is not directly applicable, I will keep the existing Fabric
-                // registration for FRAMED_COMPACTING_DRAWER as it already uses the target name.
-                // If the intent was to change the *implementation* of
-                // FRAMED_COMPACTING_DRAWER's
-                // registration to the one provided, it would require more context and changes
-                // than a simple rename or direct block replacement allows while maintaining
-                // syntactic correctness in the current Fabric environment.
-                FRAMED_COMPACTING_DRAWER = new FramedCompactingDrawerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
-                                                .isViewBlocking((state, level, pos) -> false));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_compacting_drawer"),
-                                FRAMED_COMPACTING_DRAWER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_compacting_drawer"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(FRAMED_COMPACTING_DRAWER,
-                                                new Item.Properties()));
+                FRAMED_COMPACTING_DRAWER = registerBlock("framed_compacting_drawer", FramedCompactingDrawerBlock::new,
+                                framedIronProperties());
+                registerDrawerBlockItem("framed_compacting_drawer", FRAMED_COMPACTING_DRAWER);
 
-                // Register Ender Drawer
-                ENDER_DRAWER = new EnderDrawerBlock(FabricBlockSettings.copyOf(Blocks.OBSIDIAN));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "ender_drawer"),
-                                ENDER_DRAWER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "ender_drawer"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(ENDER_DRAWER,
-                                                new Item.Properties()));
+                ENDER_DRAWER = registerBlock("ender_drawer", EnderDrawerBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN));
+                registerDrawerBlockItem("ender_drawer", ENDER_DRAWER);
 
-                // Register Drawer Controller
-                DRAWER_CONTROLLER = new DrawerControllerBlock(FabricBlockSettings.copyOf(Blocks.IRON_BLOCK));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "storage_controller"),
-                                DRAWER_CONTROLLER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "storage_controller"),
-                                new BlockItem(DRAWER_CONTROLLER, new Item.Properties())); // Controller doesn't need
-                                                                                          // content tooltip usually
+                DRAWER_CONTROLLER = registerBlock("storage_controller", DrawerControllerBlock::new,
+                                BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK));
+                registerBlockItem("storage_controller", DRAWER_CONTROLLER);
 
-                // Register Framed Drawer Controller
-                FRAMED_DRAWER_CONTROLLER = new FramedDrawerControllerBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
-                                                .isViewBlocking((state, level, pos) -> false));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_storage_controller"),
-                                FRAMED_DRAWER_CONTROLLER);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_storage_controller"),
-                                new BlockItem(FRAMED_DRAWER_CONTROLLER, new Item.Properties()));
+                FRAMED_DRAWER_CONTROLLER = registerBlock("framed_storage_controller",
+                                FramedDrawerControllerBlock::new,
+                                framedIronProperties());
+                registerBlockItem("framed_storage_controller", FRAMED_DRAWER_CONTROLLER);
 
-                // Register Framed Controller Extension (Framed Access Point)
-                FRAMED_CONTROLLER_EXTENSION = new FramedControllerExtensionBlock(
-                                FabricBlockSettings.copyOf(Blocks.IRON_BLOCK).noOcclusion()
-                                                .isViewBlocking((state, level, pos) -> false));
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_controller_extension"),
-                                FRAMED_CONTROLLER_EXTENSION);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                "framed_controller_extension"),
-                                new BlockItem(FRAMED_CONTROLLER_EXTENSION, new Item.Properties()));
+                FRAMED_CONTROLLER_EXTENSION = registerBlock("framed_controller_extension",
+                                FramedControllerExtensionBlock::new,
+                                framedIronProperties());
+                registerBlockItem("framed_controller_extension", FRAMED_CONTROLLER_EXTENSION);
 
-                // Register Framed Drawer
-                Block framedDrawer = new FramedDrawerBlock(DrawerType.X_1);
-                FRAMED_DRAWER.add(framedDrawer);
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_1"),
-                                framedDrawer);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_1"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(framedDrawer,
-                                                new Item.Properties()));
+                registerFramedDrawer(DrawerType.X_1);
+                registerFramedDrawer(DrawerType.X_2);
+                registerFramedDrawer(DrawerType.X_4);
 
-                framedDrawer = new FramedDrawerBlock(DrawerType.X_2);
-                FRAMED_DRAWER.add(framedDrawer);
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_2"),
-                                framedDrawer);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_2"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(framedDrawer,
-                                                new Item.Properties()));
-
-                framedDrawer = new FramedDrawerBlock(DrawerType.X_4);
-                FRAMED_DRAWER.add(framedDrawer);
-                Registry.register(BuiltInRegistries.BLOCK,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_4"),
-                                framedDrawer);
-                Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_drawer_4"),
-                                new com.koudesuk.functionalstorage.item.DrawerBlockItem(framedDrawer,
-                                                new Item.Properties()));
-
-                // Register Fluid Drawers
                 for (DrawerType type : DrawerType.values()) {
-                        Block block = new FluidDrawerBlock(type, FabricBlockSettings.copyOf(Blocks.STONE_BRICKS));
-                        if (type == DrawerType.X_1)
+                        String name = "fluid_drawer_" + type.getSlots();
+                        Block block = registerBlock(name, properties -> new FluidDrawerBlock(type, properties),
+                                        BlockBehaviour.Properties.ofFullCopy(Blocks.STONE_BRICKS));
+                        if (type == DrawerType.X_1) {
                                 FLUID_DRAWER_1 = block;
-                        if (type == DrawerType.X_2)
+                        }
+                        if (type == DrawerType.X_2) {
                                 FLUID_DRAWER_2 = block;
-                        if (type == DrawerType.X_4)
+                        }
+                        if (type == DrawerType.X_4) {
                                 FLUID_DRAWER_4 = block;
-                        Registry.register(BuiltInRegistries.BLOCK,
-                                        ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                        "fluid_drawer_" + type.getSlots()),
-                                        block);
-                        Registry.register(BuiltInRegistries.ITEM,
-                                        ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
-                                                        "fluid_drawer_" + type.getSlots()),
-                                        new BlockItem(block, new Item.Properties()));
+                        }
+                        registerBlockItem(name, block);
                 }
+        }
+
+        private static void registerFramedDrawer(DrawerType type) {
+                String name = "framed_drawer_" + type.getSlots();
+                Block block = registerBlock(name, properties -> new FramedDrawerBlock(type, properties),
+                                framedDrawerProperties());
+                FRAMED_DRAWER.add(block);
+                registerDrawerBlockItem(name, block);
+        }
+
+        private static BlockBehaviour.Properties framedIronProperties() {
+                return BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK).noOcclusion()
+                                .isViewBlocking((state, level, pos) -> false);
+        }
+
+        private static BlockBehaviour.Properties framedDrawerProperties() {
+                return BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).strength(1.5f, 1.5f).noOcclusion()
+                                .isViewBlocking((state, level, pos) -> false);
+        }
+
+        private static <T extends Block> T registerBlock(String name, Function<BlockBehaviour.Properties, T> factory,
+                        BlockBehaviour.Properties properties) {
+                T block = factory.apply(properties.setId(blockKey(name)));
+                return Registry.register(BuiltInRegistries.BLOCK, id(name), block);
+        }
+
+        private static void registerBlockItem(String name, Block block) {
+                registerItem(name, properties -> new BlockItem(block, properties));
+        }
+
+        private static void registerDrawerBlockItem(String name, Block block) {
+                registerItem(name, properties -> new DrawerBlockItem(block, properties));
+        }
+
+        private static <T extends Item> T registerItem(String name, Function<Item.Properties, T> factory) {
+                T item = factory.apply(itemProperties(name));
+                return Registry.register(BuiltInRegistries.ITEM, id(name), item);
+        }
+
+        private static Item.Properties itemProperties(String name) {
+                return new Item.Properties().setId(itemKey(name));
+        }
+
+        private static ResourceKey<Block> blockKey(String name) {
+                return ResourceKey.create(Registries.BLOCK, id(name));
+        }
+
+        private static ResourceKey<Item> itemKey(String name) {
+                return ResourceKey.create(Registries.ITEM, id(name));
+        }
+
+        private static Identifier id(String name) {
+                return Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID, name);
         }
 }

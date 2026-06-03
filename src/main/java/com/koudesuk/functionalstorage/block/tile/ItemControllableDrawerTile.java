@@ -28,7 +28,7 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
     public abstract int getBaseSize(int lost);
 
     public static void tick(Level level, BlockPos pos, BlockState state, ItemControllableDrawerTile<?> entity) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         entity.serverTick(level, pos, state);
     }

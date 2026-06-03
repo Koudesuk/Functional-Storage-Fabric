@@ -45,31 +45,26 @@ public class DrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
+    public net.minecraft.world.InteractionResult useItemOn(ItemStack stack, BlockState state,
             net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
-        if (level.isClientSide)
-            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        if (level.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
             net.minecraft.world.InteractionResult result = drawerTile.onSlotActivated(player, hand, hit.getDirection(),
                     hit.getLocation().x,
                     hit.getLocation().y, hit.getLocation().z, getHit(state, pos, hit));
-            return switch (result) {
-                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
-                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
-                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
-                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            };
+            return result == net.minecraft.world.InteractionResult.PASS ? net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND : result;
         }
-        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
     public net.minecraft.world.InteractionResult useWithoutItem(BlockState state, net.minecraft.world.level.Level level,
             BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.phys.BlockHitResult hit) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return net.minecraft.world.InteractionResult.SUCCESS;
         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
@@ -83,7 +78,7 @@ public class DrawerBlock extends Block implements EntityBlock {
     @Override
     public void attack(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
             net.minecraft.world.entity.player.Player player) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
@@ -209,21 +204,19 @@ public class DrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
-            BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof DrawerTile drawerTile) {
-                if (drawerTile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(drawerTile.getControllerPos());
-                    if (controller instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile storageControllerTile) {
-                        storageControllerTile.addConnectedDrawers(
-                                com.koudesuk.functionalstorage.item.LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
+            BlockPos pos, boolean movedByPiston) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof DrawerTile drawerTile) {
+            if (drawerTile.getControllerPos() != null) {
+                BlockEntity controller = level.getBlockEntity(drawerTile.getControllerPos());
+                if (controller instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile storageControllerTile) {
+                    storageControllerTile.addConnectedDrawers(
+                            com.koudesuk.functionalstorage.item.LinkingToolItem.ActionMode.REMOVE, pos);
                 }
             }
-            super.onRemove(state, level, pos, newState, isMoving);
         }
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
@@ -242,7 +235,7 @@ public class DrawerBlock extends Block implements EntityBlock {
                 if (tileData != null) {
                     tile.loadFromTag(tileData, level.registryAccess());
                     tile.setChanged();
-                    if (!level.isClientSide) {
+                    if (!level.isClientSide()) {
                         level.sendBlockUpdated(pos, state, state, 3);
                     }
                 }

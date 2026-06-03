@@ -5,15 +5,17 @@ import com.koudesuk.functionalstorage.item.ConfigurationToolItem;
 import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.koudesuk.functionalstorage.item.StorageUpgradeItem;
 import com.koudesuk.functionalstorage.item.UpgradeItem;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 public class FunctionalStorageItems {
 
@@ -28,9 +30,9 @@ public class FunctionalStorageItems {
         public static UpgradeItem CREATIVE_UPGRADE;
 
         public static void register() {
-                LINKING_TOOL = registerItem("linking_tool", new LinkingToolItem(new Item.Properties()));
+                LINKING_TOOL = registerItem("linking_tool", LinkingToolItem::new);
                 CONFIGURATION_TOOL = registerItem("configuration_tool",
-                                new ConfigurationToolItem(new Item.Properties()));
+                                ConfigurationToolItem::new);
 
                 for (StorageUpgradeItem.StorageTier tier : StorageUpgradeItem.StorageTier.values()) {
                         String itemName = tier == StorageUpgradeItem.StorageTier.IRON
@@ -38,21 +40,21 @@ public class FunctionalStorageItems {
                                         : tier.name().toLowerCase() + "_upgrade";
                         STORAGE_UPGRADES.put(tier,
                                         registerItem(itemName,
-                                                        new StorageUpgradeItem(tier)));
+                                                        properties -> new StorageUpgradeItem(tier, properties)));
                 }
 
                 PULLING_UPGRADE = registerItem("puller_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.UTILITY));
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.UTILITY));
                 PUSHING_UPGRADE = registerItem("pusher_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.UTILITY));
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.UTILITY));
                 COLLECTOR_UPGRADE = registerItem("collector_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.UTILITY));
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.UTILITY));
                 REDSTONE_UPGRADE = registerItem("redstone_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.UTILITY));
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.UTILITY));
                 VOID_UPGRADE = registerItem("void_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.UTILITY));
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.UTILITY));
                 CREATIVE_UPGRADE = registerItem("creative_vending_upgrade",
-                                new UpgradeItem(new Item.Properties(), UpgradeItem.Type.STORAGE)); // Creative is
+                                properties -> new UpgradeItem(properties, UpgradeItem.Type.STORAGE)); // Creative is
                                                                                                    // storage type? Or
                                                                                                    // utility? Forge
                                                                                                    // says
@@ -67,7 +69,7 @@ public class FunctionalStorageItems {
                 // Add to creative tab
                 // Items are added to the custom tab in FunctionalStorageGroup.java
                 /*
-                 * ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).
+                 * CreativeModeTabEvents.modifyOutput(CreativeModeTabs.FUNCTIONAL_BLOCKS).
                  * register(content -> {
                  * content.accept(LINKING_TOOL);
                  * content.accept(CONFIGURATION_TOOL);
@@ -88,9 +90,22 @@ public class FunctionalStorageItems {
                  */
         }
 
-        private static <T extends Item> T registerItem(String name, T item) {
+        private static <T extends Item> T registerItem(String name, Function<Item.Properties, T> factory) {
+                T item = factory.apply(itemProperties(name));
                 return Registry.register(BuiltInRegistries.ITEM,
-                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, name),
+                                id(name),
                                 item);
+        }
+
+        private static Item.Properties itemProperties(String name) {
+                return new Item.Properties().setId(itemKey(name));
+        }
+
+        private static ResourceKey<Item> itemKey(String name) {
+                return ResourceKey.create(Registries.ITEM, id(name));
+        }
+
+        private static Identifier id(String name) {
+                return Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID, name);
         }
 }

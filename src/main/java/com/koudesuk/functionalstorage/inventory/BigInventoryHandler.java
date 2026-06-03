@@ -13,20 +13,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-// Actually, Fabric doesn't have INBTSerializable in the same package.
-// I should just implement the methods or use a custom interface.
-// But BigInventoryHandler stub had INBTSerializable<CompoundTag> in imports?
-// No, I removed it in the stub.
-// I'll add `implements net.fabricmc.fabric.api.util.NbtSerializable` if available, or just keep methods.
-// But I'm overriding serializeNBT/deserializeNBT which implies an interface.
-// I'll check if I imported INBTSerializable.
-// The stub had `public abstract class BigInventoryHandler implements Storage<ItemVariant> {`
-// So I'm not implementing INBTSerializable.
-// I'll just add the methods.
-// But I used `@Override` annotation.
-// I should remove `@Override` if not implementing interface.
-// Or implement a custom interface.
-
 public abstract class BigInventoryHandler implements Storage<ItemVariant> {
 
     public static String BIG_ITEMS = "BigItems";
@@ -185,7 +171,10 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
             CompoundTag bigStack = new CompoundTag();
             ItemStack stack = this.slots.get(i).getResource().toStack();
             if (!stack.isEmpty()) {
-                bigStack.put(STACK, stack.save(registries, new CompoundTag()));
+                bigStack.put(STACK, ItemStack.CODEC
+                        .encodeStart(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE,
+                                registries), stack)
+                        .result().orElse(new CompoundTag()));
             }
             bigStack.putInt(AMOUNT, (int) this.slots.get(i).getAmount());
             items.put(i + "", bigStack);
@@ -195,11 +184,13 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
     }
 
     public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
-        for (String allKey : nbt.getCompound(BIG_ITEMS).getAllKeys()) {
+        CompoundTag bigItems = nbt.getCompoundOrEmpty(BIG_ITEMS);
+        for (String allKey : bigItems.keySet()) {
             int i = Integer.parseInt(allKey);
             if (i < this.slots.size()) {
-                CompoundTag stackTag = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getCompound(STACK);
-                int amount = nbt.getCompound(BIG_ITEMS).getCompound(allKey).getInt(AMOUNT);
+                CompoundTag itemTag = bigItems.getCompoundOrEmpty(allKey);
+                CompoundTag stackTag = itemTag.getCompoundOrEmpty(STACK);
+                int amount = itemTag.getIntOr(AMOUNT, 0);
                 this.slots
                         .get(i).variant = ItemVariant
                                 .of(ItemStack.CODEC

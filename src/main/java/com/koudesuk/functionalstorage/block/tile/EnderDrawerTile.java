@@ -6,7 +6,7 @@ import com.koudesuk.functionalstorage.inventory.EnderInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.world.EnderSavedData;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
-        implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+        implements ExtendedMenuProvider<BlockPosPayload> {
 
     private String frequency;
     private java.util.UUID lastClickUUID;
@@ -62,7 +62,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
             return;
         this.frequency = frequency;
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
@@ -80,7 +80,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         if (level == null) {
             return cachedHandler; // Fallback to cached
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return cachedHandler; // Client uses cached handler
         }
         return EnderSavedData.getInstance(level).getFrequency(frequency);
@@ -133,7 +133,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
                         ItemStack temp = stack.split(1);
                         container.setItem(i, temp);
                         this.setChanged();
-                        if (level != null && !level.isClientSide) {
+                        if (level != null && !level.isClientSide()) {
                             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                         }
                         return InteractionResult.SUCCESS;
@@ -146,7 +146,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
                         ItemStack temp = stack.split(1);
                         container.setItem(i, temp);
                         this.setChanged();
-                        if (level != null && !level.isClientSide) {
+                        if (level != null && !level.isClientSide()) {
                             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                         }
                         return InteractionResult.SUCCESS;
@@ -250,7 +250,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
             }
         } else if (slot == -1 || player.isShiftKeyDown()) {
             // Open GUI
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 player.openMenu(this);
             }
             return InteractionResult.SUCCESS;
@@ -285,7 +285,7 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
      * Trigger block update to sync storage data to clients.
      */
     private void syncToClients() {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             this.setChanged();
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
@@ -335,32 +335,33 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Frequency")) {
-            this.frequency = tag.getString("Frequency");
-        }
+    public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        this.frequency = input.getStringOr("Frequency", this.frequency);
         // Load cached handler data for client-side rendering
-        if (tag.contains("Handler")) {
+        java.util.Optional<CompoundTag> handlerTag = input.read("Handler", CompoundTag.CODEC);
+        if (handlerTag.isPresent()) {
             if (cachedHandler == null) {
                 cachedHandler = new EnderInventoryHandler(this.frequency, null);
             }
-            cachedHandler.deserializeNBT(tag.getCompound("Handler"), registries);
+            cachedHandler.deserializeNBT(handlerTag.get(), input.lookup());
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
         if (this.frequency != null) {
-            tag.putString("Frequency", this.frequency);
+            output.putString("Frequency", this.frequency);
         }
         // Save handler data for client sync
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             EnderInventoryHandler handler = EnderSavedData.getInstance(level).getFrequency(frequency);
-            tag.put("Handler", handler.serializeNBT(registries));
+            output.store("Handler", CompoundTag.CODEC, handler.serializeNBT(level.registryAccess()));
         } else if (cachedHandler != null) {
-            tag.put("Handler", cachedHandler.serializeNBT(registries));
+            if (level != null) {
+                output.store("Handler", CompoundTag.CODEC, cachedHandler.serializeNBT(level.registryAccess()));
+            }
         }
     }
 

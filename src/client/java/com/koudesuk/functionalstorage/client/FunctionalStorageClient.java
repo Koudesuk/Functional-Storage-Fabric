@@ -4,16 +4,15 @@ import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.client.gui.DrawerScreen;
 import com.koudesuk.functionalstorage.client.model.FramedDrawerModelLoader;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
-import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageMenus;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
-import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
-import net.fabricmc.fabric.api.client.render.fluid.v1.SimpleFluidRenderHandler;
-import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
-import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
-import net.minecraft.client.renderer.RenderType;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderingRegistry;
+import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.minecraft.resources.Identifier;
 
 public class FunctionalStorageClient implements ClientModInitializer {
         @Override
@@ -25,72 +24,46 @@ public class FunctionalStorageClient implements ClientModInitializer {
 
                 // Block entity renderers (drawers and compacting drawers share the same visuals
                 // across framed variants)
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.DRAWER,
                                 ctx -> new DrawerRenderer<>());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FRAMED_DRAWER,
                                 ctx -> new DrawerRenderer<>());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.SIMPLE_COMPACTING_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.SIMPLE_COMPACTING_DRAWER,
                                 ctx -> new SimpleCompactingDrawerRenderer());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_SIMPLE_COMPACTING_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FRAMED_SIMPLE_COMPACTING_DRAWER,
                                 ctx -> new SimpleCompactingDrawerRenderer());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.COMPACTING_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.COMPACTING_DRAWER,
                                 ctx -> new CompactingDrawerRenderer());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_COMPACTING_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FRAMED_COMPACTING_DRAWER,
                                 ctx -> new CompactingDrawerRenderer());
 
                 // Fluid drawer renderers
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_1,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FLUID_DRAWER_1,
                                 ctx -> new FluidDrawerRenderer());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_2,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FLUID_DRAWER_2,
                                 ctx -> new FluidDrawerRenderer());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FLUID_DRAWER_4,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FLUID_DRAWER_4,
                                 ctx -> new FluidDrawerRenderer());
 
                 // Ender drawer renderer
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.ENDER_DRAWER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.ENDER_DRAWER,
                                 ctx -> new EnderDrawerRenderer());
 
-                // Block render layers
-                FunctionalStorageBlocks.DRAWER_TYPES.values().forEach(blocks -> blocks
-                                .forEach(block -> BlockRenderLayerMap.INSTANCE.putBlock(block, RenderType.cutout())));
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.COMPACTING_DRAWER, RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.ENDER_DRAWER, RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.DRAWER_CONTROLLER, RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.CONTROLLER_EXTENSION,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION,
-                                RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.ARMORY_CABINET, RenderType.cutout());
-
-                // Fluid drawer blocks - use cutout (like Forge) to avoid depth/transparency
-                // issues
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_1, RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_2, RenderType.cutout());
-                BlockRenderLayerMap.INSTANCE.putBlock(FunctionalStorageBlocks.FLUID_DRAWER_4, RenderType.cutout());
-
                 // Register controller renderer for linking tool visualization
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.STORAGE_CONTROLLER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.STORAGE_CONTROLLER,
                                 ctx -> new ControllerRenderer<>());
-                BlockEntityRendererRegistry.register(FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER,
+                BlockEntityRenderers.register(FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER,
                                 ctx -> new ControllerRenderer<>());
 
-                var milkRenderHandler = SimpleFluidRenderHandler.coloredWater(0xFFFFFFFF);
-                FluidRenderHandlerRegistry.INSTANCE.register(FunctionalStorage.MILK, milkRenderHandler);
-                FluidRenderHandlerRegistry.INSTANCE.register(FunctionalStorage.MILK_FLOWING, milkRenderHandler);
+                registerMilkFluidRenderHandler();
 
                 FramedColors.register();
+        }
 
-                // NOTE: Dynamic item texture rendering for framed drawers is handled by
-                // FramedDrawerBakedModel.emitItemQuads() when the model uses the custom loader.
-                // The item models inherit from block models which use the custom loader,
-                // so NBT-based textures should work when the baked model is properly resolved.
+        private static void registerMilkFluidRenderHandler() {
+                Material still = new Material(Identifier.withDefaultNamespace("block/water_still"));
+                Material flowing = new Material(Identifier.withDefaultNamespace("block/water_flow"));
+                FluidModel.Unbaked milkModel = new FluidModel.Unbaked(still, flowing, null, null);
+                FluidRenderingRegistry.register(FunctionalStorage.MILK, FunctionalStorage.MILK_FLOWING, milkModel);
         }
 }

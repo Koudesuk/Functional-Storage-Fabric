@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingDrawerTile>
-        implements net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory<BlockPosPayload> {
+        implements net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider<BlockPosPayload> {
 
     public CompactingInventoryHandler handler;
     private boolean hasCheckedRecipes;
@@ -38,7 +38,7 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
             @Override
             public void onChange() {
                 CompactingDrawerTile.this.setChanged();
-                if (level != null && !level.isClientSide) {
+                if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
             }
@@ -72,7 +72,7 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, CompactingDrawerTile blockEntity) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         if (!blockEntity.hasCheckedRecipes) {
             if (!blockEntity.handler.getParent().isEmpty()) {
@@ -111,7 +111,7 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
                 }
             }
             setChanged();
-            if (level != null && !level.isClientSide) {
+            if (level != null && !level.isClientSide()) {
                 level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
             }
         }
@@ -191,7 +191,7 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
             }
         } else if (slot == -1 || player.isShiftKeyDown()) {
             // Open GUI
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 player.openMenu(this);
             }
             return InteractionResult.SUCCESS;
@@ -257,11 +257,9 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Handler")) {
-            handler.deserializeNBT(tag.getCompound("Handler"), registries);
-        }
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("Handler", CompoundTag.CODEC).ifPresent(tag -> handler.deserializeNBT(tag, input.lookup()));
     }
 
     /**
@@ -269,13 +267,16 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
      * This is used in Block.setPlacedBy() to restore tile state.
      */
     public void loadFromTag(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        this.loadAdditional(tag, registries);
+        this.loadAdditional(net.minecraft.world.level.storage.TagValueInput.create(
+                net.minecraft.util.ProblemReporter.DISCARDING, registries, tag));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("Handler", handler.serializeNBT(registries));
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
+        if (this.level != null) {
+            output.store("Handler", CompoundTag.CODEC, handler.serializeNBT(this.level.registryAccess()));
+        }
     }
 
     @Override

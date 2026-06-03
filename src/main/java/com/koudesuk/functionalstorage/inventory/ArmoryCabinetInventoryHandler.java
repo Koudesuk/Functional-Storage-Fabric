@@ -6,10 +6,9 @@ import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.fabricmc.fabric.api.transfer.v1.transaction.base.SnapshotParticipant;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<List<ItemStack>>
-        implements Storage<ItemVariant>, Container {
+        implements Storage<ItemVariant> {
 
     private List<ItemStack> stackList;
 
@@ -144,12 +143,10 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
         }
     }
 
-    @Override
     public int getContainerSize() {
         return FunctionalStorageConfig.ARMORY_CABINET_SIZE;
     }
 
-    @Override
     public boolean isEmpty() {
         for (ItemStack stack : stackList) {
             if (!stack.isEmpty())
@@ -158,12 +155,10 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
         return true;
     }
 
-    @Override
     public ItemStack getItem(int slot) {
         return stackList.get(slot);
     }
 
-    @Override
     public ItemStack removeItem(int slot, int amount) {
         ItemStack stack = stackList.get(slot);
         if (!stack.isEmpty()) {
@@ -174,30 +169,25 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
         return ItemStack.EMPTY;
     }
 
-    @Override
     public ItemStack removeItemNoUpdate(int slot) {
         ItemStack stack = stackList.get(slot);
         stackList.set(slot, ItemStack.EMPTY);
         return stack;
     }
 
-    @Override
     public void setItem(int slot, ItemStack stack) {
         stackList.set(slot, stack);
         onChange();
     }
 
-    @Override
     public void setChanged() {
         onChange();
     }
 
-    @Override
     public boolean stillValid(Player player) {
         return true;
     }
 
-    @Override
     public void clearContent() {
         stackList.clear();
         for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
@@ -214,7 +204,7 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
         // RecordItem was removed in 1.21, using isEnchantable and isDamageableItem as
         // checks
         return !stack.getComponents().isEmpty() || stack.isDamageableItem() || stack.isEnchantable()
-                || stack.getItem() instanceof AnimalArmorItem;
+                || stack.has(DataComponents.EQUIPPABLE);
     }
 
     public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
@@ -238,14 +228,14 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     }
 
     public void deserializeNBT(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
-        net.minecraft.nbt.ListTag tagList = nbt.getList("Items", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        net.minecraft.nbt.ListTag tagList = nbt.getListOrEmpty("Items");
         for (int i = 0; i < tagList.size(); i++) {
-            CompoundTag itemTag = tagList.getCompound(i);
-            int slot = itemTag.getInt("Slot");
+            CompoundTag itemTag = tagList.getCompoundOrEmpty(i);
+            int slot = itemTag.getIntOr("Slot", -1);
             if (slot >= 0 && slot < this.getContainerSize()) {
                 this.setItem(slot,
                         ItemStack.CODEC.parse(net.minecraft.resources.RegistryOps
-                                .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag.getCompound("Item"))
+                                .create(net.minecraft.nbt.NbtOps.INSTANCE, registries), itemTag.getCompoundOrEmpty("Item"))
                                 .result().orElse(ItemStack.EMPTY));
             }
         }

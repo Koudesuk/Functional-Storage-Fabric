@@ -17,13 +17,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
 public class FluidDrawerBlock extends DrawerBlock {
 
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public FluidDrawerBlock(DrawerType type, Properties properties) {
         super(DrawerWoodType.OAK, type, properties);
@@ -41,29 +41,24 @@ public class FluidDrawerBlock extends DrawerBlock {
     }
 
     @Override
-    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    public net.minecraft.world.InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
             BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (level.isClientSide)
-            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        if (level.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FluidDrawerTile fluidDrawerTile) {
             InteractionResult result = fluidDrawerTile.onSlotActivated(player, hand, hit.getDirection(),
                     hit.getLocation().x, hit.getLocation().y, hit.getLocation().z,
                     getHit(state, pos, hit));
-            return switch (result) {
-                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
-                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
-                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
-                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            };
+            return result == net.minecraft.world.InteractionResult.PASS ? net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND : result;
         }
-        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FluidDrawerTile fluidDrawerTile) {
@@ -76,7 +71,7 @@ public class FluidDrawerBlock extends DrawerBlock {
 
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FluidDrawerTile fluidDrawerTile) {
@@ -131,7 +126,7 @@ public class FluidDrawerBlock extends DrawerBlock {
                 if (tileData != null) {
                     tile.loadFromTag(tileData, level.registryAccess());
                     tile.setChanged();
-                    if (!level.isClientSide) {
+                    if (!level.isClientSide()) {
                         level.sendBlockUpdated(pos, state, state, 3);
                     }
                 }

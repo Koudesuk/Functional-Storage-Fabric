@@ -5,21 +5,22 @@ import com.koudesuk.functionalstorage.client.model.FramedDrawerModelData;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.util.DrawerWoodType;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -33,9 +34,17 @@ import java.util.List;
 public class FramedDrawerBlock extends DrawerBlock {
 
     public FramedDrawerBlock(DrawerType type) {
+        this(type, defaultProperties());
+    }
+
+    public FramedDrawerBlock(DrawerType type, BlockBehaviour.Properties properties) {
         super(DrawerWoodType.FRAMED, type,
-                FabricBlockSettings.copyOf(Blocks.OAK_PLANKS).strength(1.5f, 1.5f).noOcclusion()
-                        .isViewBlocking((state, level, pos) -> false));
+                properties);
+    }
+
+    private static BlockBehaviour.Properties defaultProperties() {
+        return BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).strength(1.5f, 1.5f).noOcclusion()
+                .isViewBlocking((state, level, pos) -> false);
     }
 
     @Override
@@ -59,16 +68,18 @@ public class FramedDrawerBlock extends DrawerBlock {
             CompoundTag styleTag = stack.get(FSAttachments.STYLE);
             if (styleTag != null && !styleTag.isEmpty()) {
                 HashMap<String, Item> data = new HashMap<>();
-                data.put("particle",
-                        BuiltInRegistries.ITEM.get(ResourceLocation.parse(styleTag.getString("particle"))));
-                data.put("front", BuiltInRegistries.ITEM.get(ResourceLocation.parse(styleTag.getString("front"))));
-                data.put("side", BuiltInRegistries.ITEM.get(ResourceLocation.parse(styleTag.getString("side"))));
-                data.put("front_divider",
-                        BuiltInRegistries.ITEM.get(ResourceLocation.parse(styleTag.getString("front_divider"))));
+                data.put("particle", itemFromId(styleTag.getStringOr("particle", "minecraft:air")));
+                data.put("front", itemFromId(styleTag.getStringOr("front", "minecraft:air")));
+                data.put("side", itemFromId(styleTag.getStringOr("side", "minecraft:air")));
+                data.put("front_divider", itemFromId(styleTag.getStringOr("front_divider", "minecraft:air")));
                 return new FramedDrawerModelData(data);
             }
         }
         return null;
+    }
+
+    private static Item itemFromId(String id) {
+        return BuiltInRegistries.ITEM.get(Identifier.parse(id)).map(holder -> holder.value()).orElse(Items.AIR);
     }
 
     public static ItemStack fill(ItemStack first, ItemStack second, ItemStack drawer, ItemStack divider) {
@@ -110,7 +121,7 @@ public class FramedDrawerBlock extends DrawerBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity instanceof FramedDrawerTile framedDrawerTile && framedDrawerTile.getFramedDrawerModelData() != null
                 && !framedDrawerTile.getFramedDrawerModelData().getDesign().isEmpty()) {
@@ -122,7 +133,6 @@ public class FramedDrawerBlock extends DrawerBlock {
         return new ItemStack(this);
     }
 
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
         // Parse newlines in frameddrawer.use and add each line as a separate Component
@@ -132,6 +142,5 @@ public class FramedDrawerBlock extends DrawerBlock {
                 tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

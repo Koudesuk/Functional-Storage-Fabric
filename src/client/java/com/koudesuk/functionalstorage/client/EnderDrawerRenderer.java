@@ -1,71 +1,56 @@
 package com.koudesuk.functionalstorage.client;
 
 import com.koudesuk.functionalstorage.block.tile.EnderDrawerTile;
-import com.koudesuk.functionalstorage.inventory.EnderInventoryHandler;
-import com.koudesuk.functionalstorage.util.MathUtils;
+import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import net.minecraft.core.Direction;
-import net.minecraft.world.item.ItemStack;
-import org.joml.Vector3f;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.world.phys.Vec3;
 
-/**
- * Renders Ender Drawer contents/upgrades on the block face.
- * Based on Forge EnderDrawerRenderer, adapted for Fabric.
- */
-public class EnderDrawerRenderer implements BlockEntityRenderer<EnderDrawerTile> {
+public class EnderDrawerRenderer implements BlockEntityRenderer<EnderDrawerTile, FunctionalStorageBlockEntityRenderState<EnderDrawerTile>> {
+    @Override
+    public FunctionalStorageBlockEntityRenderState<EnderDrawerTile> createRenderState() {
+        return new FunctionalStorageBlockEntityRenderState<>();
+    }
 
     @Override
-    public void render(EnderDrawerTile tile, float partialTicks, PoseStack matrixStack, MultiBufferSource bufferIn,
-            int combinedLightIn, int combinedOverlayIn) {
+    public void extractRenderState(EnderDrawerTile blockEntity,
+            FunctionalStorageBlockEntityRenderState<EnderDrawerTile> state, float partialTicks, Vec3 cameraPosition,
+            ModelFeatureRenderer.CrumblingOverlay breakProgress) {
+        BlockEntityRenderer.super.extractRenderState(blockEntity, state, partialTicks, cameraPosition, breakProgress);
+        state.blockEntity = blockEntity;
+        state.partialTicks = partialTicks;
+    }
+
+    @Override
+    public void submit(FunctionalStorageBlockEntityRenderState<EnderDrawerTile> state, PoseStack poseStack,
+            SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
+        EnderDrawerTile tile = state.blockEntity;
+        if (tile == null || tile.getLevel() == null || tile.getHandler() == null) {
+            return;
+        }
         if (Minecraft.getInstance().player != null
                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
                         FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
             return;
         }
-        matrixStack.pushPose();
 
-        Direction facing = tile.getFacingDirection();
-        matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
-
-        if (facing == Direction.NORTH) {
-            matrixStack.last().pose().mul(
-                    MathUtils.createTransformMatrix(new Vector3f(-1, 0, 0), new Vector3f(0), 1));
-        } else if (facing == Direction.EAST) {
-            matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(-1, 0, -1),
-                    new Vector3f(0, -90, 0), 1));
-        } else if (facing == Direction.SOUTH) {
-            matrixStack.last().pose().mul(
-                    MathUtils.createTransformMatrix(new Vector3f(0, 0, -1), new Vector3f(0, 180, 0), 1));
-        } else if (facing == Direction.WEST) {
-            matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0, 0, 0),
-                    new Vector3f(0, 90, 0), 1));
-        }
-
-        matrixStack.translate(0, 0, -0.5 / 16D);
-        combinedLightIn = LevelRenderer.getLightColor(tile.getLevel(), tile.getBlockPos().relative(facing));
-        DrawerRenderer.renderUpgrades(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
-        render1Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
-        matrixStack.popPose();
-    }
-
-    private void render1Slot(PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
-            int combinedOverlayIn, EnderDrawerTile tile) {
-        EnderInventoryHandler inventoryHandler = tile.getHandler();
-        if (inventoryHandler == null) {
+        BigInventoryHandler.BigStack stored = tile.getHandler().getStoredStacks().get(0);
+        if (stored.getStack().isEmpty()) {
             return;
         }
 
-        if (!inventoryHandler.getStoredStacks().get(0).getStack().isEmpty()) {
-            matrixStack.translate(0.5, 0.5, 0.0005f);
-            ItemStack stack = inventoryHandler.getStoredStacks().get(0).getStack();
-            DrawerRenderer.renderStack(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, stack,
-                    inventoryHandler.getStoredStacks().get(0).getAmount(),
-                    inventoryHandler.getSlotLimit(0), 0.015f,
-                    tile.getDrawerOptions(), tile.getLevel());
-        }
+        poseStack.pushPose();
+        DrawerRenderer.transformToDrawerFace(poseStack, tile.getFacingDirection());
+        int light = state.lightCoords;
+        DrawerRenderer.renderUpgrades(poseStack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, tile);
+        poseStack.translate(0.5, 0.5, 0.0005f);
+        DrawerRenderer.renderStack(poseStack, submitNodeCollector, light, stored.getStack(), stored.getAmount(),
+                tile.getHandler().getSlotLimit(0), 0.015f, tile.getDrawerOptions(), tile.getLevel());
+        poseStack.popPose();
     }
 }

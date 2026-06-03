@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 public class FunctionalStorageNetwork {
 
     public static void register() {
-        PayloadTypeRegistry.playC2S().register(UpdateUpgradeDirectionPayload.ID,
+        PayloadTypeRegistry.serverboundPlay().register(UpdateUpgradeDirectionPayload.ID,
                 UpdateUpgradeDirectionPayload.STREAM_CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(UpdateUpgradeDirectionPayload.ID,

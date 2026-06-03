@@ -84,7 +84,7 @@ public final class ItemStackHelper {
      */
     public static CompoundTag getCompound(ItemStack stack, String key) {
         CompoundTag tag = getCustomData(stack);
-        return tag.getCompound(key);
+        return tag.getCompoundOrEmpty(key);
     }
 
     /**
@@ -92,7 +92,7 @@ public final class ItemStackHelper {
      */
     public static boolean getBoolean(ItemStack stack, String key) {
         CompoundTag tag = getCustomData(stack);
-        return tag.getBoolean(key);
+        return tag.getBooleanOr(key, false);
     }
 
     /**
@@ -101,7 +101,7 @@ public final class ItemStackHelper {
      */
     public static int getInt(ItemStack stack, String key) {
         CompoundTag tag = getCustomData(stack);
-        return tag.getInt(key);
+        return tag.getIntOr(key, 0);
     }
 
     /**

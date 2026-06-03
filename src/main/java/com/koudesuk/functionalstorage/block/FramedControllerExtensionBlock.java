@@ -63,7 +63,7 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedControllerExtensionTile framedTile) {
             if (framedTile.getFramedDrawerModelData() != null) {
@@ -78,7 +78,6 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
         return new ItemStack(this);
     }
 
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
         String useText = Component.translatable("frameddrawer.use").getString();
@@ -87,6 +86,5 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
                 tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

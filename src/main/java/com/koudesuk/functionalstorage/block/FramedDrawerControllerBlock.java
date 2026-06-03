@@ -37,7 +37,7 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level,
             BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return type == com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER
@@ -80,7 +80,7 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedDrawerControllerTile framedControllerTile) {
             if (framedControllerTile.getFramedDrawerModelData() != null) {
@@ -95,7 +95,6 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
         return new ItemStack(this);
     }
 
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
         String useText = Component.translatable("frameddrawer.use").getString();
@@ -104,6 +103,5 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
                 tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

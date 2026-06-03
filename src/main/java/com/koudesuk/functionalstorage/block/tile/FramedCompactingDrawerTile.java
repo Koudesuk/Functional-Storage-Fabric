@@ -2,12 +2,11 @@ package com.koudesuk.functionalstorage.block.tile;
 
 import com.koudesuk.functionalstorage.client.model.FramedDrawerModelData;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
-import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class FramedCompactingDrawerTile extends CompactingDrawerTile implements RenderAttachmentBlockEntity {
+public class FramedCompactingDrawerTile extends CompactingDrawerTile {
 
     private FramedDrawerModelData framedDrawerModelData;
 
@@ -22,26 +21,26 @@ public class FramedCompactingDrawerTile extends CompactingDrawerTile implements 
     public void setFramedDrawerModelData(FramedDrawerModelData framedDrawerModelData) {
         this.framedDrawerModelData = framedDrawerModelData;
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        this.framedDrawerModelData = FramedDrawerModelData.fromNBT(tag.getCompound("Style"));
+    public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("Style", CompoundTag.CODEC)
+                .ifPresent(tag -> this.framedDrawerModelData = FramedDrawerModelData.fromNBT(tag));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
         if (this.framedDrawerModelData != null) {
-            tag.put("Style", this.framedDrawerModelData.serializeNBT(registries));
+            output.store("Style", CompoundTag.CODEC, this.framedDrawerModelData.serializeNBT());
         }
     }
 
-    @Override
     public Object getRenderAttachmentData() {
         return framedDrawerModelData;
     }

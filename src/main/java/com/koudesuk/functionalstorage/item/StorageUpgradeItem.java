@@ -8,11 +8,13 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.Item;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class StorageUpgradeItem extends UpgradeItem {
 
@@ -48,7 +50,11 @@ public class StorageUpgradeItem extends UpgradeItem {
     private final StorageTier storageTier;
 
     public StorageUpgradeItem(StorageTier tier) {
-        super(new Properties(), Type.STORAGE);
+        this(tier, new Properties());
+    }
+
+    public StorageUpgradeItem(StorageTier tier, Properties properties) {
+        super(properties, Type.STORAGE);
         this.storageTier = tier;
     }
 
@@ -82,19 +88,18 @@ public class StorageUpgradeItem extends UpgradeItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
-            List<Component> tooltip,
-            TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, context, tooltip, isAdvanced);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
+            Consumer<Component> tooltip, TooltipFlag isAdvanced) {
+        super.appendHoverText(stack, context, display, tooltip, isAdvanced);
         if (storageTier == StorageTier.IRON) {
-            tooltip.add(Component.translatable("item.utility.downgrade").withStyle(ChatFormatting.GRAY));
+            tooltip.accept(Component.translatable("item.utility.downgrade").withStyle(ChatFormatting.GRAY));
         } else {
             java.text.DecimalFormat format = new java.text.DecimalFormat();
-            tooltip.add(Component.translatable("storageupgrade.desc.item").withStyle(ChatFormatting.GRAY)
+            tooltip.accept(Component.translatable("storageupgrade.desc.item").withStyle(ChatFormatting.GRAY)
                     .append(format.format(getStorageMultiplier())));
-            tooltip.add(Component.translatable("storageupgrade.desc.fluid").withStyle(ChatFormatting.GRAY)
+            tooltip.accept(Component.translatable("storageupgrade.desc.fluid").withStyle(ChatFormatting.GRAY)
                     .append(format.format(getStorageMultiplier() / FunctionalStorageConfig.FLUID_DIVISOR)));
-            tooltip.add(Component.translatable("storageupgrade.desc.range",
+            tooltip.accept(Component.translatable("storageupgrade.desc.range",
                     format.format(getStorageMultiplier() / FunctionalStorageConfig.RANGE_DIVISOR))
                     .withStyle(ChatFormatting.GRAY));
         }

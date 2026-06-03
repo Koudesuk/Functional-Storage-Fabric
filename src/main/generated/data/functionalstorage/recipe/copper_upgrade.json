@@ -2,18 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": {
-      "item": "minecraft:copper_block"
-    },
-    "C": {
-      "tag": "c:chests/wooden"
-    },
-    "D": {
-      "tag": "functionalstorage:drawer"
-    },
-    "I": {
-      "item": "minecraft:copper_ingot"
-    }
+    "B": "minecraft:copper_block",
+    "C": "#c:chests/wooden",
+    "D": "#functionalstorage:drawer",
+    "I": "minecraft:copper_ingot"
   },
   "pattern": [
     "IBI",
@@ -21,7 +13,6 @@
     "IBI"
   ],
   "result": {
-    "count": 1,
     "id": "functionalstorage:copper_upgrade"
   }
 }

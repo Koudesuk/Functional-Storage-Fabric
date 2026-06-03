@@ -14,12 +14,14 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class UpgradeItem extends Item {
 
@@ -49,8 +51,8 @@ public class UpgradeItem extends Item {
     }
 
     @Override
-    public void onCraftedBy(ItemStack stack, Level level, Player player) {
-        super.onCraftedBy(stack, level, player);
+    public void onCraftedBy(ItemStack stack, Player player) {
+        super.onCraftedBy(stack, player);
         initNbt(stack);
     }
 
@@ -95,9 +97,9 @@ public class UpgradeItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-            TooltipFlag isAdvanced) {
-        tooltip.add(Component.translatable("upgrade.type").withStyle(ChatFormatting.YELLOW)
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
+            Consumer<Component> tooltip, TooltipFlag isAdvanced) {
+        tooltip.accept(Component.translatable("upgrade.type").withStyle(ChatFormatting.YELLOW)
                 .append(Component.translatable("upgrade.type." + getType().name().toLowerCase(Locale.ROOT))
                         .withStyle(ChatFormatting.WHITE)));
 
@@ -109,18 +111,18 @@ public class UpgradeItem extends Item {
             // Capitalize direction name directly (no Titanium dependency)
             String directionName = getDirection(stack).getName();
             String capitalizedName = directionName.substring(0, 1).toUpperCase() + directionName.substring(1);
-            tooltip.add(Component.translatable("item.utility.direction").withStyle(ChatFormatting.YELLOW)
+            tooltip.accept(Component.translatable("item.utility.direction").withStyle(ChatFormatting.YELLOW)
                     .append(Component.literal(capitalizedName).withStyle(ChatFormatting.WHITE)));
-            tooltip.add(Component.literal(""));
-            tooltip.add(Component.translatable("item.utility.direction.desc").withStyle(ChatFormatting.GRAY));
+            tooltip.accept(Component.literal(""));
+            tooltip.accept(Component.translatable("item.utility.direction.desc").withStyle(ChatFormatting.GRAY));
         }
         // Slot tooltip for redstone upgrade
         if (item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
-            tooltip.add(Component.translatable("item.utility.slot").withStyle(ChatFormatting.YELLOW)
+            tooltip.accept(Component.translatable("item.utility.slot").withStyle(ChatFormatting.YELLOW)
                     .append(Component.literal((stack.has(FSAttachments.SLOT) ? stack.get(FSAttachments.SLOT) : 0) + "")
                             .withStyle(ChatFormatting.WHITE)));
-            tooltip.add(Component.literal(""));
-            tooltip.add(Component.translatable("item.utility.slot.desc").withStyle(ChatFormatting.GRAY));
+            tooltip.accept(Component.literal(""));
+            tooltip.accept(Component.translatable("item.utility.slot.desc").withStyle(ChatFormatting.GRAY));
         }
     }
 }

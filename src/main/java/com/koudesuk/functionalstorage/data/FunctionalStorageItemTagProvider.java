@@ -1,11 +1,11 @@
 package com.koudesuk.functionalstorage.data;
 
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
-import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -13,15 +13,15 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.concurrent.CompletableFuture;
 
-public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagProvider {
+public class FunctionalStorageItemTagProvider extends FabricTagsProvider.ItemTagsProvider {
 
     // Fabric convention tags - we add items to these tags for recipe compatibility
     public static final TagKey<Item> STONES = TagKey.create(Registries.ITEM,
-            ResourceLocation.parse("c:stones"));
+            Identifier.parse("c:stones"));
     public static final TagKey<Item> WOODEN_CHESTS = TagKey.create(Registries.ITEM,
-            ResourceLocation.parse("c:chests/wooden"));
+            Identifier.parse("c:chests/wooden"));
 
-    public FunctionalStorageItemTagProvider(FabricDataOutput output,
+    public FunctionalStorageItemTagProvider(FabricPackOutput output,
             CompletableFuture<HolderLookup.Provider> registriesFuture) {
         super(output, registriesFuture);
     }
@@ -29,8 +29,8 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
     @Override
     protected void addTags(HolderLookup.Provider arg) {
         // === DRAWER TAG ===
-        FabricTagProvider<Item>.FabricTagBuilder drawerBuilder = getOrCreateTagBuilder(
-                TagKey.create(Registries.ITEM, ResourceLocation.parse("functionalstorage:drawer")));
+        var drawerBuilder = valueLookupBuilder(
+                TagKey.create(Registries.ITEM, Identifier.parse("functionalstorage:drawer")));
 
         for (java.util.List<Block> blocks : FunctionalStorageBlocks.DRAWER_TYPES.values()) {
             for (Block block : blocks) {
@@ -53,7 +53,7 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
         // === C:STONES TAG ===
         // Populate c:stones with stone variants (Fabric convention tag)
         // This matches Forge Tags.Items.STONE
-        getOrCreateTagBuilder(STONES)
+        valueLookupBuilder(STONES)
                 .add(Items.STONE)
                 .add(Items.GRANITE)
                 .add(Items.DIORITE)
@@ -69,7 +69,7 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
         // === C:CHESTS/WOODEN TAG ===
         // Populate c:chests/wooden with wooden chests only (excludes ender chest)
         // This matches Forge Tags.Items.CHESTS_WOODEN
-        getOrCreateTagBuilder(WOODEN_CHESTS)
+        valueLookupBuilder(WOODEN_CHESTS)
                 .add(Items.CHEST)
                 .add(Items.TRAPPED_CHEST);
     }

@@ -3,7 +3,6 @@ package com.koudesuk.functionalstorage.block.tile;
 import com.koudesuk.functionalstorage.client.model.FramedDrawerModelData;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.DrawerType;
-import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.minecraft.core.BlockPos;
@@ -12,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
 
-public class FramedDrawerTile extends DrawerTile implements RenderAttachmentBlockEntity {
+public class FramedDrawerTile extends DrawerTile {
 
     private FramedDrawerModelData framedDrawerModelData;
 
@@ -28,28 +27,25 @@ public class FramedDrawerTile extends DrawerTile implements RenderAttachmentBloc
     public void setFramedDrawerModelData(FramedDrawerModelData framedDrawerModelData) {
         this.framedDrawerModelData = framedDrawerModelData;
         this.setChanged();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
         }
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Style")) {
-            this.framedDrawerModelData.deserializeNBT(tag.getCompound("Style"));
-        }
+    public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
+        super.loadAdditional(input);
+        input.read("Style", CompoundTag.CODEC).ifPresent(this.framedDrawerModelData::deserializeNBT);
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput output) {
+        super.saveAdditional(output);
         if (this.framedDrawerModelData != null) {
-            tag.put("Style", this.framedDrawerModelData.serializeNBT(registries));
+            output.store("Style", CompoundTag.CODEC, this.framedDrawerModelData.serializeNBT());
         }
     }
 
-    @Override
     public Object getRenderAttachmentData() {
         return framedDrawerModelData;
     }

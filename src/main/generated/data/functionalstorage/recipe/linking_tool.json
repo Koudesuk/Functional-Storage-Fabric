@@ -2,18 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "D": {
-      "tag": "functionalstorage:drawer"
-    },
-    "E": {
-      "item": "minecraft:diamond"
-    },
-    "G": {
-      "item": "minecraft:gold_ingot"
-    },
-    "P": {
-      "item": "minecraft:paper"
-    }
+    "D": "#functionalstorage:drawer",
+    "E": "minecraft:diamond",
+    "G": "minecraft:gold_ingot",
+    "P": "minecraft:paper"
   },
   "pattern": [
     "PPG",
@@ -21,7 +13,6 @@
     "PEP"
   ],
   "result": {
-    "count": 1,
     "id": "functionalstorage:linking_tool"
   }
 }

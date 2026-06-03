@@ -36,29 +36,24 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+    public net.minecraft.world.InteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
             BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (level.isClientSide)
-            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        if (level.isClientSide())
+            return net.minecraft.world.InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedCompactingDrawerTile tile) {
             InteractionResult result = tile.onSlotActivated(player, hand, hit.getDirection(), hit.getLocation().x,
                     hit.getLocation().y,
                     hit.getLocation().z, getHit(state, pos, hit));
-            return switch (result) {
-                case SUCCESS -> net.minecraft.world.ItemInteractionResult.SUCCESS;
-                case CONSUME -> net.minecraft.world.ItemInteractionResult.CONSUME;
-                case FAIL -> net.minecraft.world.ItemInteractionResult.FAIL;
-                default -> net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-            };
+            return result == net.minecraft.world.InteractionResult.PASS ? net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND : result;
         }
-        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return net.minecraft.world.InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     @Override
     public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hit) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return InteractionResult.SUCCESS;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedCompactingDrawerTile tile) {
@@ -71,7 +66,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
 
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
+        if (level.isClientSide())
             return;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof FramedCompactingDrawerTile tile) {
@@ -115,7 +110,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity instanceof FramedCompactingDrawerTile framedDrawerTile
                 && framedDrawerTile.getFramedDrawerModelData() != null
@@ -128,7 +123,6 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
         return new ItemStack(this);
     }
 
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
         String useText = Component.translatable("frameddrawer.use").getString();
@@ -137,6 +131,5 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
                 tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

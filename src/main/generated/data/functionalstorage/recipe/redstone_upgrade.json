@@ -2,18 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": {
-      "item": "minecraft:redstone_block"
-    },
-    "C": {
-      "item": "minecraft:comparator"
-    },
-    "D": {
-      "tag": "functionalstorage:drawer"
-    },
-    "I": {
-      "item": "minecraft:redstone"
-    }
+    "B": "minecraft:redstone_block",
+    "C": "minecraft:comparator",
+    "D": "#functionalstorage:drawer",
+    "I": "minecraft:redstone"
   },
   "pattern": [
     "IBI",
@@ -21,7 +13,6 @@
     "IBI"
   ],
   "result": {
-    "count": 1,
     "id": "functionalstorage:redstone_upgrade"
   }
 }

@@ -4,10 +4,9 @@ import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -31,28 +30,42 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput container, HolderLookup.Provider registryAccess) {
+    public ItemStack assemble(CraftingInput container) {
         return higherOutput.copy();
     }
 
-    @Override
     public boolean canCraftInDimensions(int width, int height) {
         return true;
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registryAccess) {
-        return higherOutput;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<CustomCompactingRecipe> getSerializer() {
         return Serializer.INSTANCE;
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public RecipeType<CustomCompactingRecipe> getType() {
         return Type.INSTANCE;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
+
+    @Override
+    public String group() {
+        return "";
+    }
+
+    @Override
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.create(lowerInput);
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
     }
 
     public Ingredient getLowerInput() {
@@ -75,9 +88,8 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
         public static final String ID = "compacting";
     }
 
-    public static class Serializer implements RecipeSerializer<CustomCompactingRecipe> {
-        public static final Serializer INSTANCE = new Serializer();
-        public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+    public static class Serializer {
+        public static final Identifier ID = Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                 "compacting");
 
         public static final MapCodec<CustomCompactingRecipe> CODEC = RecordCodecBuilder.mapCodec(
@@ -95,14 +107,7 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
                         net.minecraft.network.codec.ByteBufCodecs.INT, CustomCompactingRecipe::getNeeded,
                         CustomCompactingRecipe::new);
 
-        @Override
-        public MapCodec<CustomCompactingRecipe> codec() {
-            return CODEC;
-        }
-
-        @Override
-        public StreamCodec<RegistryFriendlyByteBuf, CustomCompactingRecipe> streamCodec() {
-            return STREAM_CODEC;
-        }
+        public static final RecipeSerializer<CustomCompactingRecipe> INSTANCE = new RecipeSerializer<>(CODEC,
+                STREAM_CODEC);
     }
 }
