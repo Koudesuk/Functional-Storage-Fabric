@@ -82,16 +82,21 @@ public class ConfigurationToolItem extends Item {
         Level level = context.getLevel();
         BlockEntity blockEntity = level.getBlockEntity(pos);
         ConfigurationAction configuractionAction = getAction(stack);
-        if (blockEntity instanceof ControllableDrawerTile) {
+        if (blockEntity instanceof ControllableDrawerTile<?> drawerTile) {
+            // The server owns the state, the client just gets the block update back
+            if (level.isClientSide) {
+                return InteractionResult.SUCCESS;
+            }
             if (configuractionAction == ConfigurationAction.LOCKING) {
-                ((ControllableDrawerTile<?>) blockEntity).toggleLocking();
+                drawerTile.toggleLocking();
             } else {
-                ((ControllableDrawerTile<?>) blockEntity).toggleOption(configuractionAction);
-                if (configuractionAction.getMax() > 1) {
-                    context.getPlayer().displayClientMessage(
+                drawerTile.toggleOption(configuractionAction);
+                Player player = context.getPlayer();
+                if (player != null && configuractionAction.getMax() > 1) {
+                    player.displayClientMessage(
                             Component
                                     .translatable("configurationtool.configmode.indicator.mode_"
-                                            + ((ControllableDrawerTile<?>) blockEntity).getDrawerOptions()
+                                            + drawerTile.getDrawerOptions()
                                                     .getAdvancedValue(configuractionAction))
                                     .setStyle(Style.EMPTY.withColor(configuractionAction.getColor())),
                             true);

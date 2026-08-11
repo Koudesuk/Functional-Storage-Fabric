@@ -25,7 +25,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class StorageControllerTile extends ItemControllableDrawerTile<StorageControllerTile>
@@ -125,19 +127,11 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
             // First priority: Try locked drawers
             for (Storage<ItemVariant> storage : this.connectedDrawers.getItemHandlers()) {
                 if (storage instanceof BigInventoryHandler handler && handler.isLocked()) {
+                    // A locked drawer only takes items its slots are already configured for.
+                    // Unconfigured slots can only be set by clicking that slot on the drawer
+                    // itself, never through the controller.
                     // Single click: Insert held item
                     if (!stack.isEmpty()) {
-                        // Logic for setting locked item if empty
-                        var storedStacks = handler.getStoredStacks();
-                        for (int i = 0; i < storedStacks.size(); i++) {
-                            if (handler.isLocked() && storedStacks.get(i).getAmount() == 0
-                                    && storedStacks.get(i).getStack().isEmpty()) {
-                                if (handler.isItemValid(i, ItemVariant.of(stack))) {
-                                    handler.setLockedItem(i, ItemVariant.of(stack));
-                                }
-                            }
-                        }
-
                         try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                                 .openOuter()) {
                             long insertedAmount = handler.insert(ItemVariant.of(stack), stack.getCount(), transaction);
@@ -153,17 +147,6 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                         for (int i = 0; i < playerIn.getInventory().getContainerSize(); i++) {
                             ItemStack invStack = playerIn.getInventory().getItem(i);
                             if (!invStack.isEmpty()) {
-                                // Same locked empty check for inventory items
-                                var storedStacks = handler.getStoredStacks();
-                                for (int s = 0; s < storedStacks.size(); s++) {
-                                    if (handler.isLocked() && storedStacks.get(s).getAmount() == 0
-                                            && storedStacks.get(s).getStack().isEmpty()) {
-                                        if (handler.isItemValid(s, ItemVariant.of(invStack))) {
-                                            handler.setLockedItem(s, ItemVariant.of(invStack));
-                                        }
-                                    }
-                                }
-
                                 try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                                         .openOuter()) {
                                     long insertedAmount = handler.insert(ItemVariant.of(invStack),
@@ -384,6 +367,68 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
     public ConnectedDrawers getConnectedDrawers() {
         return connectedDrawers;
+    }
+
+    /**
+     * Every drawer linked to this controller. Controllers and extensions are not
+     * storage themselves, so they are skipped.
+     */
+    private List<ControllableDrawerTile<?>> getConnectedDrawerTiles() {
+        List<ControllableDrawerTile<?>> drawers = new ArrayList<>();
+        if (level == null || level.isClientSide)
+            return drawers;
+        for (Long connectedDrawer : new ArrayList<>(this.connectedDrawers.getConnectedDrawers())) {
+            BlockEntity entity = level.getBlockEntity(BlockPos.of(connectedDrawer));
+            if (entity instanceof StorageControllerTile || entity instanceof ControllerExtensionTile)
+                continue;
+            if (entity instanceof ControllableDrawerTile<?> drawer)
+                drawers.add(drawer);
+        }
+        return drawers;
+    }
+
+    /** True when every connected drawer is locked. False when there are none. */
+    public boolean areAllDrawersLocked() {
+        List<ControllableDrawerTile<?>> drawers = getConnectedDrawerTiles();
+        if (drawers.isEmpty())
+            return false;
+        for (ControllableDrawerTile<?> drawer : drawers) {
+            if (!drawer.isLocked())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * The controller has no storage of its own, so locking it means locking every
+     * connected drawer. Any unlocked drawer means "lock them all", otherwise they
+     * all get unlocked.
+     */
+    @Override
+    public void toggleLocking() {
+        boolean lock = !areAllDrawersLocked();
+        for (ControllableDrawerTile<?> drawer : getConnectedDrawerTiles()) {
+            drawer.setLocked(lock);
+        }
+    }
+
+    /**
+     * The controller keeps the master value (it is what the configuration tool
+     * reports back to the player) and pushes it onto every connected drawer.
+     */
+    @Override
+    public void toggleOption(com.koudesuk.functionalstorage.item.ConfigurationToolItem.ConfigurationAction action) {
+        super.toggleOption(action);
+        for (ControllableDrawerTile<?> drawer : getConnectedDrawerTiles()) {
+            DrawerOptions options = drawer.getDrawerOptions();
+            if (action.getMax() == 1) {
+                options.setActive(action, getDrawerOptions().isActive(action));
+            } else {
+                options.setAdvancedValue(action, getDrawerOptions().getAdvancedValue(action));
+            }
+            drawer.setChanged();
+            level.sendBlockUpdated(drawer.getBlockPos(), drawer.getBlockState(), drawer.getBlockState(), 3);
+        }
     }
 
     @Override

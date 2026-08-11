@@ -30,13 +30,48 @@ public class ControllerExtensionTile extends ItemControllableDrawerTile<Controll
 
     @Override
     public Storage<ItemVariant> getStorage() {
-        if (getControllerPos() != null && level != null) {
-            BlockEntity entity = level.getBlockEntity(getControllerPos());
-            if (entity instanceof StorageControllerTile controller) {
-                return controller.getStorage();
-            }
+        StorageControllerTile controller = getController();
+        return controller != null ? controller.getStorage() : null;
+    }
+
+    private StorageControllerTile getController() {
+        if (getControllerPos() != null && level != null
+                && level.getBlockEntity(getControllerPos()) instanceof StorageControllerTile controller) {
+            return controller;
         }
         return null;
+    }
+
+    /**
+     * An extension is just another face of the controller, so configuring it
+     * configures the whole network. Its own padlock mirrors the network state.
+     */
+    @Override
+    public void toggleLocking() {
+        StorageControllerTile controller = getController();
+        if (controller == null) {
+            super.toggleLocking();
+            return;
+        }
+        controller.toggleLocking();
+        setLocked(controller.areAllDrawersLocked());
+    }
+
+    @Override
+    public void toggleOption(com.koudesuk.functionalstorage.item.ConfigurationToolItem.ConfigurationAction action) {
+        StorageControllerTile controller = getController();
+        if (controller == null) {
+            super.toggleOption(action);
+            return;
+        }
+        controller.toggleOption(action);
+    }
+
+    /** A linked extension has no options of its own, the controller holds them. */
+    @Override
+    public DrawerOptions getDrawerOptions() {
+        StorageControllerTile controller = getController();
+        return controller != null ? controller.getDrawerOptions() : super.getDrawerOptions();
     }
 
     @Override
