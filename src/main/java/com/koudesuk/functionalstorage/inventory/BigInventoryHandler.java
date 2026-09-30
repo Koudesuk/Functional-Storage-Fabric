@@ -27,7 +27,7 @@ import java.util.List;
 // I should remove `@Override` if not implementing interface.
 // Or implement a custom interface.
 
-public abstract class BigInventoryHandler implements Storage<ItemVariant> {
+public abstract class BigInventoryHandler implements Storage<ItemVariant>, SlottedItemStorage {
 
     public static String BIG_ITEMS = "BigItems";
     public static String STACK = "Stack";

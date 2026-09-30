@@ -79,7 +79,18 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
     @Override
     public double getStorageDiv() {
-        return FunctionalStorageConfig.RANGE_DIVISOR;
+        return FunctionalStorageConfig.RANGE_DIVISOR.get();
+    }
+
+    /**
+     * Linking radius in blocks: the configured base plus what the storage upgrades add.
+     */
+    public int getLinkingRange() {
+        int extra = getStorageMultiplier();
+        if (extra == 1)
+            extra = 0;
+        return (int) Math.min(Integer.MAX_VALUE,
+                (long) FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE.get() + extra);
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StorageControllerTile blockEntity) {
@@ -437,13 +448,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     }
 
     public boolean addConnectedDrawers(LinkingToolItem.ActionMode action, BlockPos... positions) {
-        var extraRange = getStorageMultiplier();
-        if (extraRange == 1) {
-            extraRange = 0;
-        }
         var didWork = false;
-        var area = new AABB(this.getBlockPos())
-                .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
+        var area = new AABB(this.getBlockPos()).inflate(getLinkingRange());
         this.connectedDrawers.setLevel(this.getLevel());
         for (BlockPos position : positions) {
             if (level != null && level.getBlockState(position)

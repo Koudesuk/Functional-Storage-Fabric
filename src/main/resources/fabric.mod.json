@@ -28,6 +28,9 @@
 		],
 		"fabric-model-loading": [
 			"com.koudesuk.functionalstorage.client.model.FramedDrawerModelLoader"
+		],
+		"modmenu": [
+			"com.koudesuk.functionalstorage.client.ModMenuIntegration"
 		]
 	},
 	"mixins": [

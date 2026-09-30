@@ -1,6 +1,5 @@
 package com.koudesuk.functionalstorage.util;
 
-import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.ControllerExtensionTile;
 import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
@@ -52,12 +51,7 @@ public class ConnectedDrawers {
         this.fluidHandlers = new ArrayList<>();
         this.extensions = 0;
         if (level != null && !level.isClientSide()) {
-            var extraRange = controllerTile.getStorageMultiplier();
-            if (extraRange == 1) {
-                extraRange = 0;
-            }
-            var area = new AABB(controllerTile.getBlockPos())
-                    .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
+            var area = new AABB(controllerTile.getBlockPos()).inflate(controllerTile.getLinkingRange());
             this.connectedDrawers.removeIf(
                     aLong -> !(level.getBlockEntity(BlockPos.of(aLong)) instanceof ControllableDrawerTile<?>)
                             || !area.contains(Vec3.atCenterOf(BlockPos.of(aLong))));

@@ -79,6 +79,11 @@ dependencies {
 
     // Jade
     modImplementation "maven.modrinth:jade:${project.jade_version}"
+
+    // Mod Menu: compile against its API for the config screen entrypoint, and run it only in dev.
+    // Neither configuration ships it or makes it a dependency for players.
+    modCompileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+    modLocalRuntime "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {
@@ -100,8 +105,11 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	// Minecraft 1.21.1 targets Java 21. The toolchain makes compiling and runClient use a JDK 21
+	// whatever JVM Gradle itself runs on; newer JDKs trigger LWJGL and JVM warnings in game.
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 // Handle duplicate resources between src/main/resources and src/main/generated

@@ -13,6 +13,7 @@ import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,8 +23,8 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     private List<ItemStack> stackList;
 
     public ArmoryCabinetInventoryHandler() {
-        this.stackList = new ArrayList<>(FunctionalStorageConfig.ARMORY_CABINET_SIZE);
-        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
+        this.stackList = new ArrayList<>(FunctionalStorageConfig.ARMORY_CABINET_SIZE.get());
+        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE.get(); i++) {
             this.stackList.add(ItemStack.EMPTY);
         }
     }
@@ -146,7 +147,7 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
 
     @Override
     public int getContainerSize() {
-        return FunctionalStorageConfig.ARMORY_CABINET_SIZE;
+        return stackList.size();
     }
 
     @Override
@@ -199,10 +200,7 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
 
     @Override
     public void clearContent() {
-        stackList.clear();
-        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
-            stackList.add(ItemStack.EMPTY);
-        }
+        Collections.fill(stackList, ItemStack.EMPTY);
     }
 
     public abstract void onChange();

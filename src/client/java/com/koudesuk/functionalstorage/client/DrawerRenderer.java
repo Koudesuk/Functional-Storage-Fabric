@@ -41,7 +41,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                         int combinedLightIn, int combinedOverlayIn) {
                 if (Minecraft.getInstance().player != null
                                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
                         return;
                 }
                 matrixStack.pushPose();
@@ -279,7 +279,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                                 Minecraft.getInstance().level, null,
                                 0);
                 if (model.isGui3d()) {
-                        float thickness = (float) FunctionalStorageClientConfig.DRAWER_RENDER_THICKNESS;
+                        float thickness = (float) FunctionalStorageClientConfig.DRAWER_RENDER_THICKNESS.get();
                         // Avoid scaling normal matrix by using mulPoseMatrix instead of scale()
                         matrixStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
                                         new Vector3f(.75f, .75f, thickness)));

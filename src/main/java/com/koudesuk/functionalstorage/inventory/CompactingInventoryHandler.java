@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class CompactingInventoryHandler extends SnapshotParticipant<Integer> implements Storage<ItemVariant> {
+public abstract class CompactingInventoryHandler extends SnapshotParticipant<Integer>
+        implements Storage<ItemVariant>, SlottedItemStorage {
 
     public static String PARENT = "Parent";
     public static String BIG_ITEMS = "BigItems";
@@ -28,10 +29,13 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
     private int slots;
     private final List<CompactingStackStorage> storageSlots;
 
-    public CompactingInventoryHandler(int slots) {
+    /**
+     * @param baseStacks capacity in stacks of the most compacted item, before upgrades
+     */
+    public CompactingInventoryHandler(int slots, int baseStacks) {
         this.resultList = new ArrayList<>();
         this.slots = slots;
-        this.totalAmount = 512;
+        this.totalAmount = baseStacks * 64;
         for (int i = 0; i < slots - 1; i++) {
             this.totalAmount *= 9;
         }

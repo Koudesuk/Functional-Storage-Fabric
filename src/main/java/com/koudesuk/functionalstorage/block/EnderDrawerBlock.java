@@ -29,13 +29,12 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class EnderDrawerBlock extends Block implements EntityBlock {
+public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
@@ -110,31 +109,12 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof EnderDrawerTile tile) {
-            HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
+    public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level,
+            BlockPos pos) {
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
     @Override
-    public float getDestroyProgress(BlockState state, Player player,
-            net.minecraft.world.level.BlockGetter level, BlockPos pos) {
-        HitResult result = player.pick(20, 0, false);
-        if (result instanceof BlockHitResult blockHitResult) {
-            Direction facing = state.getValue(FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f;
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
-    }
-
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();

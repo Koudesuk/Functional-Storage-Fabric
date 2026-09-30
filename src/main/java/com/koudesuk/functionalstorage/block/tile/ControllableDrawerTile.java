@@ -193,6 +193,12 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         return InteractionResult.PASS;
     }
 
+    /**
+     * Left click on a front slot, see {@link com.koudesuk.functionalstorage.block.DrawerFront}.
+     */
+    public void onClicked(Player player, int slot) {
+    }
+
     public abstract int getStorageSlotAmount();
 
     public int getUtilitySlotAmount() {
@@ -208,23 +214,18 @@ public abstract class ControllableDrawerTile<T extends ControllableDrawerTile<T>
         return mult;
     }
 
-    // Cached upgrade calculation from original Forge version
+    // Cached upgrade calculation from original Forge version. Upgrades multiply together; every
+    // factor is at least 1 and the product stops at Integer.MAX_VALUE instead of overflowing.
     private void maybeCacheUpgrades() {
         if (needsUpgradeCache) {
-            mult = 1;
+            double div = Math.max(1, getStorageDiv());
+            long product = 1;
             for (int i = 0; i < storageUpgrades.getContainerSize(); i++) {
-                ItemStack stack = storageUpgrades.getItem(i);
-                if (stack.getItem() instanceof StorageUpgradeItem) {
-                    StorageUpgradeItem upgrade = (StorageUpgradeItem) stack.getItem();
-                    double div = getStorageDiv();
-                    if (div == 0)
-                        div = 1;
-                    if (mult == 1)
-                        mult = (int) (upgrade.getStorageMultiplier() / div);
-                    else
-                        mult *= (int) (upgrade.getStorageMultiplier() / div);
-                }
+                if (storageUpgrades.getItem(i).getItem() instanceof StorageUpgradeItem upgrade)
+                    product = Math.min(Integer.MAX_VALUE,
+                            product * Math.max(1, (long) (upgrade.getStorageMultiplier() / div)));
             }
+            mult = (int) product;
             needsUpgradeCache = false;
         }
     }

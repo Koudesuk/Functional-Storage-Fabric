@@ -19,7 +19,7 @@ public class SimpleCompactingDrawerRenderer<T extends SimpleCompactingDrawerTile
                         MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
                 if (Minecraft.getInstance().player != null
                                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
                         return;
                 }
                 matrixStack.pushPose();

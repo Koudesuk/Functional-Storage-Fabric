@@ -33,8 +33,6 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         implements ExtendedScreenHandlerFactory<BlockPosPayload> {
 
     private String frequency;
-    private java.util.UUID lastClickUUID;
-    private long lastClickTime;
 
     // Client-side cached handler for rendering (synced via NBT)
     private EnderInventoryHandler cachedHandler;
@@ -161,103 +159,19 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         }
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            long now = System.currentTimeMillis();
-            if (!stack.isEmpty()) {
-                // Insert item
-                if (handler.isItemValid(slot, ItemVariant.of(stack))) {
-                    int amount = stack.getCount();
-                    if (amount > 0) {
-                        // Handle empty locked drawer
-                        if (handler.isLocked() && handler.getStoredStacks().get(slot).getAmount() == 0
-                                && handler.getStoredStacks().get(slot).getStack().isEmpty()) {
-                            handler.setLockedItem(slot, ItemVariant.of(stack));
-                        }
-
-                        try (Transaction transaction = Transaction.openOuter()) {
-                            long inserted = handler.insertIntoSlot(slot, ItemVariant.of(stack), amount, transaction);
-                            if (inserted > 0) {
-                                stack.shrink((int) inserted);
-                                transaction.commit();
-
-                                // Double click detection - insert all matching items from inventory
-                                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                                    boolean hasVoid = this.isVoid();
-                                    ItemVariant slotVariant = handler.getResource(slot);
-
-                                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                                        ItemStack invStack = player.getInventory().getItem(i);
-                                        if (!invStack.isEmpty()) {
-                                            ItemVariant invVariant = ItemVariant.of(invStack);
-
-                                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                                continue;
-                                            }
-
-                                            if (handler.isItemValid(slot, invVariant)) {
-                                                try (Transaction invTransaction = Transaction.openOuter()) {
-                                                    long invInserted = handler.insert(invVariant, invStack.getCount(),
-                                                            invTransaction);
-                                                    if (invInserted > 0) {
-                                                        invStack.shrink((int) invInserted);
-                                                        invTransaction.commit();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                lastClickUUID = player.getUUID();
-                                lastClickTime = now;
-                                // Sync to clients after insertion
-                                syncToClients();
-                                return InteractionResult.SUCCESS;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Empty hand - Double click to deposit matching items
-                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                    boolean hasVoid = this.isVoid();
-                    ItemVariant slotVariant = handler.getResource(slot);
-
-                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                        ItemStack invStack = player.getInventory().getItem(i);
-                        if (!invStack.isEmpty()) {
-                            ItemVariant invVariant = ItemVariant.of(invStack);
-
-                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                continue;
-                            }
-
-                            if (handler.isItemValid(slot, invVariant)) {
-                                try (Transaction invTransaction = Transaction.openOuter()) {
-                                    long invInserted = handler.insert(invVariant, invStack.getCount(), invTransaction);
-                                    if (invInserted > 0) {
-                                        invStack.shrink((int) invInserted);
-                                        invTransaction.commit();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // Sync after batch deposit
-                    syncToClients();
-                }
-                lastClickUUID = player.getUUID();
-                lastClickTime = now;
-                return InteractionResult.SUCCESS;
-            }
-        } else if (slot == -1 || player.isShiftKeyDown()) {
-            // Open GUI
-            if (!level.isClientSide) {
-                player.openMenu(this);
-            }
-            return InteractionResult.SUCCESS;
+            // An empty slot of a locked drawer takes on whatever it is clicked with
+            if (!stack.isEmpty() && handler.isLocked() && handler.getResource(slot).isBlank())
+                handler.setLockedItem(slot, ItemVariant.of(stack));
+            useSlot(handler, player, hand, slot);
+            // The shared ender inventory does not notify this block entity by itself
+            syncToClients();
+        } else if (!level.isClientSide) {
+            player.openMenu(this);
         }
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
+    @Override
     public void onClicked(Player player, int slot) {
         EnderInventoryHandler handler = getHandler();
         if (handler == null || slot == -1) {

@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.inventory.FluidInventoryHandler;
@@ -109,6 +110,11 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
     }
 
     @Override
+    public double getStorageDiv() {
+        return FunctionalStorageConfig.FLUID_DIVISOR.get();
+    }
+
+    @Override
     public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains("Handler")) {
@@ -158,6 +164,7 @@ public class FluidDrawerTile extends ControllableDrawerTile<FluidDrawerTile>
         return InteractionResult.PASS;
     }
 
+    @Override
     public void onClicked(Player player, int slot) {
         if (slot != -1) {
             // Left-click: Use FluidStorageUtil for fluid transfer (works with ANY fluid)

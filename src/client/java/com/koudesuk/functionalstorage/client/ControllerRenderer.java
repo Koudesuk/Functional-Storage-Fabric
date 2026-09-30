@@ -1,7 +1,6 @@
 package com.koudesuk.functionalstorage.client;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
-import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -125,12 +124,7 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
             }
 
             // Render controller linking range as green translucent box
-            var extraRange = tile.getStorageMultiplier();
-            if (extraRange == 1) {
-                extraRange = 0;
-            }
-            var area = new AABB(tile.getBlockPos())
-                    .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
+            var area = new AABB(tile.getBlockPos()).inflate(tile.getLinkingRange());
             renderShape(matrixStack, bufferIn.getBuffer(TYPE), Shapes.create(area), -tile.getBlockPos().getX(),
                     -tile.getBlockPos().getY(), -tile.getBlockPos().getZ(), 0.5f, 1, 0.5f, 1.0F);
             renderFaces(matrixStack, bufferIn, area, -tile.getBlockPos().getX(), -tile.getBlockPos().getY(),
