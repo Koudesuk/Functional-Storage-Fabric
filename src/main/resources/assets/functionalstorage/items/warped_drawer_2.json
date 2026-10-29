@@ -1,6 +1,18 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "functionalstorage:item/warped_drawer_2"
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "functionalstorage:item/warped_drawer_2"
+      },
+      {
+        "type": "minecraft:special",
+        "base": "functionalstorage:item/warped_drawer_2",
+        "model": {
+          "type": "functionalstorage:drawer"
+        }
+      }
+    ]
   }
 }

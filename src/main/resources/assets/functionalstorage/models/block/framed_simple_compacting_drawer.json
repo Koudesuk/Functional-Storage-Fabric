@@ -8,6 +8,6 @@
     "side": "functionalstorage:block/framed_side",
     "top": "functionalstorage:block/framed_side",
     "lock_icon": "functionalstorage:block/unlock",
-    "front_divider": "functionalstorage:block/framed_side"
+    "front_divider": "functionalstorage:block/framed_divider"
   }
 }

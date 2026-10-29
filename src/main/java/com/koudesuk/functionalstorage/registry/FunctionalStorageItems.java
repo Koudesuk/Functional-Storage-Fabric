@@ -5,6 +5,11 @@ import com.koudesuk.functionalstorage.item.ConfigurationToolItem;
 import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.koudesuk.functionalstorage.item.StorageUpgradeItem;
 import com.koudesuk.functionalstorage.item.UpgradeItem;
+import com.koudesuk.functionalstorage.item.component.ExecuteEveryBehavior;
+import com.koudesuk.functionalstorage.item.component.GenerateFluidBehavior;
+import com.koudesuk.functionalstorage.item.component.GenerateItemBehavior;
+import net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -12,6 +17,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.material.Fluids;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +36,9 @@ public class FunctionalStorageItems {
         public static UpgradeItem REDSTONE_UPGRADE;
         public static UpgradeItem VOID_UPGRADE;
         public static UpgradeItem CREATIVE_UPGRADE;
+        public static Item DRIPPING_UPGRADE;
+        public static Item WATER_GENERATOR_UPGRADE;
+        public static Item OBSIDIAN_UPGRADE;
 
         public static void register() {
                 LINKING_TOOL = registerItem("linking_tool", LinkingToolItem::new);
@@ -65,6 +76,25 @@ public class FunctionalStorageItems {
                 // In Forge, CreativeUpgrade extends UpgradeItem with Type.STORAGE usually, but
                 // it acts special.
                 // Let's assume Type.STORAGE for now as it provides infinite storage.
+
+                // Plain items whose functional behavior makes them utility upgrades, like the original's
+                // 1.6 generator upgrades: they put what they make into the drawer they are installed in
+                DRIPPING_UPGRADE = registerItem("dripping_upgrade", properties -> new Item(properties.component(
+                                FSAttachments.FUNCTIONAL_BEHAVIOR, new ExecuteEveryBehavior(20, new GenerateFluidBehavior(
+                                                new GenerateFluidBehavior.FluidStackTemplate(Fluids.LAVA, 20))))));
+                WATER_GENERATOR_UPGRADE = registerItem("water_generator_upgrade", properties -> new Item(properties.component(
+                                FSAttachments.FUNCTIONAL_BEHAVIOR, new ExecuteEveryBehavior(1, new GenerateFluidBehavior(
+                                                new GenerateFluidBehavior.FluidStackTemplate(Fluids.WATER, 2000))))));
+                OBSIDIAN_UPGRADE = registerItem("obsidian_upgrade", properties -> new Item(properties.component(
+                                FSAttachments.FUNCTIONAL_BEHAVIOR, new ExecuteEveryBehavior(300,
+                                                new GenerateItemBehavior(new ItemStackTemplate(Items.OBSIDIAN))))));
+
+                // The Void Upgrade can only be installed once. Its own holder only exists once it is
+                // registered, so the component is added afterwards, like the original's
+                // ModifyDefaultComponentsEvent
+                DefaultItemComponentEvents.MODIFY.register(context -> context.modify(VOID_UPGRADE,
+                                builder -> builder.set(FSAttachments.INCOMPATIBLE_UPGRADES,
+                                                HolderSet.direct(VOID_UPGRADE.builtInRegistryHolder()))));
 
                 // Add to creative tab
                 // Items are added to the custom tab in FunctionalStorageGroup.java

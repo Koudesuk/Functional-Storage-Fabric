@@ -2,18 +2,20 @@ package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.EnderDrawerTile;
-import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
-import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -29,13 +31,15 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class EnderDrawerBlock extends Block implements EntityBlock {
+public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
@@ -45,6 +49,24 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(LOCKED, false));
+    }
+
+    private static final Map<String, List<ItemStack>> FREQUENCY_LOOK = new HashMap<>();
+
+    /**
+     * The icons that stand for a frequency, one vanilla non-block item per part of the UUID, picked
+     * the same way as the original so a frequency looks the same in both.
+     */
+    public static List<ItemStack> getFrequencyDisplay(String frequency) {
+        return FREQUENCY_LOOK.computeIfAbsent(frequency, key -> {
+            List<Item> items = BuiltInRegistries.ITEM.stream()
+                    .filter(item -> item != Items.AIR && !(item instanceof BlockItem)
+                            && BuiltInRegistries.ITEM.getKey(item).getNamespace().equals("minecraft"))
+                    .toList();
+            return Arrays.stream(key.split("-"))
+                    .map(part -> new ItemStack(items.get(Math.abs(part.hashCode() % items.size()))))
+                    .toList();
+        });
     }
 
     @Override
@@ -105,31 +127,12 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide())
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof EnderDrawerTile tile) {
-            HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
+    public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level,
+            BlockPos pos) {
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
     @Override
-    public float getDestroyProgress(BlockState state, Player player,
-            net.minecraft.world.level.BlockGetter level, BlockPos pos) {
-        HitResult result = player.pick(20, 0, false);
-        if (result instanceof BlockHitResult blockHitResult) {
-            Direction facing = state.getValue(FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f;
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
-    }
-
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();
@@ -201,19 +204,18 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         }
     }
 
+    // Comparators read how full the drawer is, like the original
     @Override
-    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
-            BlockPos pos, boolean movedByPiston) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof EnderDrawerTile tile) {
-            if (tile.getControllerPos() != null) {
-                BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                if (controller instanceof StorageControllerTile storageControllerTile) {
-                    storageControllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                }
-            }
-        }
-        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+            net.minecraft.core.Direction direction) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
     }
 
     @Override
@@ -247,6 +249,9 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

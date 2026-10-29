@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "functionalstorage:dripping_upgrade",
+    "functionalstorage:dripping_upgrade",
+    "functionalstorage:dripping_upgrade",
+    "functionalstorage:dripping_upgrade",
+    "functionalstorage:water_generator_upgrade"
+  ],
+  "result": {
+    "id": "functionalstorage:obsidian_upgrade"
+  }
+}

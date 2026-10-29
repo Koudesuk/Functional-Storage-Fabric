@@ -4,7 +4,10 @@
   "key": {
     "B": "minecraft:copper_block",
     "C": "#c:chests/wooden",
-    "D": "#functionalstorage:drawer",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "I": "minecraft:copper_ingot"
   },
   "pattern": [

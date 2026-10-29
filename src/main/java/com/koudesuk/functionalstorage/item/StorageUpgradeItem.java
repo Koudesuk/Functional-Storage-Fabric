@@ -98,9 +98,9 @@ public class StorageUpgradeItem extends UpgradeItem {
             tooltip.accept(Component.translatable("storageupgrade.desc.item").withStyle(ChatFormatting.GRAY)
                     .append(format.format(getStorageMultiplier())));
             tooltip.accept(Component.translatable("storageupgrade.desc.fluid").withStyle(ChatFormatting.GRAY)
-                    .append(format.format(getStorageMultiplier() / FunctionalStorageConfig.FLUID_DIVISOR)));
+                    .append(format.format(Math.max(1, getStorageMultiplier() / FunctionalStorageConfig.FLUID_DIVISOR.get()))));
             tooltip.accept(Component.translatable("storageupgrade.desc.range",
-                    format.format(getStorageMultiplier() / FunctionalStorageConfig.RANGE_DIVISOR))
+                    format.format(getStorageMultiplier() / FunctionalStorageConfig.RANGE_DIVISOR.get()))
                     .withStyle(ChatFormatting.GRAY));
         }
     }

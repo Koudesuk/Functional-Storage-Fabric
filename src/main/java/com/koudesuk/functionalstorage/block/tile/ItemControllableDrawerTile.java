@@ -1,31 +1,109 @@
 package com.koudesuk.functionalstorage.block.tile;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
+import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
+import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
+import com.koudesuk.functionalstorage.inventory.SlottedItemStorage;
 import com.koudesuk.functionalstorage.item.UpgradeItem;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageItems;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawerTile<T>>
         extends ControllableDrawerTile<T> {
+
+    private UUID lastClickPlayer;
+    private long lastClickTime;
 
     public ItemControllableDrawerTile(BlockEntityType<?> type, BlockPos pos, BlockState blockState) {
         super(type, pos, blockState);
     }
 
+    /**
+     * Right click on a front slot. The held stack goes in; a second click within 500 ms also
+     * pulls every stack of the slot's item out of the main inventory, whatever is in hand.
+     */
+    protected void useSlot(SlottedItemStorage storage, Player player, InteractionHand hand, int slot) {
+        long now = System.currentTimeMillis();
+        boolean doubleClick = player.getUUID().equals(lastClickPlayer) && now - lastClickTime < 500;
+        lastClickPlayer = player.getUUID();
+        lastClickTime = now;
+
+        insertIntoSlot(storage, slot, player.getItemInHand(hand));
+        ItemVariant resource = storage.getResource(slot);
+        if (!doubleClick || resource.isBlank())
+            return;
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
+            if (resource.matches(stack))
+                insertIntoSlot(storage, slot, stack);
+        }
+    }
+
+    private static void insertIntoSlot(SlottedItemStorage storage, int slot, ItemStack stack) {
+        if (stack.isEmpty())
+            return;
+        try (Transaction transaction = Transaction.openOuter()) {
+            stack.shrink((int) storage.insertIntoSlot(slot, ItemVariant.of(stack), stack.getCount(), transaction));
+            transaction.commit();
+        }
+    }
+
     public abstract Storage<ItemVariant> getStorage();
 
     public abstract int getBaseSize(int lost);
+
+    @Override
+    public int getComparatorSignal() {
+        if (getStorage() instanceof CompactingInventoryHandler compacting)
+            return comparatorSignal(compacting.getAmount() / (double) Math.max(1, compacting.getTotalCapacity()),
+                    compacting.getAmount() > 0);
+        int slots = 0;
+        double fullness = 0;
+        boolean hasContents = false;
+        for (StorageView<ItemVariant> view : getStorage()) {
+            slots++;
+            if (!view.isResourceBlank()) {
+                hasContents = true;
+                long limit = view.getCapacity();
+                fullness += limit <= 0 ? 0 : Math.min(1D, view.getAmount() / (double) limit);
+            }
+        }
+        return slots == 0 ? 0 : comparatorSignal(fullness / slots, hasContents);
+    }
+
+    /**
+     * Only a drawer's own slots count; a controller's storage is its linked drawers, which its range
+     * upgrades never resize.
+     */
+    @Override
+    protected List<long[]> getSlotFill() {
+        List<long[]> fill = new ArrayList<>();
+        if (getStorage() instanceof CompactingInventoryHandler compacting) {
+            fill.add(new long[] { compacting.getAmount(), compacting.getTotalCapacity() });
+        } else if (getStorage() instanceof BigInventoryHandler big) {
+            for (StorageView<ItemVariant> view : big)
+                fill.add(new long[] { view.getAmount(), view.getCapacity() });
+        }
+        return fill;
+    }
 
     public static void tick(Level level, BlockPos pos, BlockState state, ItemControllableDrawerTile<?> entity) {
         if (level.isClientSide())
@@ -34,6 +112,8 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
     }
 
     public void serverTick(Level level, BlockPos pos, BlockState state) {
+        tickFunctionalUpgrades(level);
+
         // Redstone update - check every 20 ticks like original Forge version
         if (level.getGameTime() % 20 == 0) {
             if (getUtilitySlotAmount() > 0) {
@@ -49,7 +129,7 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
         }
 
         // Process other upgrades at the configured rate
-        if (level.getGameTime() % FunctionalStorageConfig.UPGRADE_TICK == 0) {
+        if (level.getGameTime() % FunctionalStorageConfig.UPGRADE_TICK.get() == 0) {
             if (getUtilitySlotAmount() > 0) {
                 for (int i = 0; i < this.getUtilityUpgrades().getContainerSize(); i++) {
                     ItemStack stack = this.getUtilityUpgrades().getItem(i);
@@ -59,21 +139,7 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
                         } else if (stack.getItem().equals(FunctionalStorageItems.PUSHING_UPGRADE)) {
                             processUpgrade(level, pos, stack, true);
                         } else if (stack.getItem().equals(FunctionalStorageItems.COLLECTOR_UPGRADE)) {
-                            Direction direction = UpgradeItem.getDirection(stack);
-                            AABB box = new AABB(pos.relative(direction));
-                            for (ItemEntity entity : level.getEntitiesOfClass(ItemEntity.class, box)) {
-                                if (entity.isAlive()) {
-                                    try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                            .openOuter()) {
-                                        long inserted = getStorage().insert(ItemVariant.of(entity.getItem()),
-                                                entity.getItem().getCount(), transaction);
-                                        if (inserted > 0) {
-                                            entity.getItem().shrink((int) inserted);
-                                            transaction.commit();
-                                        }
-                                    }
-                                }
-                            }
+                            collectItems(level, pos, stack);
                         }
                     }
                 }
@@ -82,6 +148,16 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
     }
 
     private void processUpgrade(Level level, BlockPos pos, ItemStack stack, boolean drawerIsSource) {
+        moveItems(level, pos, stack, drawerIsSource, drawerIsSource
+                ? FunctionalStorageConfig.UPGRADE_PUSH_ITEMS.get()
+                : FunctionalStorageConfig.UPGRADE_PULL_ITEMS.get());
+    }
+
+    /**
+     * One Pulling or Pushing run: moves up to {@code amount} items between the drawer and the
+     * inventory the upgrade faces. The data-driven move_items behavior uses it too.
+     */
+    public void moveItems(Level level, BlockPos pos, ItemStack stack, boolean drawerIsSource, int amount) {
         Direction direction = UpgradeItem.getDirection(stack);
         Storage<ItemVariant> neighborStorage = ItemStorage.SIDED.find(level, pos.relative(direction),
                 direction.getOpposite());
@@ -92,10 +168,33 @@ public abstract class ItemControllableDrawerTile<T extends ItemControllableDrawe
 
             try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                     .openOuter()) {
-                StorageUtil.move(source, destination, variant -> true, FunctionalStorageConfig.UPGRADE_PULL_ITEMS,
-                        transaction);
+                StorageUtil.move(source, destination, variant -> true, amount, transaction);
                 transaction.commit();
             }
         }
     }
-}
+
+    /**
+     * One Collector run: takes the item entities in the block the upgrade faces into the drawer. The
+     * data-driven collect_item_entities behavior uses it too.
+     */
+    public void collectItems(Level level, BlockPos pos, ItemStack stack) {
+        Direction direction = UpgradeItem.getDirection(stack);
+        AABB box = new AABB(pos.relative(direction));
+        for (ItemEntity entity : level.getEntitiesOfClass(ItemEntity.class, box)) {
+            if (entity.isAlive() && !entity.getItem().isEmpty()) {
+                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
+                        .openOuter()) {
+                    long inserted = getStorage().insert(ItemVariant.of(entity.getItem()),
+                            Math.min(entity.getItem().getCount(),
+                                    FunctionalStorageConfig.UPGRADE_COLLECTOR_ITEMS.get()),
+                            transaction);
+                    if (inserted > 0) {
+                        entity.getItem().shrink((int) inserted);
+                        transaction.commit();
+                    }
+                }
+            }
+        }
+    }
+}

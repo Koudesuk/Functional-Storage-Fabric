@@ -35,7 +35,8 @@ public class FramedDrawerTile extends DrawerTile {
     @Override
     public void loadAdditional(net.minecraft.world.level.storage.ValueInput input) {
         super.loadAdditional(input);
-        input.read("Style", CompoundTag.CODEC).ifPresent(this.framedDrawerModelData::deserializeNBT);
+        input.read("Style", CompoundTag.CODEC)
+                .ifPresent(tag -> this.framedDrawerModelData = FramedDrawerModelData.fromNBT(tag));
     }
 
     @Override
@@ -46,11 +47,16 @@ public class FramedDrawerTile extends DrawerTile {
         }
     }
 
-    public Object getRenderAttachmentData() {
+    // Read by the framed block model through FabricBlockGetter.getBlockEntityRenderData
+    @Override
+    public Object getRenderData() {
         return framedDrawerModelData;
     }
 
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (StorageView<ItemVariant> view : getStorage()) {
             if (!view.isResourceBlank() && view.getAmount() > 0) {
                 return false;

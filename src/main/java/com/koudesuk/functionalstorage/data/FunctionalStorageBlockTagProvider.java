@@ -51,5 +51,32 @@ public class FunctionalStorageBlockTagProvider extends FabricTagsProvider.BlockT
                 .add(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER)
                 .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER)
                 .add(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION);
+        for (Block framedFluidDrawer : FunctionalStorageBlocks.FRAMED_FLUID_DRAWER) {
+            valueLookupBuilder(BlockTags.MINEABLE_WITH_PICKAXE).add(framedFluidDrawer);
+        }
+
+        // Moving these with block carrying mods (Carry On and the like) could duplicate or lose what they
+        // hold, so they opt out through the common tag, with the same blocks as the original
+        var relocation = valueLookupBuilder(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK,
+                Identifier.fromNamespaceAndPath("c", "relocation_not_supported")));
+        for (java.util.List<Block> blocks : FunctionalStorageBlocks.DRAWER_TYPES.values()) {
+            blocks.forEach(relocation::add);
+        }
+        FunctionalStorageBlocks.FRAMED_DRAWER.forEach(relocation::add);
+        FunctionalStorageBlocks.FRAMED_FLUID_DRAWER.forEach(relocation::add);
+        relocation
+                .add(FunctionalStorageBlocks.COMPACTING_DRAWER)
+                .add(FunctionalStorageBlocks.DRAWER_CONTROLLER)
+                .add(FunctionalStorageBlocks.ARMORY_CABINET)
+                .add(FunctionalStorageBlocks.ENDER_DRAWER)
+                .add(FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER)
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_1)
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_2)
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_4)
+                .add(FunctionalStorageBlocks.CONTROLLER_EXTENSION)
+                .add(FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER)
+                .add(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER)
+                .add(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION)
+                .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER);
     }
 }

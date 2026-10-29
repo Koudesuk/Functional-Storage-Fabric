@@ -1,0 +1,25 @@
+{
+  "type": "functionalstorage:copy_components",
+  "category": "misc",
+  "components": [
+    "functionalstorage:tile"
+  ],
+  "copyIndex": 1,
+  "key": {
+    "C": {
+      "fabric:type": "fabric:difference",
+      "base": "#functionalstorage:drawer_2x2",
+      "subtracted": [
+        "functionalstorage:framed_drawer_4",
+        "functionalstorage:fluid_drawer_4"
+      ]
+    },
+    "P": "#c:nuggets/iron"
+  },
+  "pattern": [
+    "PCP"
+  ],
+  "result": {
+    "id": "functionalstorage:framed_drawer_4"
+  }
+}

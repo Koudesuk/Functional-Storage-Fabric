@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": "minecraft:pointed_dripstone",
+    "D": "minecraft:cauldron",
+    "I": "#c:stones",
+    "R": "minecraft:lava_bucket"
+  },
+  "pattern": [
+    "IBI",
+    "IDI",
+    "IRI"
+  ],
+  "result": {
+    "id": "functionalstorage:dripping_upgrade"
+  }
+}

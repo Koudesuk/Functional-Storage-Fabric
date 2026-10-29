@@ -17,7 +17,9 @@ public class FramedDrawerControllerTile extends StorageControllerTile {
         this.framedDrawerModelData = new FramedDrawerModelData(null);
     }
 
-    public @Nullable Object getRenderAttachmentData() {
+    // Read by the framed block model through FabricBlockGetter.getBlockEntityRenderData
+    @Override
+    public @Nullable Object getRenderData() {
         return framedDrawerModelData;
     }
 

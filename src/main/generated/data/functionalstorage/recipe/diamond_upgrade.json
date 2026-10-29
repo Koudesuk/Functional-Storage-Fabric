@@ -2,10 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:diamond_block",
+    "B": "#c:storage_blocks/diamond",
     "C": "#c:chests/wooden",
     "D": "functionalstorage:gold_upgrade",
-    "I": "minecraft:diamond"
+    "I": "#c:gems/diamond"
   },
   "pattern": [
     "IBI",

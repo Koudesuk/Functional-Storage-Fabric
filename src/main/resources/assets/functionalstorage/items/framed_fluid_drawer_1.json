@@ -1,0 +1,21 @@
+{
+  "model": {
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:special",
+        "base": "functionalstorage:item/framed_fluid_drawer_1",
+        "model": {
+          "type": "functionalstorage:framed"
+        }
+      },
+      {
+        "type": "minecraft:special",
+        "base": "functionalstorage:item/framed_fluid_drawer_1",
+        "model": {
+          "type": "functionalstorage:drawer"
+        }
+      }
+    ]
+  }
+}

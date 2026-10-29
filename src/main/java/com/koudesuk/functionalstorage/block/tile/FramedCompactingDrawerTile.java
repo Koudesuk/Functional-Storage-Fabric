@@ -41,7 +41,9 @@ public class FramedCompactingDrawerTile extends CompactingDrawerTile {
         }
     }
 
-    public Object getRenderAttachmentData() {
+    // Read by the framed block model through FabricBlockGetter.getBlockEntityRenderData
+    @Override
+    public Object getRenderData() {
         return framedDrawerModelData;
     }
 }

@@ -19,7 +19,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 
 public class FluidDrawerBlock extends DrawerBlock {
 
@@ -67,19 +66,6 @@ public class FluidDrawerBlock extends DrawerBlock {
                     getHit(state, pos, hit));
         }
         return InteractionResult.PASS;
-    }
-
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide())
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FluidDrawerTile fluidDrawerTile) {
-            HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                fluidDrawerTile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
     }
 
     @Override
@@ -157,6 +143,9 @@ public class FluidDrawerBlock extends DrawerBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

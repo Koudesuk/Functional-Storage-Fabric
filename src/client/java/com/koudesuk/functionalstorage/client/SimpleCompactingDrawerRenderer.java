@@ -38,17 +38,26 @@ public class SimpleCompactingDrawerRenderer<T extends SimpleCompactingDrawerTile
         }
         if (Minecraft.getInstance().player != null
                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                        FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                        FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
             return;
         }
 
         poseStack.pushPose();
         DrawerRenderer.transformToDrawerFace(poseStack, tile.getFacingDirection());
-        int light = state.lightCoords;
+        int light = DrawerRenderer.getFrontLight(tile, state.lightCoords);
         DrawerRenderer.renderUpgrades(poseStack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, tile);
-        renderSlot(poseStack, submitNodeCollector, light, tile, 0, 0.35f, 0.5f);
-        renderSlot(poseStack, submitNodeCollector, light, tile, 1, 0.65f, 0.5f);
+        submitContents(poseStack, submitNodeCollector, light, tile);
         poseStack.popPose();
+    }
+
+    /**
+     * The stored items on the drawer face, shared with the drawer items (DrawerContentsItemRenderer).
+     */
+    static void submitContents(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light,
+            SimpleCompactingDrawerTile tile) {
+        // Lower tier at the bottom, higher tier at the top, matching SimpleCompactingDrawerBlock.getHit
+        renderSlot(poseStack, submitNodeCollector, light, tile, 0, 0.5f, 0.27f);
+        renderSlot(poseStack, submitNodeCollector, light, tile, 1, 0.5f, 0.77f);
     }
 
     private static void renderSlot(PoseStack poseStack, SubmitNodeCollector collector, int light,
@@ -63,7 +72,7 @@ public class SimpleCompactingDrawerRenderer<T extends SimpleCompactingDrawerTile
         }
         poseStack.pushPose();
         poseStack.last().pose().mul(MathUtils.createTransformMatrix(new Vector3f(x, y, 0.0005f), new Vector3f(0),
-                new Vector3f(.55f, .55f, 1.0f)));
+                new Vector3f(.5f, .5f, 1.0f)));
         DrawerRenderer.renderStack(poseStack, collector, light, display, handler.getStackInSlot(slot).getCount(),
                 handler.getSlotLimit(slot), 0.02f, tile.getDrawerOptions(), tile.getLevel());
         poseStack.popPose();

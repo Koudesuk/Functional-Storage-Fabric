@@ -2,10 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:gold_block",
+    "B": "#c:storage_blocks/gold",
     "C": "#c:chests/wooden",
     "D": "functionalstorage:copper_upgrade",
-    "I": "minecraft:gold_ingot"
+    "I": "#c:ingots/gold"
   },
   "pattern": [
     "IBI",

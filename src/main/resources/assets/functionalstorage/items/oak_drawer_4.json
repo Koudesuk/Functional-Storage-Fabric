@@ -1,6 +1,18 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "functionalstorage:item/oak_drawer_4"
+    "type": "minecraft:composite",
+    "models": [
+      {
+        "type": "minecraft:model",
+        "model": "functionalstorage:item/oak_drawer_4"
+      },
+      {
+        "type": "minecraft:special",
+        "base": "functionalstorage:item/oak_drawer_4",
+        "model": {
+          "type": "functionalstorage:drawer"
+        }
+      }
+    ]
   }
 }

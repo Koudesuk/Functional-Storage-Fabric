@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 
-public class FramedDrawerBlock extends DrawerBlock {
+public class FramedDrawerBlock extends DrawerBlock implements FramedBlock {
 
     public FramedDrawerBlock(DrawerType type) {
         this(type, defaultProperties());
@@ -131,16 +131,5 @@ public class FramedDrawerBlock extends DrawerBlock {
             return stack;
         }
         return new ItemStack(this);
-    }
-
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-            TooltipFlag flag) {
-        // Parse newlines in frameddrawer.use and add each line as a separate Component
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
-            }
-        }
     }
 }

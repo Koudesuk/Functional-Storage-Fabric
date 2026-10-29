@@ -4,7 +4,8 @@
     "particle": "functionalstorage:block/framed_front_2",
     "front": "functionalstorage:block/framed_front_2",
     "side": "functionalstorage:block/framed_side",
-    "lock_icon": "functionalstorage:block/lock"
+    "lock_icon": "functionalstorage:block/lock",
+    "front_divider": "functionalstorage:block/framed_divider"
   },
   "elements": [
     {
@@ -129,7 +130,7 @@
             15,
             9
           ],
-          "texture": "#front",
+          "texture": "#front_divider",
           "cullface": "north"
         },
         "up": {
@@ -139,7 +140,7 @@
             1,
             9
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         },
         "down": {
           "uv": [
@@ -149,7 +150,7 @@
             7
           ],
           "rotation": 180,
-          "texture": "#front"
+          "texture": "#front_divider"
         }
       }
     },

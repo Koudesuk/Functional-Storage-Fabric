@@ -55,9 +55,16 @@ public class DrawerMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(storageUpgrades, i, 10 + i * 18, 70) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
-                    return stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem
-                            && ((com.koudesuk.functionalstorage.item.UpgradeItem) stack.getItem())
-                                    .getType() == com.koudesuk.functionalstorage.item.UpgradeItem.Type.STORAGE;
+                    return com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile.isStorageUpgrade(stack)
+                            && tile.canUseStorageUpgradeWithCreative(stack, getContainerSlot())
+                            && tile.canChangeStorageUpgrade(getContainerSlot(), stack.copyWithCount(1));
+                }
+
+                // Vanilla asks this before every way of taking the upgrade out (click, shift click,
+                // number keys, dropping), like the original's extract predicate
+                @Override
+                public boolean mayPickup(Player player) {
+                    return tile.canChangeStorageUpgrade(getContainerSlot(), ItemStack.EMPTY);
                 }
 
                 @Override
@@ -77,9 +84,8 @@ public class DrawerMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(utilityUpgrades, i, 114 + i * 18, 70) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
-                    return stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem
-                            && ((com.koudesuk.functionalstorage.item.UpgradeItem) stack.getItem())
-                                    .getType() == com.koudesuk.functionalstorage.item.UpgradeItem.Type.UTILITY;
+                    return com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile
+                            .canPlaceUtilityUpgrade(utilityUpgrades, stack);
                 }
 
                 @Override

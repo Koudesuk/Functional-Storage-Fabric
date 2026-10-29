@@ -12,6 +12,7 @@ import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
+import com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.item.DrawerBlockItem;
@@ -51,6 +52,7 @@ public class FunctionalStorageBlocks {
         public static Block FLUID_DRAWER_4;
 
         public static List<Block> FRAMED_DRAWER = new ArrayList<>();
+        public static List<Block> FRAMED_FLUID_DRAWER = new ArrayList<>();
 
         public static void register() {
                 for (DrawerType type : DrawerType.values()) {
@@ -106,12 +108,13 @@ public class FunctionalStorageBlocks {
                 FRAMED_DRAWER_CONTROLLER = registerBlock("framed_storage_controller",
                                 FramedDrawerControllerBlock::new,
                                 framedIronProperties());
-                registerBlockItem("framed_storage_controller", FRAMED_DRAWER_CONTROLLER);
+                // DrawerBlockItem for the framed texture tooltip
+                registerDrawerBlockItem("framed_storage_controller", FRAMED_DRAWER_CONTROLLER);
 
                 FRAMED_CONTROLLER_EXTENSION = registerBlock("framed_controller_extension",
                                 FramedControllerExtensionBlock::new,
                                 framedIronProperties());
-                registerBlockItem("framed_controller_extension", FRAMED_CONTROLLER_EXTENSION);
+                registerDrawerBlockItem("framed_controller_extension", FRAMED_CONTROLLER_EXTENSION);
 
                 registerFramedDrawer(DrawerType.X_1);
                 registerFramedDrawer(DrawerType.X_2);
@@ -130,7 +133,18 @@ public class FunctionalStorageBlocks {
                         if (type == DrawerType.X_4) {
                                 FLUID_DRAWER_4 = block;
                         }
-                        registerBlockItem(name, block);
+                        // DrawerBlockItem for the contents tooltip
+                        registerDrawerBlockItem(name, block);
+                }
+
+                // Framed fluid drawers, like the original's framed_fluid_1/2/4
+                for (DrawerType type : DrawerType.values()) {
+                        String name = "framed_fluid_drawer_" + type.getSlots();
+                        Block block = registerBlock(name, properties -> new FramedFluidDrawerBlock(type, properties),
+                                        BlockBehaviour.Properties.ofFullCopy(Blocks.STONE_BRICKS).noOcclusion()
+                                                        .isViewBlocking((state, level, pos) -> false));
+                        FRAMED_FLUID_DRAWER.add(block);
+                        registerDrawerBlockItem(name, block);
                 }
         }
 
@@ -172,7 +186,8 @@ public class FunctionalStorageBlocks {
         }
 
         private static Item.Properties itemProperties(String name) {
-                return new Item.Properties().setId(itemKey(name));
+                // Same as vanilla Items.registerBlock: block items share the block's translation key
+                return new Item.Properties().setId(itemKey(name)).useBlockDescriptionPrefix();
         }
 
         private static ResourceKey<Block> blockKey(String name) {

@@ -6,7 +6,8 @@
     "particle": "functionalstorage:block/framed_side",
     "side": "functionalstorage:block/framed_side",
     "top": "functionalstorage:block/framed_side",
-    "lock_icon": "functionalstorage:block/lock"
+    "lock_icon": "functionalstorage:block/lock",
+    "front_divider": "functionalstorage:block/framed_divider"
   },
   "elements": [
     {
@@ -490,7 +491,7 @@
             15,
             9
           ],
-          "texture": "#front",
+          "texture": "#front_divider",
           "cullface": "north"
         },
         "up": {
@@ -500,7 +501,7 @@
             1,
             7
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         },
         "down": {
           "uv": [
@@ -509,7 +510,7 @@
             1,
             9
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         }
       }
     },
@@ -532,7 +533,7 @@
             9,
             15
           ],
-          "texture": "#front",
+          "texture": "#front_divider",
           "cullface": "north"
         },
         "east": {
@@ -542,7 +543,7 @@
             8,
             15
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         },
         "south": {
           "uv": [
@@ -551,7 +552,7 @@
             2,
             6
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         },
         "west": {
           "uv": [
@@ -560,7 +561,7 @@
             9,
             15
           ],
-          "texture": "#front"
+          "texture": "#front_divider"
         }
       }
     },

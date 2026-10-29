@@ -44,6 +44,7 @@ public class FunctionalStorageGroup {
                                                         entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_1);
                                                         entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_2);
                                                         entries.accept(FunctionalStorageBlocks.FLUID_DRAWER_4);
+                                                        FunctionalStorageBlocks.FRAMED_FLUID_DRAWER.forEach(entries::accept);
 
                                                         // Add tools
                                                         entries.accept(FunctionalStorageItems.LINKING_TOOL);
@@ -70,6 +71,9 @@ public class FunctionalStorageGroup {
                                                         entries.accept(FunctionalStorageItems.REDSTONE_UPGRADE);
                                                         entries.accept(FunctionalStorageItems.VOID_UPGRADE);
                                                         entries.accept(FunctionalStorageItems.CREATIVE_UPGRADE);
+                                                        entries.accept(FunctionalStorageItems.DRIPPING_UPGRADE);
+                                                        entries.accept(FunctionalStorageItems.WATER_GENERATOR_UPGRADE);
+                                                        entries.accept(FunctionalStorageItems.OBSIDIAN_UPGRADE);
                                                 })
                                                 .build());
         }

@@ -1,11 +1,14 @@
 package com.koudesuk.functionalstorage.data;
 
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
+import com.koudesuk.functionalstorage.util.DrawerType;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagsProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -49,6 +52,30 @@ public class FunctionalStorageItemTagProvider extends FabricTagsProvider.ItemTag
         for (Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
             drawerBuilder.add(block.asItem());
         }
+        for (Block block : FunctionalStorageBlocks.FRAMED_FLUID_DRAWER) {
+            drawerBuilder.add(block.asItem());
+        }
+
+        // === DRAWERS BY SIZE AND FLUID DRAWERS === (the original's drawer_1x1/1x2/2x2 and fluid_drawer)
+        for (DrawerType type : DrawerType.values()) {
+            var sizeBuilder = valueLookupBuilder(StorageTags.drawerOfSize(type));
+            for (Block block : FunctionalStorageBlocks.DRAWER_TYPES.get(type)) {
+                sizeBuilder.add(block.asItem());
+            }
+            for (Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
+                if (((com.koudesuk.functionalstorage.block.DrawerBlock) block).getType() == type)
+                    sizeBuilder.add(block.asItem());
+            }
+            sizeBuilder.add(switch (type) {
+                case X_1 -> FunctionalStorageBlocks.FLUID_DRAWER_1.asItem();
+                case X_2 -> FunctionalStorageBlocks.FLUID_DRAWER_2.asItem();
+                case X_4 -> FunctionalStorageBlocks.FLUID_DRAWER_4.asItem();
+            });
+        }
+        valueLookupBuilder(StorageTags.FLUID_DRAWER)
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_1.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_2.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_4.asItem());
 
         // === C:STONES TAG ===
         // Populate c:stones with stone variants (Fabric convention tag)
@@ -72,5 +99,28 @@ public class FunctionalStorageItemTagProvider extends FabricTagsProvider.ItemTag
         valueLookupBuilder(WOODEN_CHESTS)
                 .add(Items.CHEST)
                 .add(Items.TRAPPED_CHEST);
+
+        // === DATA PACK TAGS === (same contents as the original's FunctionalStorageItemTagsProvider)
+        // Vanilla tags are not known to this provider, so addTag fails its reference check;
+        // forceAddTag skips the check and still writes a plain required "#minecraft:swords"
+        valueLookupBuilder(StorageTags.ARMORY_CABINET_INSERTABLE)
+                .forceAddTag(ItemTags.SWORDS)
+                .forceAddTag(ItemTags.AXES)
+                .forceAddTag(ItemTags.HOES)
+                .forceAddTag(ItemTags.PICKAXES)
+                .forceAddTag(ItemTags.SHOVELS)
+                .forceAddTag(ItemTags.HEAD_ARMOR)
+                .forceAddTag(ItemTags.CHEST_ARMOR)
+                .forceAddTag(ItemTags.LEG_ARMOR)
+                .forceAddTag(ItemTags.FOOT_ARMOR)
+                .forceAddTag(ItemTags.BOW_ENCHANTABLE)
+                .forceAddTag(ItemTags.CROSSBOW_ENCHANTABLE)
+                .forceAddTag(ItemTags.TRIDENT_ENCHANTABLE)
+                .forceAddTag(ItemTags.MACE_ENCHANTABLE)
+                .add(Items.ELYTRA, Items.SHIELD, Items.FISHING_ROD, Items.FLINT_AND_STEEL, Items.SHEARS, Items.BRUSH,
+                        Items.ENCHANTED_BOOK);
+        // Empty on purpose, for data packs to fill
+        valueLookupBuilder(StorageTags.DRAWER_STORAGE_DENYLIST);
+        valueLookupBuilder(StorageTags.CREATIVE_VENDING_UPGRADE_INCOMPATIBLE);
     }
 }

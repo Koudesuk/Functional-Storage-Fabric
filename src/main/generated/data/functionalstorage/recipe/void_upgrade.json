@@ -2,8 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "D": "#functionalstorage:drawer",
-    "I": "minecraft:obsidian"
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
+    "I": "#c:obsidians"
   },
   "pattern": [
     "III",

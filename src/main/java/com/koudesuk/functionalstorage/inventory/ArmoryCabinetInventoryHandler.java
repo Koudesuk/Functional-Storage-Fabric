@@ -1,6 +1,7 @@
 package com.koudesuk.functionalstorage.inventory;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
@@ -12,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,8 +23,8 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     private List<ItemStack> stackList;
 
     public ArmoryCabinetInventoryHandler() {
-        this.stackList = new ArrayList<>(FunctionalStorageConfig.ARMORY_CABINET_SIZE);
-        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
+        this.stackList = new ArrayList<>(FunctionalStorageConfig.ARMORY_CABINET_SIZE.get());
+        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE.get(); i++) {
             this.stackList.add(ItemStack.EMPTY);
         }
     }
@@ -144,7 +146,7 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     }
 
     public int getContainerSize() {
-        return FunctionalStorageConfig.ARMORY_CABINET_SIZE;
+        return stackList.size();
     }
 
     public boolean isEmpty() {
@@ -189,15 +191,22 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
     }
 
     public void clearContent() {
-        stackList.clear();
-        for (int i = 0; i < FunctionalStorageConfig.ARMORY_CABINET_SIZE; i++) {
-            stackList.add(ItemStack.EMPTY);
-        }
+        Collections.fill(stackList, ItemStack.EMPTY);
     }
 
     public abstract void onChange();
 
+    /**
+     * Whether the cabinet takes the item at all, like the original's isValid.
+     */
+    public boolean isItemValid(ItemStack stack) {
+        return !stack.isEmpty() && isCertifiedStack(stack);
+    }
+
     private boolean isCertifiedStack(ItemStack stack) {
+        // Checked before the stack size, like the original, so the tag can add stackable items
+        if (StorageTags.isArmoryInsertable(stack.getItem()))
+            return true;
         if (stack.getMaxStackSize() > 1)
             return false;
         // In 1.21, use Component API to check for custom data instead of hasTag()

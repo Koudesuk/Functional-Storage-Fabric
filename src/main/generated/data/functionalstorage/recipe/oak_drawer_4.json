@@ -3,7 +3,9 @@
   "category": "misc",
   "key": {
     "C": "#c:chests/wooden",
-    "P": "minecraft:oak_planks"
+    "P": {
+      "fabric:type": "functionalstorage:woodless"
+    }
   },
   "pattern": [
     "CPC",

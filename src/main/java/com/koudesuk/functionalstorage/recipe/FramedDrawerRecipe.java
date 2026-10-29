@@ -4,6 +4,7 @@ import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
+import com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -69,6 +70,13 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 ((BlockItem) drawer.getItem()).getBlock() instanceof FramedControllerExtensionBlock;
     }
 
+    public static boolean matchesFluid(ItemStack first, ItemStack second, ItemStack drawer) {
+        return !first.isEmpty() && first.getItem() instanceof BlockItem &&
+                !second.isEmpty() && second.getItem() instanceof BlockItem &&
+                !drawer.isEmpty() && drawer.getItem() instanceof BlockItem &&
+                ((BlockItem) drawer.getItem()).getBlock() instanceof FramedFluidDrawerBlock;
+    }
+
     private static Ingredients getIngredients(CraftingInput inv) {
         List<ItemStack> nonEmpty = new ArrayList<>();
         for (int i = 0; i < inv.size(); i++) {
@@ -111,7 +119,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
                 matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
                 matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer());
+                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesFluid(ingredients.first(), ingredients.second(), ingredients.drawer());
     }
 
     @Override
@@ -125,7 +134,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
                 matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
                 matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer())) {
+                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
+                matchesFluid(ingredients.first(), ingredients.second(), ingredients.drawer())) {
             return FramedDrawerBlock.fill(ingredients.first(), ingredients.second(), ingredients.drawer(),
                     ingredients.divider());
         }

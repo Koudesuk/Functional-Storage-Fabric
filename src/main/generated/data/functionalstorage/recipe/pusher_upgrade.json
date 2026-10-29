@@ -2,8 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:redstone",
-    "D": "#functionalstorage:drawer",
+    "B": "#c:dusts/redstone",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "I": "#c:stones",
     "R": "minecraft:hopper"
   },

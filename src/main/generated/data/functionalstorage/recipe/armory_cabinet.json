@@ -2,8 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:netherite_ingot",
-    "C": "#functionalstorage:drawer",
+    "B": "#c:ingots/netherite",
+    "C": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "D": "minecraft:comparator",
     "I": "#c:stones"
   },

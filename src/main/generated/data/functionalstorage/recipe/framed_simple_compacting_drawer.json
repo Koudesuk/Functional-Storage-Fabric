@@ -2,7 +2,10 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "D": "#functionalstorage:drawer",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "I": "#c:ingots/iron",
     "P": "minecraft:piston",
     "S": "#c:nuggets/iron"

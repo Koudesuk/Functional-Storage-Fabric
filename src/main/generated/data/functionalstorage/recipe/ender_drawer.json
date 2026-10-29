@@ -2,8 +2,11 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": "minecraft:ender_chest",
-    "L": "#functionalstorage:drawer",
+    "C": "#c:chests/ender",
+    "L": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "P": "#minecraft:planks"
   },
   "pattern": [

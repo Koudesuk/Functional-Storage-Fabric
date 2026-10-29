@@ -2,9 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "key": {
-    "D": "#functionalstorage:drawer",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "E": "minecraft:diamond",
-    "G": "minecraft:gold_ingot",
+    "G": "#c:ingots/gold",
     "P": "minecraft:paper"
   },
   "pattern": [

@@ -1,6 +1,5 @@
 package com.koudesuk.functionalstorage.util;
 
-import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.ControllerExtensionTile;
 import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
@@ -52,22 +51,19 @@ public class ConnectedDrawers {
         this.fluidHandlers = new ArrayList<>();
         this.extensions = 0;
         if (level != null && !level.isClientSide()) {
-            var extraRange = controllerTile.getStorageMultiplier();
-            if (extraRange == 1) {
-                extraRange = 0;
-            }
-            var area = new AABB(controllerTile.getBlockPos())
-                    .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
-            this.connectedDrawers.removeIf(
-                    aLong -> !(level.getBlockEntity(BlockPos.of(aLong)) instanceof ControllableDrawerTile<?>)
-                            || !area.contains(Vec3.atCenterOf(BlockPos.of(aLong))));
+            var area = new AABB(controllerTile.getBlockPos()).inflate(controllerTile.getLinkingRange());
+            this.connectedDrawers.removeIf(aLong -> !staysLinked(BlockPos.of(aLong), area));
+            // Higher priority drawers come first, then the nearest, like the original
             this.connectedDrawers.sort(
-                    Comparator.comparingDouble(value -> BlockPos.of(value).distSqr(controllerTile.getBlockPos())));
+                    Comparator.<Long>comparingInt(value -> getPriority(BlockPos.of(value))).reversed()
+                            .thenComparingDouble(value -> BlockPos.of(value).distSqr(controllerTile.getBlockPos())));
             for (Long connectedDrawer : this.connectedDrawers) {
                 BlockPos pos = BlockPos.of(connectedDrawer);
                 BlockEntity entity = level.getBlockEntity(pos);
-                if (entity instanceof StorageControllerTile)
-                    continue;
+                // A listed drawer must point back, or breaking it cannot unlink it. A controller placed
+                // again from its item brings its list back after breaking it cleared the drawers.
+                if (entity instanceof ControllableDrawerTile<?> linked && linked.getControllerPos() == null)
+                    linked.setControllerPos(controllerTile.getBlockPos());
                 // Skip Controller Extension tiles - they return controller's storage which
                 // would cause infinite recursion
                 if (entity instanceof ControllerExtensionTile) {
@@ -98,6 +94,22 @@ public class ConnectedDrawers {
         if (this.controllerTile.getFluidHandler() != null) {
             this.controllerTile.getFluidHandler().invalidate();
         }
+    }
+
+    /**
+     * Like the original's rebuild, only drawers and extensions in range stay linked, never a
+     * controller. A drawer that points to another controller belongs to that one instead.
+     */
+    private boolean staysLinked(BlockPos pos, AABB area) {
+        if (!area.contains(Vec3.atCenterOf(pos)) || !(level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> drawer)
+                || drawer instanceof StorageControllerTile)
+            return false;
+        BlockPos owner = drawer.getControllerPos();
+        return owner == null || owner.equals(controllerTile.getBlockPos());
+    }
+
+    private int getPriority(BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> drawer ? drawer.getPriority() : 0;
     }
 
     public void rebuildShapes() {

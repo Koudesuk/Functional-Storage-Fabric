@@ -38,18 +38,26 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile>
         }
         if (Minecraft.getInstance().player != null
                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                        FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                        FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
             return;
         }
 
         poseStack.pushPose();
         DrawerRenderer.transformToDrawerFace(poseStack, tile.getFacingDirection());
-        int light = state.lightCoords;
+        int light = DrawerRenderer.getFrontLight(tile, state.lightCoords);
         DrawerRenderer.renderUpgrades(poseStack, submitNodeCollector, light, OverlayTexture.NO_OVERLAY, tile);
+        submitContents(poseStack, submitNodeCollector, light, tile);
+        poseStack.popPose();
+    }
+
+    /**
+     * The stored items on the drawer face, shared with the drawer items (DrawerContentsItemRenderer).
+     */
+    static void submitContents(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light,
+            CompactingDrawerTile tile) {
         renderSlot(poseStack, submitNodeCollector, light, tile, 0, 0.75f, 0.27f);
         renderSlot(poseStack, submitNodeCollector, light, tile, 1, 0.25f, 0.27f);
         renderSlot(poseStack, submitNodeCollector, light, tile, 2, 0.5f, 0.77f);
-        poseStack.popPose();
     }
 
     private static void renderSlot(PoseStack poseStack, SubmitNodeCollector collector, int light,

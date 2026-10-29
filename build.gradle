@@ -70,7 +70,7 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // JEI
     compileOnly "mezz.jei:jei-${project.jei_minecraft_version}-fabric-api:${project.jei_version}"
@@ -78,6 +78,15 @@ dependencies {
 
     // Jade
     implementation "maven.modrinth:jade:${project.jade_version}"
+
+    // The One Probe: compile against its API only. It needs Forge Config API Port at runtime, so it is
+    // not run in dev; drop both jars into run/mods to try it.
+    compileOnly "maven.modrinth:the-one-probe:${project.top_version}"
+
+    // Mod Menu: compile against its API for the config screen entrypoint, and run it only in dev.
+    // Neither configuration ships it or makes it a dependency for players.
+    compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+    localRuntime "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {

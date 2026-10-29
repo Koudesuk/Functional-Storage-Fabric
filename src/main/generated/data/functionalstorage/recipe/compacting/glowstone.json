@@ -1,0 +1,10 @@
+{
+  "type": "functionalstorage:custom_compacting",
+  "higher_input": {
+    "id": "minecraft:glowstone"
+  },
+  "lower_input": {
+    "count": 4,
+    "id": "minecraft:glowstone_dust"
+  }
+}

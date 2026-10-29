@@ -1,6 +1,5 @@
 package com.koudesuk.functionalstorage.block;
 
-import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
@@ -21,8 +20,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
 
 public class StorageControllerBlock extends Block implements EntityBlock {
 
@@ -84,14 +81,7 @@ public class StorageControllerBlock extends Block implements EntityBlock {
                 }
                 Block.popResource(level, pos, stack);
             }
-            for (Long connectedDrawer : new ArrayList<>(tile.getConnectedDrawers().getConnectedDrawers())) {
-                BlockEntity connectedEntity = level.getBlockEntity(BlockPos.of(connectedDrawer));
-                if (connectedEntity instanceof StorageControllerTile)
-                    continue;
-                if (connectedEntity instanceof ControllableDrawerTile<?> controllableDrawerTile) {
-                    controllableDrawerTile.clearControllerPos();
-                }
-            }
+            // Unlinking the drawers happens in StorageControllerTile.preRemoveSideEffects
         }
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }

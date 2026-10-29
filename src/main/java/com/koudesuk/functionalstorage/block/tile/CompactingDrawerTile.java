@@ -1,10 +1,13 @@
 package com.koudesuk.functionalstorage.block.tile;
 
+import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.CompactingUtil;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.minecraft.core.BlockPos;
@@ -34,10 +37,11 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
 
     public CompactingDrawerTile(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
-        this.handler = new CompactingInventoryHandler(3) {
+        this.handler = new CompactingInventoryHandler(3, FunctionalStorageConfig.COMPACTING_DRAWER_STACKS.get()) {
             @Override
             public void onChange() {
                 CompactingDrawerTile.this.setChanged();
+                CompactingDrawerTile.this.updateComparatorOutput();
                 if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
@@ -46,6 +50,12 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
             @Override
             public int getMultiplier() {
                 return getStorageMultiplier();
+            }
+
+            @Override
+            public double getSizeFactor() {
+                return CompactingDrawerTile.this.getSizeFactor(FSAttachments.ITEM_STORAGE_MODIFIER,
+                        FunctionalStorageConfig.COMPACTING_DRAWER_STACKS.get());
             }
 
             @Override
@@ -84,10 +94,6 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
         }
     }
 
-    // Fields for double-click detection
-    private java.util.UUID lastClickUUID;
-    private long lastClickTime;
-
     @Override
     public InteractionResult onSlotActivated(Player player, InteractionHand hand, Direction facing, double hitX,
             double hitY, double hitZ, int slot) {
@@ -96,8 +102,8 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
                 || stack.getItem().equals(com.koudesuk.functionalstorage.registry.FunctionalStorageItems.LINKING_TOOL))
             return InteractionResult.PASS;
 
-        // Setup compacting if not already setup
-        if (!handler.isSetup() && slot != -1 && !stack.isEmpty()) {
+        // Setup compacting if not already setup; a denied item never becomes the drawer's item
+        if (!handler.isSetup() && slot != -1 && !stack.isEmpty() && !StorageTags.isDrawerDenied(stack.getItem())) {
             ItemStack setupStack = stack.copy();
             setupStack.setCount(1);
             CompactingUtil compactingUtil = new CompactingUtil(this.level, 3);
@@ -122,87 +128,18 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
             return parentResult;
         }
 
-        // Handle slot interaction
         if (slot != -1 && !player.isShiftKeyDown()) {
-            long now = System.currentTimeMillis();
-            if (!stack.isEmpty()) {
-                // Insert item
-                net.fabricmc.fabric.api.transfer.v1.item.ItemVariant resource = net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
-                        .of(stack);
-                if (handler.isItemValid(slot, resource)) {
-                    try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                            .openOuter()) {
-                        long inserted = handler.insertIntoSlot(slot, resource, stack.getCount(), transaction);
-                        if (inserted > 0) {
-                            stack.shrink((int) inserted);
-                            transaction.commit();
-
-                            // Double click detection - insert all matching items from inventory
-                            if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                                for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                                    ItemStack invStack = player.getInventory().getItem(i);
-                                    if (!invStack.isEmpty()) {
-                                        net.fabricmc.fabric.api.transfer.v1.item.ItemVariant invVariant = net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
-                                                .of(invStack);
-                                        if (handler.isItemValid(slot, invVariant)) {
-                                            try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction invTransaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                                    .openOuter()) {
-                                                long invInserted = handler.insert(invVariant, invStack.getCount(),
-                                                        invTransaction);
-                                                if (invInserted > 0) {
-                                                    invStack.shrink((int) invInserted);
-                                                    invTransaction.commit();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            lastClickUUID = player.getUUID();
-                            lastClickTime = now;
-                            return InteractionResult.SUCCESS;
-                        }
-                    }
-                }
-            } else {
-                // Empty hand - Double click to deposit matching items
-                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                        ItemStack invStack = player.getInventory().getItem(i);
-                        if (!invStack.isEmpty()) {
-                            net.fabricmc.fabric.api.transfer.v1.item.ItemVariant invVariant = net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
-                                    .of(invStack);
-                            if (handler.isItemValid(slot, invVariant)) {
-                                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction invTransaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                        .openOuter()) {
-                                    long invInserted = handler.insert(invVariant, invStack.getCount(), invTransaction);
-                                    if (invInserted > 0) {
-                                        invStack.shrink((int) invInserted);
-                                        invTransaction.commit();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                lastClickUUID = player.getUUID();
-                lastClickTime = now;
-                return InteractionResult.SUCCESS;
-            }
-        } else if (slot == -1 || player.isShiftKeyDown()) {
-            // Open GUI
-            if (!level.isClientSide()) {
-                player.openMenu(this);
-            }
-            return InteractionResult.SUCCESS;
+            useSlot(handler, player, hand, slot);
+        } else if (!level.isClientSide()) {
+            player.openMenu(this);
         }
-
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
     /**
      * Handle left-click extraction from a specific slot.
      */
+    @Override
     public void onClicked(Player player, int slot) {
         if (slot != -1) {
             try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
@@ -237,6 +174,9 @@ public class CompactingDrawerTile extends ItemControllableDrawerTile<CompactingD
     }
 
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (net.fabricmc.fabric.api.transfer.v1.storage.StorageView<ItemVariant> view : getStorage()) {
             if (!view.isResourceBlank()) {
                 return false;

@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 
-public class DrawerBlock extends Block implements EntityBlock {
+public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     private final DrawerType type;
     private final IWoodType woodType;
@@ -76,33 +76,12 @@ public class DrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void attack(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
-            net.minecraft.world.entity.player.Player player) {
-        if (level.isClientSide())
-            return;
-        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-                drawerTile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
+    public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
     @Override
-    public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
-            net.minecraft.world.level.BlockGetter level, BlockPos pos) {
-        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-        if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-            net.minecraft.core.Direction facing = state
-                    .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f;
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
-    }
-
     public int getHit(BlockState state, BlockPos pos, net.minecraft.world.phys.BlockHitResult blockHitResult) {
         net.minecraft.core.Direction facing = state
                 .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
@@ -204,22 +183,6 @@ public class DrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
-            BlockPos pos, boolean movedByPiston) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof DrawerTile drawerTile) {
-            if (drawerTile.getControllerPos() != null) {
-                BlockEntity controller = level.getBlockEntity(drawerTile.getControllerPos());
-                if (controller instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile storageControllerTile) {
-                    storageControllerTile.addConnectedDrawers(
-                            com.koudesuk.functionalstorage.item.LinkingToolItem.ActionMode.REMOVE, pos);
-                }
-            }
-        }
-        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
-    }
-
-    @Override
     public void setPlacedBy(net.minecraft.world.level.Level level, BlockPos pos, BlockState state,
             @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
@@ -269,6 +232,20 @@ public class DrawerBlock extends Block implements EntityBlock {
         return woodType;
     }
 
+    // Comparators read how full the drawer is, like the original
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+            net.minecraft.core.Direction direction) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
+    }
+
     @Override
     public boolean isSignalSource(BlockState state) {
         return true;
@@ -297,6 +274,9 @@ public class DrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

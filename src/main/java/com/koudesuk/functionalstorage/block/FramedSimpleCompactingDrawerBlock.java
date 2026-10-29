@@ -7,7 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -17,12 +16,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlock {
+public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlock implements FramedBlock {
 
     public FramedSimpleCompactingDrawerBlock(Properties properties) {
         super(properties);
@@ -40,19 +38,6 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity instanceof FramedSimpleCompactingDrawerTile framedDrawerTile) {
             framedDrawerTile.setFramedDrawerModelData(FramedDrawerBlock.getDrawerModelData(stack));
-        }
-    }
-
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide())
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FramedSimpleCompactingDrawerTile tile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
         }
     }
 
@@ -90,15 +75,5 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
             return stack;
         }
         return new ItemStack(this);
-    }
-
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-            TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
-            }
-        }
     }
 }

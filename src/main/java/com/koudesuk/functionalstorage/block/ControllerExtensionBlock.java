@@ -1,8 +1,6 @@
 package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.ControllerExtensionTile;
-import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
-import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -70,21 +68,6 @@ public class ControllerExtensionBlock extends Block implements EntityBlock {
                     hit.getLocation().z);
         }
         return InteractionResult.PASS;
-    }
-
-    @Override
-    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
-            BlockPos pos, boolean movedByPiston) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof ControllerExtensionTile tile) {
-            if (tile.getControllerPos() != null) {
-                BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                if (controller instanceof StorageControllerTile controllerTile) {
-                    controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                }
-            }
-        }
-        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override

@@ -1,8 +1,6 @@
 package com.koudesuk.functionalstorage.block;
 
 import com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile;
-import com.koudesuk.functionalstorage.block.tile.StorageControllerTile;
-import com.koudesuk.functionalstorage.item.LinkingToolItem;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,7 +24,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-public class CompactingDrawerBlock extends Block implements EntityBlock {
+public class CompactingDrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
@@ -94,34 +92,6 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide())
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof CompactingDrawerTile tile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
-
-    @Override
-    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level,
-            BlockPos pos, boolean movedByPiston) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof CompactingDrawerTile tile) {
-            if (tile.getControllerPos() != null) {
-                BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                if (controller instanceof StorageControllerTile controllerTile) {
-                    controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                }
-            }
-        }
-        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
-    }
-
-    @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state,
             @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
@@ -148,16 +118,10 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     @Override
     public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level,
             BlockPos pos) {
-        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-        if (result instanceof BlockHitResult blockHitResult) {
-            Direction facing = state.getValue(FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f; // Prevent breaking from front face
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
+    @Override
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();
@@ -233,6 +197,20 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
         return stacks;
     }
 
+    // Comparators read how full the drawer is, like the original
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+            net.minecraft.core.Direction direction) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
+    }
+
     @Override
     public boolean isSignalSource(BlockState state) {
         return true;
@@ -261,6 +239,9 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

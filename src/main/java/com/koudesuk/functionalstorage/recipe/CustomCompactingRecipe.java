@@ -4,24 +4,49 @@ import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class CustomCompactingRecipe implements Recipe<CraftingInput> {
 
     private final Ingredient lowerInput;
-    private final ItemStack higherOutput;
+    // Made on first use for the custom_compacting format: an ItemStack needs the item components, which datagen
+    // has not bound yet when it builds the recipes (the original also keeps templates and makes stacks on demand)
+    @Nullable
+    private ItemStack higherOutput;
     private final int needed;
+    // Set when the recipe uses the original's functionalstorage:custom_compacting format
+    @Nullable
+    private final ItemStackTemplate lowerTemplate;
+    @Nullable
+    private final ItemStackTemplate higherTemplate;
 
     public CustomCompactingRecipe(Ingredient lowerInput, ItemStack higherOutput, int needed) {
         this.lowerInput = lowerInput;
         this.higherOutput = higherOutput;
         this.needed = needed;
+        this.lowerTemplate = null;
+        this.higherTemplate = null;
+    }
+
+    /**
+     * The original's format: {@code lower_input} items (with their count) compact into one {@code higher_input}.
+     */
+    public CustomCompactingRecipe(ItemStackTemplate lowerInput, ItemStackTemplate higherInput) {
+        this.lowerInput = Ingredient.of(lowerInput.item().value());
+        this.higherOutput = null;
+        this.needed = lowerInput.count();
+        this.lowerTemplate = lowerInput;
+        this.higherTemplate = higherInput;
     }
 
     @Override
@@ -31,7 +56,7 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
 
     @Override
     public ItemStack assemble(CraftingInput container) {
-        return higherOutput.copy();
+        return getHigherOutput().copy();
     }
 
     public boolean canCraftInDimensions(int width, int height) {
@@ -40,7 +65,7 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
 
     @Override
     public RecipeSerializer<CustomCompactingRecipe> getSerializer() {
-        return Serializer.INSTANCE;
+        return lowerTemplate != null ? Serializer.CUSTOM_INSTANCE : Serializer.INSTANCE;
     }
 
     @Override
@@ -73,11 +98,25 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
     }
 
     public ItemStack getHigherOutput() {
+        if (higherOutput == null)
+            higherOutput = higherTemplate.create().copyWithCount(1);
         return higherOutput;
     }
 
     public int getNeeded() {
         return needed;
+    }
+
+    public ItemStackTemplate lowerTemplate() {
+        return lowerTemplate;
+    }
+
+    public ItemStackTemplate higherTemplate() {
+        return higherTemplate;
+    }
+
+    public void save(RecipeOutput output, Identifier id) {
+        output.accept(ResourceKey.create(Registries.RECIPE, id), this, null);
     }
 
     public static class Type implements RecipeType<CustomCompactingRecipe> {
@@ -91,6 +130,9 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
     public static class Serializer {
         public static final Identifier ID = Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
                 "compacting");
+        // Same id and fields as the original mod, so its data packs load here too
+        public static final Identifier CUSTOM_ID = Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
+                "custom_compacting");
 
         public static final MapCodec<CustomCompactingRecipe> CODEC = RecordCodecBuilder.mapCodec(
                 instance -> instance.group(
@@ -109,5 +151,20 @@ public class CustomCompactingRecipe implements Recipe<CraftingInput> {
 
         public static final RecipeSerializer<CustomCompactingRecipe> INSTANCE = new RecipeSerializer<>(CODEC,
                 STREAM_CODEC);
+
+        public static final MapCodec<CustomCompactingRecipe> CUSTOM_CODEC = RecordCodecBuilder.mapCodec(
+                instance -> instance.group(
+                        ItemStackTemplate.CODEC.fieldOf("lower_input").forGetter(CustomCompactingRecipe::lowerTemplate),
+                        ItemStackTemplate.CODEC.fieldOf("higher_input").forGetter(CustomCompactingRecipe::higherTemplate))
+                        .apply(instance, CustomCompactingRecipe::new));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, CustomCompactingRecipe> CUSTOM_STREAM_CODEC = StreamCodec
+                .composite(
+                        ItemStackTemplate.STREAM_CODEC, CustomCompactingRecipe::lowerTemplate,
+                        ItemStackTemplate.STREAM_CODEC, CustomCompactingRecipe::higherTemplate,
+                        CustomCompactingRecipe::new);
+
+        public static final RecipeSerializer<CustomCompactingRecipe> CUSTOM_INSTANCE = new RecipeSerializer<>(
+                CUSTOM_CODEC, CUSTOM_STREAM_CODEC);
     }
 }

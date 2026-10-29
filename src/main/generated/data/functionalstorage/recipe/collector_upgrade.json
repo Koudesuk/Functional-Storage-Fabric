@@ -3,9 +3,12 @@
   "category": "misc",
   "key": {
     "B": "minecraft:hopper",
-    "D": "#functionalstorage:drawer",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "I": "#c:stones",
-    "R": "minecraft:redstone"
+    "R": "#c:dusts/redstone"
   },
   "pattern": [
     "IBI",

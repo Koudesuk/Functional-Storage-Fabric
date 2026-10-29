@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "B": "minecraft:bucket",
+    "B": "#c:buckets/empty",
     "P": "#minecraft:planks"
   },
   "pattern": [

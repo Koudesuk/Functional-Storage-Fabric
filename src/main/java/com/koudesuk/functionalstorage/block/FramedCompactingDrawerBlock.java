@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
+public class FramedCompactingDrawerBlock extends CompactingDrawerBlock implements FramedBlock {
 
     public FramedCompactingDrawerBlock(Properties properties) {
         super(properties);
@@ -62,19 +62,6 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
                     hit.getLocation().z, getHit(state, pos, hit));
         }
         return InteractionResult.PASS;
-    }
-
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide())
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FramedCompactingDrawerTile tile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
     }
 
     @Override
@@ -121,15 +108,5 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
             return stack;
         }
         return new ItemStack(this);
-    }
-
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
-            TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
-            }
-        }
     }
 }

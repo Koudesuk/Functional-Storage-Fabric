@@ -7,7 +7,9 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.registries.BuiltInRegistries;
 
@@ -132,12 +134,16 @@ public class CompactingUtil {
 
         List<ItemStack> candidates = new ArrayList<>();
         Map<ItemStack, Integer> candidatesRate = new HashMap<>();
+        ContextMap displayContext = SlotDisplayContext.fromLevel(level);
         for (RecipeHolder<?> holder : recipeManager().map(RecipeManager::getRecipes).orElse(List.of())) {
-            if (holder.value().getType() != RecipeType.CRAFTING)
+            // Shaped recipes only, like the original. The output comes from the recipe display:
+            // special recipes such as the decorated pot read their grid in assemble and crash on an empty one
+            if (!(holder.value() instanceof ShapedRecipe craftingRecipe))
                 continue;
-            CraftingRecipe craftingRecipe = (CraftingRecipe) holder.value();
-            List<Ingredient> ingredients = craftingRecipe.placementInfo().ingredients();
-            ItemStack output = craftingRecipe.assemble(CraftingInput.EMPTY);
+            List<Ingredient> ingredients = craftingRecipe.getIngredients().stream().flatMap(Optional::stream).toList();
+            ItemStack output = craftingRecipe.display().stream()
+                    .map(display -> display.result().resolveForFirstStack(displayContext))
+                    .filter(result -> !result.isEmpty()).findFirst().orElse(ItemStack.EMPTY);
             if (!ItemStack.isSameItem(stack, output))
                 continue;
             ItemStack match = tryMatch(stack, ingredients);

@@ -1,6 +1,7 @@
 package com.koudesuk.functionalstorage.inventory;
 
 import com.koudesuk.functionalstorage.util.CompactingUtil;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
@@ -13,7 +14,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class CompactingInventoryHandler extends SnapshotParticipant<Integer> implements Storage<ItemVariant> {
+public abstract class CompactingInventoryHandler extends SnapshotParticipant<Integer>
+        implements Storage<ItemVariant>, SlottedItemStorage {
 
     public static String PARENT = "Parent";
     public static String BIG_ITEMS = "BigItems";
@@ -28,10 +30,13 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
     private int slots;
     private final List<CompactingStackStorage> storageSlots;
 
-    public CompactingInventoryHandler(int slots) {
+    /**
+     * @param baseStacks capacity in stacks of the most compacted item, before upgrades
+     */
+    public CompactingInventoryHandler(int slots, int baseStacks) {
         this.resultList = new ArrayList<>();
         this.slots = slots;
-        this.totalAmount = 512;
+        this.totalAmount = baseStacks * 64;
         for (int i = 0; i < slots - 1; i++) {
             this.totalAmount *= 9;
         }
@@ -58,6 +63,9 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
 
     @Override
     public long insert(ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        // Denied items are not even voided, like the original
+        if (StorageTags.isDrawerDenied(resource.getItem()))
+            return 0;
         long amount = maxAmount;
         for (CompactingStackStorage slot : storageSlots) {
             amount -= slot.insert(resource, amount, transaction);
@@ -115,7 +123,14 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
         if (this.resultList.get(slot).getNeeded() == 0)
             return 0;
         return (int) Math.min(Integer.MAX_VALUE, Math.floor(
-                (double) (total * (long) getMultiplier()) / this.resultList.get(slot).getNeeded()));
+                (double) (total * (long) getMultiplier()) * getSizeFactor() / this.resultList.get(slot).getNeeded()));
+    }
+
+    /**
+     * Data-driven size upgrades (the original's item_storage_modifier), as a factor; 1 without any.
+     */
+    public double getSizeFactor() {
+        return 1;
     }
 
     public int getSlotLimitBase(int slot) {
@@ -130,7 +145,7 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
     }
 
     public boolean isItemValid(int slot, ItemStack stack) {
-        return isSetup() && !stack.isEmpty();
+        return isSetup() && !stack.isEmpty() && !StorageTags.isDrawerDenied(stack.getItem());
     }
 
     public boolean isSetup() {
@@ -160,6 +175,14 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
 
     public int getAmount() {
         return amount;
+    }
+
+    /**
+     * How many of the least compacted item the drawer holds when full.
+     */
+    public long getTotalCapacity() {
+        long total = hasDowngrade() ? (slots == 2 ? 64 * 9 : 64 * 9 * 9) : totalAmount;
+        return (long) Math.floor((double) (total * getMultiplier()) * getSizeFactor());
     }
 
     public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
@@ -259,7 +282,7 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
      * For compacting drawers, the item must match one of the compacting tiers.
      */
     public boolean isItemValid(int slot, ItemVariant resource) {
-        if (!isSetup())
+        if (!isSetup() || StorageTags.isDrawerDenied(resource.getItem()))
             return false;
         if (slot < 0 || slot >= resultList.size())
             return false;
@@ -368,7 +391,7 @@ public abstract class CompactingInventoryHandler extends SnapshotParticipant<Int
         }
 
         public long insert(ItemVariant resource, long maxAmount, TransactionContext transaction) {
-            if (slotIndex >= resultList.size())
+            if (slotIndex >= resultList.size() || StorageTags.isDrawerDenied(resource.getItem()))
                 return 0;
             // Only insert into the last slot (the most compacted item) or if it matches
             // existing items

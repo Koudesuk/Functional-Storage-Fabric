@@ -4,7 +4,10 @@
   "key": {
     "B": "minecraft:redstone_block",
     "C": "minecraft:comparator",
-    "D": "#functionalstorage:drawer",
+    "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
+      "tag": "functionalstorage:drawer"
+    },
     "I": "minecraft:redstone"
   },
   "pattern": [

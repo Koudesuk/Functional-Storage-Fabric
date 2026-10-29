@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": "#c:chests/wooden",
+    "P": "minecraft:pale_oak_planks"
+  },
+  "pattern": [
+    "CPC",
+    "PPP",
+    "CPC"
+  ],
+  "result": {
+    "count": 4,
+    "id": "functionalstorage:pale_oak_drawer_4"
+  }
+}

@@ -3,6 +3,7 @@ package com.koudesuk.functionalstorage.block.tile;
 import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.util.IWoodType;
 import net.minecraft.core.BlockPos;
@@ -40,6 +41,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             @Override
             public void onChange() {
                 DrawerTile.this.setChanged();
+                DrawerTile.this.updateComparatorOutput();
                 if (level != null && !level.isClientSide()) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
@@ -48,6 +50,13 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             @Override
             public int getMultiplier() {
                 return DrawerTile.this.getStorageMultiplier();
+            }
+
+            @Override
+            public double getSizeFactor() {
+                // The original's base is the drawer's stacks, one stack with the Iron Downgrade
+                return DrawerTile.this.getSizeFactor(FSAttachments.ITEM_STORAGE_MODIFIER,
+                        hasDowngrade() ? 1 : DrawerTile.this.type.getSlotAmount() / 64D);
             }
 
             @Override
@@ -91,9 +100,6 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
         }
     }
 
-    private java.util.UUID lastClickUUID;
-    private long lastClickTime;
-
     public net.minecraft.world.InteractionResult onSlotActivated(net.minecraft.world.entity.player.Player player,
             net.minecraft.world.InteractionHand hand, net.minecraft.core.Direction facing, double hitX, double hitY,
             double hitZ, int slot) {
@@ -102,148 +108,21 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
                 || stack.getItem() instanceof com.koudesuk.functionalstorage.item.LinkingToolItem)
             return net.minecraft.world.InteractionResult.PASS;
 
-        if (!stack.isEmpty() && stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem) {
-            com.koudesuk.functionalstorage.item.UpgradeItem upgradeItem = (com.koudesuk.functionalstorage.item.UpgradeItem) stack
-                    .getItem();
-            if (upgradeItem instanceof com.koudesuk.functionalstorage.item.StorageUpgradeItem
-                    || upgradeItem == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.CREATIVE_UPGRADE) {
-                net.minecraft.world.SimpleContainer container = getStorageUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        net.minecraft.world.item.ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide()) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return net.minecraft.world.InteractionResult.SUCCESS;
-                    }
-                }
-            } else {
-                net.minecraft.world.SimpleContainer container = getUtilityUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        net.minecraft.world.item.ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide()) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return net.minecraft.world.InteractionResult.SUCCESS;
-                    }
-                }
-            }
-        }
+        if (installUpgrade(stack))
+            return net.minecraft.world.InteractionResult.SUCCESS;
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            long now = System.currentTimeMillis();
-            if (!stack.isEmpty()) {
-                // Insert item
-                if (handler.isItemValid(slot, net.fabricmc.fabric.api.transfer.v1.item.ItemVariant.of(stack))) {
-                    int amount = stack.getCount();
-                    if (amount > 0) {
-                        // Handle empty locked drawer
-                        if (handler.isLocked() && handler.getStoredStacks().get(slot).getAmount() == 0
-                                && handler.getStoredStacks().get(slot).getStack().isEmpty()) {
-                            handler.setLockedItem(slot, net.fabricmc.fabric.api.transfer.v1.item.ItemVariant.of(stack));
-                        }
-
-                        try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                .openOuter()) {
-                            long inserted = handler.insertIntoSlot(slot,
-                                    net.fabricmc.fabric.api.transfer.v1.item.ItemVariant.of(stack), amount,
-                                    transaction);
-                            if (inserted > 0) {
-                                stack.shrink((int) inserted);
-                                transaction.commit();
-
-                                // Double click detection
-                                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                                    // FIX: When void upgrade is active, only insert items matching the stored item
-                                    boolean hasVoid = this.isVoid();
-                                    net.fabricmc.fabric.api.transfer.v1.item.ItemVariant slotVariant = handler
-                                            .getResource(slot);
-
-                                    // Insert matching items from inventory
-                                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                                        net.minecraft.world.item.ItemStack invStack = player.getInventory().getItem(i);
-                                        if (!invStack.isEmpty()) {
-                                            net.fabricmc.fabric.api.transfer.v1.item.ItemVariant invVariant = net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
-                                                    .of(invStack);
-
-                                            // Skip non-matching items when void is active
-                                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                                continue;
-                                            }
-
-                                            if (handler.isItemValid(slot, invVariant)) {
-                                                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction invTransaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                                        .openOuter()) {
-                                                    long invInserted = handler
-                                                            .insert(invVariant, invStack.getCount(), invTransaction);
-                                                    if (invInserted > 0) {
-                                                        invStack.shrink((int) invInserted);
-                                                        invTransaction.commit();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                lastClickUUID = player.getUUID();
-                                lastClickTime = now;
-
-                                return net.minecraft.world.InteractionResult.SUCCESS;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Empty hand - Double click to deposit matching items
-                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                    // FIX: When void upgrade is active, only insert items matching the stored item
-                    boolean hasVoid = this.isVoid();
-                    net.fabricmc.fabric.api.transfer.v1.item.ItemVariant slotVariant = handler.getResource(slot);
-
-                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                        net.minecraft.world.item.ItemStack invStack = player.getInventory().getItem(i);
-                        if (!invStack.isEmpty()) {
-                            net.fabricmc.fabric.api.transfer.v1.item.ItemVariant invVariant = net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
-                                    .of(invStack);
-
-                            // Skip non-matching items when void is active
-                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                continue;
-                            }
-
-                            if (handler.isItemValid(slot, invVariant)) {
-                                try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction invTransaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
-                                        .openOuter()) {
-                                    long invInserted = handler.insert(invVariant,
-                                            invStack.getCount(), invTransaction);
-                                    if (invInserted > 0) {
-                                        invStack.shrink((int) invInserted);
-                                        invTransaction.commit();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                lastClickUUID = player.getUUID();
-                lastClickTime = now;
-                return net.minecraft.world.InteractionResult.SUCCESS;
-            }
-        } else if (slot == -1 || player.isShiftKeyDown()) {
-            // Open GUI
-            if (!level.isClientSide()) {
-                player.openMenu(this);
-            }
-            return net.minecraft.world.InteractionResult.SUCCESS;
+            // An empty slot of a locked drawer takes on whatever it is clicked with
+            if (!stack.isEmpty() && handler.isLocked() && handler.getResource(slot).isBlank())
+                handler.setLockedItem(slot, net.fabricmc.fabric.api.transfer.v1.item.ItemVariant.of(stack));
+            useSlot(handler, player, hand, slot);
+        } else if (!level.isClientSide()) {
+            player.openMenu(this);
         }
-        return net.minecraft.world.InteractionResult.PASS;
+        return net.minecraft.world.InteractionResult.SUCCESS;
     }
 
+    @Override
     public void onClicked(net.minecraft.world.entity.player.Player player, int slot) {
         if (slot != -1) {
             // Extract item from the specific slot
@@ -307,6 +186,9 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
     }
 
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (int i = 0; i < getHandler().getStoredStacks().size(); i++) {
             if (!getHandler().getStoredStacks().get(i).getStack().isEmpty()) {
                 return false;

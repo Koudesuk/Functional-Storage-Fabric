@@ -28,6 +28,7 @@ public class FunctionalStorageBlockEntities {
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FluidDrawerTile> FLUID_DRAWER_1;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FluidDrawerTile> FLUID_DRAWER_2;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FluidDrawerTile> FLUID_DRAWER_4;
+        public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedFluidDrawerTile> FRAMED_FLUID_DRAWER;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedDrawerControllerTile> FRAMED_DRAWER_CONTROLLER;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedSimpleCompactingDrawerTile> FRAMED_SIMPLE_COMPACTING_DRAWER;
         public static BlockEntityType<com.koudesuk.functionalstorage.block.tile.FramedControllerExtensionTile> FRAMED_CONTROLLER_EXTENSION;
@@ -124,6 +125,14 @@ public class FunctionalStorageBlockEntities {
                                                                 pos, state,
                                                                 com.koudesuk.functionalstorage.util.DrawerType.X_4),
                                                 FunctionalStorageBlocks.FLUID_DRAWER_4).build(null));
+                FRAMED_FLUID_DRAWER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
+                                Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "framed_fluid_drawer"),
+                                FabricBlockEntityTypeBuilder.create((pos, state) -> new com.koudesuk.functionalstorage.block.tile.FramedFluidDrawerTile(
+                                                pos, state,
+                                                state.getBlock() instanceof com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock block
+                                                                ? block.getType()
+                                                                : com.koudesuk.functionalstorage.util.DrawerType.X_1),
+                                                FunctionalStorageBlocks.FRAMED_FLUID_DRAWER.toArray(new Block[0])).build(null));
 
                 FRAMED_DRAWER_CONTROLLER = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
                                 Identifier.fromNamespaceAndPath(FunctionalStorage.MOD_ID,
