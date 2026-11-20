@@ -1,0 +1,25 @@
+{
+  "type": "functionalstorage:copy_components",
+  "category": "misc",
+  "copyIndex": 4,
+  "key": {
+    "D": {
+      "item": "functionalstorage:compacting_drawer"
+    },
+    "S": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "nbt": [
+    "Tile"
+  ],
+  "pattern": [
+    "S S",
+    "SDS",
+    " S "
+  ],
+  "result": {
+    "item": "functionalstorage:framed_compacting_drawer"
+  },
+  "show_notification": true
+}

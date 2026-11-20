@@ -76,9 +76,15 @@ dependencies {
     // JEI
     modCompileOnlyApi "mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}"
     modRuntimeOnly "mezz.jei:jei-${project.minecraft_version}-fabric:${project.jei_version}"
+    // mezz_config: the config library JEI requires at runtime (CurseForge "mezzconfig", same jar on Jared's maven)
+    modRuntimeOnly "net.mezzdev.config:mezz_config-${project.minecraft_version}-fabric:${project.mezz_config_version}"
 
     // Jade
     modImplementation "maven.modrinth:jade:${project.jade_version}"
+
+    // Mod Menu: compile against its API for the config screen entrypoint only. It is not a dependency for
+    // players, and run/mods already holds a Mod Menu jar for the dev client.
+    modCompileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {

@@ -36,6 +36,58 @@ public class FunctionalStorageItemTagProvider extends FabricTagProvider.ItemTagP
                 drawerBuilder.add(block.asItem());
             }
         }
+        drawerBuilder
+                .add(FunctionalStorageBlocks.SIMPLE_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FRAMED_COMPACTING_DRAWER.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_1.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_2.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_4.asItem());
+        for (Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
+            drawerBuilder.add(block.asItem());
+        }
+        for (Block block : FunctionalStorageBlocks.FRAMED_FLUID_DRAWER) {
+            drawerBuilder.add(block.asItem());
+        }
+
+        // === DRAWERS BY SIZE AND FLUID DRAWERS === (the original's drawer_1x1/1x2/2x2 and fluid_drawer)
+        for (com.koudesuk.functionalstorage.util.DrawerType type : com.koudesuk.functionalstorage.util.DrawerType.values()) {
+            FabricTagProvider<Item>.FabricTagBuilder sizeBuilder = getOrCreateTagBuilder(
+                    com.koudesuk.functionalstorage.util.StorageTags.drawerOfSize(type));
+            for (Block block : FunctionalStorageBlocks.DRAWER_TYPES.get(type)) {
+                sizeBuilder.add(block.asItem());
+            }
+            for (Block block : FunctionalStorageBlocks.FRAMED_DRAWER) {
+                if (((com.koudesuk.functionalstorage.block.DrawerBlock) block).getType() == type)
+                    sizeBuilder.add(block.asItem());
+            }
+            sizeBuilder.add(switch (type) {
+                case X_1 -> FunctionalStorageBlocks.FLUID_DRAWER_1.asItem();
+                case X_2 -> FunctionalStorageBlocks.FLUID_DRAWER_2.asItem();
+                case X_4 -> FunctionalStorageBlocks.FLUID_DRAWER_4.asItem();
+            });
+        }
+        getOrCreateTagBuilder(com.koudesuk.functionalstorage.util.StorageTags.FLUID_DRAWER)
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_1.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_2.asItem())
+                .add(FunctionalStorageBlocks.FLUID_DRAWER_4.asItem());
+
+        // === DATA PACK TAGS === (the original's tags; 1.20.1 has no armor or enchantable item tags)
+        // Vanilla tags are not known to this provider, so addTag fails its reference check;
+        // forceAddTag skips the check and still writes a plain required "#minecraft:swords"
+        getOrCreateTagBuilder(com.koudesuk.functionalstorage.util.StorageTags.ARMORY_CABINET_INSERTABLE)
+                .forceAddTag(net.minecraft.tags.ItemTags.SWORDS)
+                .forceAddTag(net.minecraft.tags.ItemTags.AXES)
+                .forceAddTag(net.minecraft.tags.ItemTags.HOES)
+                .forceAddTag(net.minecraft.tags.ItemTags.PICKAXES)
+                .forceAddTag(net.minecraft.tags.ItemTags.SHOVELS)
+                .forceAddTag(net.minecraft.tags.ItemTags.TRIMMABLE_ARMOR)
+                .add(Items.ELYTRA, Items.SHIELD, Items.BOW, Items.CROSSBOW, Items.TRIDENT, Items.FISHING_ROD,
+                        Items.FLINT_AND_STEEL, Items.SHEARS, Items.BRUSH, Items.ENCHANTED_BOOK);
+        // Empty on purpose, for data packs to fill
+        getOrCreateTagBuilder(com.koudesuk.functionalstorage.util.StorageTags.DRAWER_STORAGE_DENYLIST);
+        getOrCreateTagBuilder(com.koudesuk.functionalstorage.util.StorageTags.CREATIVE_VENDING_UPGRADE_INCOMPATIBLE);
 
         // === C:STONES TAG ===
         // Populate c:stones with stone variants (Fabric convention tag)

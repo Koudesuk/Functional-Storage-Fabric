@@ -35,6 +35,7 @@ public class FunctionalStorageBlocks {
         public static Block FLUID_DRAWER_4;
 
         public static List<Block> FRAMED_DRAWER = new ArrayList<>();
+        public static List<Block> FRAMED_FLUID_DRAWER = new ArrayList<>();
 
         public static void register() {
                 // Register Drawer Types
@@ -233,10 +234,27 @@ public class FunctionalStorageBlocks {
                                         new ResourceLocation(FunctionalStorage.MOD_ID,
                                                         "fluid_drawer_" + type.getSlots()),
                                         block);
+                        // DrawerBlockItem for the contents tooltip
                         Registry.register(BuiltInRegistries.ITEM,
                                         new ResourceLocation(FunctionalStorage.MOD_ID,
                                                         "fluid_drawer_" + type.getSlots()),
-                                        new BlockItem(block, new Item.Properties()));
+                                        new com.koudesuk.functionalstorage.item.DrawerBlockItem(block,
+                                                        new Item.Properties()));
+                }
+
+                // Framed fluid drawers, like the original's framed_fluid_1/2/4
+                for (DrawerType type : DrawerType.values()) {
+                        String name = "framed_fluid_drawer_" + type.getSlots();
+                        Block block = new com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock(type,
+                                        FabricBlockSettings.copyOf(Blocks.STONE_BRICKS).noOcclusion()
+                                                        .isViewBlocking((state, level, pos) -> false));
+                        FRAMED_FLUID_DRAWER.add(block);
+                        Registry.register(BuiltInRegistries.BLOCK,
+                                        new ResourceLocation(FunctionalStorage.MOD_ID, name), block);
+                        Registry.register(BuiltInRegistries.ITEM,
+                                        new ResourceLocation(FunctionalStorage.MOD_ID, name),
+                                        new com.koudesuk.functionalstorage.item.DrawerBlockItem(block,
+                                                        new Item.Properties()));
                 }
         }
 }

@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedDrawerControllerBlock extends DrawerControllerBlock {
+public class FramedDrawerControllerBlock extends DrawerControllerBlock implements FramedBlock {
 
     public FramedDrawerControllerBlock(Properties properties) {
         super(properties);

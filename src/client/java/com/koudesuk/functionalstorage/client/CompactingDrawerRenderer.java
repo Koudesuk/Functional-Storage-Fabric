@@ -19,7 +19,7 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
                         int combinedLightIn, int combinedOverlayIn) {
                 if (Minecraft.getInstance().player != null
                                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
                         return;
                 }
                 matrixStack.pushPose();
@@ -55,6 +55,22 @@ public class CompactingDrawerRenderer<T extends CompactingDrawerTile> implements
                 combinedLightIn = net.minecraft.client.renderer.LevelRenderer.getLightColor(tile.getLevel(),
                                 tile.getBlockPos().relative(facing));
                 DrawerRenderer.renderUpgrades(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                render3Slots(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                matrixStack.popPose();
+        }
+
+        /**
+         * A compacting drawer item's contents, where a north facing drawer shows them (the item model faces
+         * north). Upgrades are left out, like the original's CompactingDrawerISTER.
+         */
+        public void renderItemContents(T tile, PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
+                        int combinedOverlayIn) {
+                matrixStack.pushPose();
+                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
+                                new org.joml.Vector3f(0), new org.joml.Vector3f(0, 180, 0), 1));
+                matrixStack.mulPoseMatrix(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
+                                new org.joml.Vector3f(-1, 0, 0), new org.joml.Vector3f(0), 1));
+                matrixStack.translate(0, 0, -0.5 / 16D);
                 render3Slots(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
                 matrixStack.popPose();
         }

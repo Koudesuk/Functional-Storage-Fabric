@@ -1,9 +1,14 @@
 package com.koudesuk.functionalstorage.network;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
+import com.koudesuk.functionalstorage.block.DrawerFront;
+import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
+import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
 import com.koudesuk.functionalstorage.item.UpgradeItem;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -29,6 +34,32 @@ public class FunctionalStorageNetwork {
                     }
                 }
             });
+        });
+
+        // Left clicks on drawer fronts, see DrawerClickHandler (handlers of FabricPackets run on the server thread)
+        ServerPlayNetworking.registerGlobalReceiver(DrawerClickPayload.TYPE,
+                (payload, player, responseSender) -> DrawerFront.click(player, payload.hit()));
+
+        // Same checks as the original's DrawerPriorityMessage: within 8 blocks, never below 0
+        ServerPlayNetworking.registerGlobalReceiver(DrawerPriorityPayload.TYPE, (payload, player, responseSender) -> {
+            BlockPos pos = payload.pos();
+            if (player.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) > 64D)
+                return;
+            if (player.level().getBlockEntity(pos) instanceof ControllableDrawerTile<?> drawer)
+                drawer.setPriority(Math.max(0, payload.priority()));
+        });
+
+        // The armory cabinet screen's search and scroll row
+        ServerPlayNetworking.registerGlobalReceiver(ArmorySearchPayload.TYPE, (payload, player, responseSender) -> {
+            if (player.containerMenu instanceof com.koudesuk.functionalstorage.inventory.ArmoryCabinetMenu menu
+                    && menu.containerId == payload.containerId())
+                menu.applySearch(payload.query(), payload.scrollRow());
+        });
+
+        // The server's common config, so what clients show matches what the server enforces
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (ServerPlayNetworking.canSend(handler, ConfigSyncPayload.TYPE))
+                sender.sendPacket(new ConfigSyncPayload(FunctionalStorageConfig.FILE.snapshot()));
         });
     }
 }

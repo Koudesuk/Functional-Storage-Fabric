@@ -16,7 +16,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 
 public class FluidDrawerBlock extends DrawerBlock {
 
@@ -51,18 +50,6 @@ public class FluidDrawerBlock extends DrawerBlock {
         return InteractionResult.PASS;
     }
 
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FluidDrawerTile fluidDrawerTile) {
-            HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                fluidDrawerTile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
 
     @Override
     public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
@@ -75,13 +62,9 @@ public class FluidDrawerBlock extends DrawerBlock {
     }
 
     @Override
-    public java.util.List<net.minecraft.world.item.ItemStack> getDrops(BlockState state,
-            net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
-        net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> stacks = net.minecraft.core.NonNullList
-                .create();
+    public net.minecraft.world.item.ItemStack getDropStack(BlockState state,
+            @org.jetbrains.annotations.Nullable BlockEntity drawerTile) {
         net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FluidDrawerTile tile) {
             if (!tile.isEverythingEmpty()) {
                 stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
@@ -90,8 +73,7 @@ public class FluidDrawerBlock extends DrawerBlock {
                 stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -141,6 +123,9 @@ public class FluidDrawerBlock extends DrawerBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

@@ -3,10 +3,11 @@
   "category": "misc",
   "key": {
     "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
       "tag": "functionalstorage:drawer"
     },
     "I": {
-      "item": "minecraft:iron_ingot"
+      "tag": "c:iron_ingots"
     }
   },
   "pattern": [

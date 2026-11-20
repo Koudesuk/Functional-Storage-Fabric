@@ -1,6 +1,9 @@
 package com.koudesuk.functionalstorage;
 
+import com.koudesuk.functionalstorage.block.DrawerFront;
+import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.fluid.MilkFluid;
+import com.koudesuk.functionalstorage.network.FunctionalStorageNetwork;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlocks;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageItems;
@@ -33,6 +36,7 @@ public class FunctionalStorage implements ModInitializer {
         @Override
         public void onInitialize() {
                 LOGGER.info("Functional Storage initializing...");
+                FunctionalStorageConfig.FILE.load();
 
                 // Register milk fluid (equivalent to ForgeMod.enableMilkFluid())
                 Registry.register(BuiltInRegistries.FLUID, new ResourceLocation(MOD_ID, "milk"), MILK);
@@ -56,18 +60,16 @@ public class FunctionalStorage implements ModInitializer {
                 FluidStorage.combinedItemApiProvider(Items.MILK_BUCKET).register(ctx -> new FullItemFluidStorage(ctx,
                                 Items.BUCKET, FluidVariant.of(MILK), FluidConstants.BUCKET));
 
-                // Register empty bucket to accept fluids (enables extraction from drawers)
-                // Water bucket
-                FluidStorage.combinedItemApiProvider(Items.BUCKET).register(ctx -> new EmptyItemFluidStorage(ctx,
-                                Items.WATER_BUCKET, Fluids.WATER, FluidConstants.BUCKET));
-                // Lava bucket
-                FluidStorage.combinedItemApiProvider(Items.BUCKET).register(ctx -> new EmptyItemFluidStorage(ctx,
-                                Items.LAVA_BUCKET, Fluids.LAVA, FluidConstants.BUCKET));
-                // Milk bucket
+                // Empty bucket accepts milk too. Water and lava are left to Fabric's own EmptyBucketStorage:
+                // a second provider for them made one insert fill two buckets from a stack
                 FluidStorage.combinedItemApiProvider(Items.BUCKET).register(
                                 ctx -> new EmptyItemFluidStorage(ctx, Items.MILK_BUCKET, MILK, FluidConstants.BUCKET));
 
                 LOGGER.info("Registered fluid handlers for bucket interactions");
+
+                // The original's data-driven upgrade behaviors, before any item that carries one
+                com.koudesuk.functionalstorage.item.component.FunctionalUpgradeBehavior.registerTypes();
+                com.koudesuk.functionalstorage.registry.FSAttachments.register();
 
                 FunctionalStorageBlocks.register();
                 com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
@@ -75,6 +77,7 @@ public class FunctionalStorage implements ModInitializer {
                 FunctionalStorageBlockEntities.register();
                 FunctionalStorageItems.register();
                 com.koudesuk.functionalstorage.registry.FunctionalStorageMenus.register();
+                FunctionalStorageNetwork.register();
 
                 net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerForBlockEntity(
                                 (drawer, direction) -> drawer.getHandler(),
@@ -123,6 +126,12 @@ public class FunctionalStorage implements ModInitializer {
                 net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
                                 (drawer, direction) -> drawer.getHandler(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_4);
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_FLUID_DRAWER);
+
+                // Drawer items, like the original's item capabilities
+                com.koudesuk.functionalstorage.inventory.DrawerItemStorage.register();
 
                 // Register FluidStorage for Storage Controllers (enables AE2 and other mods to
                 // access fluid drawers via controller)
@@ -133,19 +142,9 @@ public class FunctionalStorage implements ModInitializer {
                                 (controller, direction) -> controller.getFluidHandler(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_DRAWER_CONTROLLER);
 
-                // Handle left-click (attack) on drawer blocks to extract items
+                // Left clicks: Linking Tool on Ender Drawers, and the drawer front guard
                 net.fabricmc.fabric.api.event.player.AttackBlockCallback.EVENT
                                 .register((player, world, hand, pos, direction) -> {
-                                        net.minecraft.world.level.block.state.BlockState state = world
-                                                        .getBlockState(pos);
-                                        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-                                        if (!(result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult)) {
-                                                return net.minecraft.world.InteractionResult.PASS;
-                                        }
-                                        if (!blockHitResult.getBlockPos().equals(pos)) {
-                                                return net.minecraft.world.InteractionResult.PASS;
-                                        }
-
                                         // Handle LinkingTool left-click on EnderDrawer to store frequency
                                         net.minecraft.world.item.ItemStack heldItem = player.getItemInHand(hand);
                                         if (heldItem.getItem() instanceof com.koudesuk.functionalstorage.item.LinkingToolItem) {
@@ -169,134 +168,16 @@ public class FunctionalStorage implements ModInitializer {
                                                 }
                                         }
 
-                                        // Handle DrawerBlock
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
-                                                int hit = drawerBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                .getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-                                                                        drawerTile.onClicked(player, hit);
-                                                                }
-                                                        }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
-                                                }
-                                        }
-
-                                        // Handle CompactingDrawerBlock (including framed)
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.CompactingDrawerBlock compactingBlock) {
-                                                int hit = compactingBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                .getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.CompactingDrawerTile compactingTile) {
-                                                                        compactingTile.onClicked(player, hit);
-                                                                }
-                                                        }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
-                                                }
-                                        }
-
-                                        // Handle SimpleCompactingDrawerBlock (including framed)
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock simpleCompactingBlock) {
-                                                int hit = simpleCompactingBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                .getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.SimpleCompactingDrawerTile simpleCompactingTile) {
-                                                                        simpleCompactingTile.onClicked(player, hit);
-                                                                }
-                                                        }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
-                                                }
-                                        }
-
-                                        // Handle FluidDrawerBlock
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FluidDrawerBlock fluidBlock) {
-                                                int hit = fluidBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                .getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.FluidDrawerTile fluidTile) {
-                                                                        fluidTile.onClicked(player, hit);
-                                                                }
-                                                        }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
-                                                }
-                                        }
-
-                                        // Handle EnderDrawerBlock
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.EnderDrawerBlock enderBlock) {
-                                                int hit = enderBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        if (!world.isClientSide()) {
-                                                                net.minecraft.world.level.block.entity.BlockEntity blockEntity = world
-                                                                                .getBlockEntity(pos);
-                                                                if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.EnderDrawerTile enderTile) {
-                                                                        enderTile.onClicked(player, hit);
-                                                                }
-                                                        }
-                                                        return net.minecraft.world.InteractionResult.SUCCESS;
-                                                }
-                                        }
-
-                                        return net.minecraft.world.InteractionResult.PASS;
-                                });
-
-                // Prevent block breaking when clicking on drawer front face (especially for
-                // creative mode)
-                net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE
-                                .register((world, player, pos, state, blockEntity) -> {
-                                        // Only check in creative mode - survival mode uses getDestroyProgress
-                                        if (!player.isCreative()) {
-                                                return true; // Allow normal breaking in survival
-                                        }
-
-                                        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-                                        if (!(result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult)) {
-                                                return true; // Allow breaking if no hit result
-                                        }
-                                        if (!blockHitResult.getBlockPos().equals(pos)) {
-                                                return true; // Allow breaking if hit result doesn't match
-                                        }
-
-                                        // Check each drawer type and cancel if hitting front face
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.DrawerBlock drawerBlock) {
-                                                int hit = drawerBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        return false; // Cancel breaking - front face was clicked
-                                                }
-                                        }
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.CompactingDrawerBlock compactingBlock) {
-                                                int hit = compactingBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        return false; // Cancel breaking - front face was clicked
-                                                }
-                                        }
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.SimpleCompactingDrawerBlock simpleCompactingBlock) {
-                                                int hit = simpleCompactingBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        return false; // Cancel breaking - front face was clicked
-                                                }
-                                        }
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.FluidDrawerBlock fluidBlock) {
-                                                int hit = fluidBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        return false; // Cancel breaking - front face was clicked
-                                                }
-                                        }
-                                        if (state.getBlock() instanceof com.koudesuk.functionalstorage.block.EnderDrawerBlock enderBlock) {
-                                                int hit = enderBlock.getHit(state, pos, blockHitResult);
-                                                if (hit != -1) {
-                                                        return false; // Cancel breaking - front face was clicked
-                                                }
-                                        }
-
-                                        return true; // Allow breaking for all other cases
+                                        // Drawer fronts never break. Players extract through DrawerClickPayload and
+                                        // cancel this attack on their side, so whatever reaches the server here is
+                                        // automation such as deployer fake players: trace their view instead.
+                                        if (world.isClientSide() || !DrawerFront.isFront(world.getBlockState(pos), direction))
+                                                return net.minecraft.world.InteractionResult.PASS;
+                                        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                                                        && player.pick(20, 0, false) instanceof net.minecraft.world.phys.BlockHitResult hit
+                                                        && hit.getBlockPos().equals(pos))
+                                                DrawerFront.click(serverPlayer, hit);
+                                        return net.minecraft.world.InteractionResult.FAIL;
                                 });
         }
 }

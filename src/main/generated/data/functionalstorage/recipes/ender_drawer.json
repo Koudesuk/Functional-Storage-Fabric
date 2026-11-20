@@ -6,6 +6,7 @@
       "item": "minecraft:ender_chest"
     },
     "L": {
+      "fabric:type": "functionalstorage:tag_without_component",
       "tag": "functionalstorage:drawer"
     },
     "P": {

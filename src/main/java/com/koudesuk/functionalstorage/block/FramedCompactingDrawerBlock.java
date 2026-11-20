@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
+public class FramedCompactingDrawerBlock extends CompactingDrawerBlock implements FramedBlock {
 
     public FramedCompactingDrawerBlock(Properties properties) {
         super(properties);
@@ -45,18 +45,6 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
         return InteractionResult.PASS;
     }
 
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof FramedCompactingDrawerTile tile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
@@ -69,10 +57,8 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        NonNullList<ItemStack> stacks = NonNullList.create();
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FramedCompactingDrawerTile framedDrawerTile) {
             if (!framedDrawerTile.isEverythingEmpty()) {
                 stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
@@ -84,8 +70,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
                 stack.getOrCreateTag().putBoolean("Locked", framedDrawerTile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -105,12 +90,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip,
             TooltipFlag flag) {
         // Parse newlines in frameddrawer.use and add each line as a separate Component
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
-            }
-        }
+        FramedBlock.appendTooltip(tooltip);
         super.appendHoverText(stack, level, tooltip, flag);
     }
 }

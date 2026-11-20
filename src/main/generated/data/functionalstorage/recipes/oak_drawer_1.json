@@ -6,7 +6,7 @@
       "tag": "c:wooden_chests"
     },
     "P": {
-      "item": "minecraft:oak_planks"
+      "fabric:type": "functionalstorage:woodless"
     }
   },
   "pattern": [

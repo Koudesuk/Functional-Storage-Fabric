@@ -19,7 +19,7 @@ import java.util.List;
  * Framed variant of the Controller Access Point that supports custom textures.
  * Extends ControllerExtensionBlock and adds support for FramedDrawerModelData.
  */
-public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
+public class FramedControllerExtensionBlock extends ControllerExtensionBlock implements FramedBlock {
 
     public FramedControllerExtensionBlock(Properties properties) {
         super(properties);

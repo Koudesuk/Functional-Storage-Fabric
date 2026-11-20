@@ -3,7 +3,7 @@
   "category": "misc",
   "key": {
     "B": {
-      "item": "minecraft:bucket"
+      "tag": "c:empty_buckets"
     },
     "P": {
       "tag": "minecraft:planks"

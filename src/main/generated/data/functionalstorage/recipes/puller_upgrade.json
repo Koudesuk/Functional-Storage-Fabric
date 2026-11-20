@@ -3,12 +3,13 @@
   "category": "misc",
   "key": {
     "B": {
-      "item": "minecraft:redstone"
+      "tag": "c:redstone_dusts"
     },
     "C": {
       "item": "minecraft:hopper"
     },
     "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
       "tag": "functionalstorage:drawer"
     },
     "I": {

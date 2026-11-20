@@ -22,7 +22,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-public class CompactingDrawerBlock extends Block implements EntityBlock {
+public class CompactingDrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
@@ -73,31 +73,15 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
         return InteractionResult.PASS;
     }
 
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof CompactingDrawerTile tile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
+    // Left clicks on the front go through DrawerFront.click (DrawerClickPayload), see DrawerClickHandler
 
     @Override
     @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof CompactingDrawerTile tile) {
-                if (tile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                    if (controller instanceof StorageControllerTile controllerTile) {
-                        controllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
-                }
+            if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile) {
+                tile.unlinkFromController();
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
@@ -129,16 +113,10 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
     @Override
     public float getDestroyProgress(BlockState state, Player player, net.minecraft.world.level.BlockGetter level,
             BlockPos pos) {
-        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-        if (result instanceof BlockHitResult blockHitResult) {
-            Direction facing = state.getValue(FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f; // Prevent breaking from front face
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
+    @Override
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();
@@ -204,9 +182,14 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
         net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> stacks = net.minecraft.core.NonNullList
                 .create();
+        stacks.add(getDropStack(state, builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public net.minecraft.world.item.ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof CompactingDrawerTile tile) {
             if (!tile.isEverythingEmpty()) {
                 stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
@@ -215,8 +198,20 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
                 stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
+    }
+
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
     }
 
     @Override
@@ -247,6 +242,9 @@ public class CompactingDrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

@@ -1,0 +1,17 @@
+{
+  "replace": false,
+  "values": [
+    "functionalstorage:oak_drawer_4",
+    "functionalstorage:spruce_drawer_4",
+    "functionalstorage:birch_drawer_4",
+    "functionalstorage:jungle_drawer_4",
+    "functionalstorage:acacia_drawer_4",
+    "functionalstorage:dark_oak_drawer_4",
+    "functionalstorage:crimson_drawer_4",
+    "functionalstorage:warped_drawer_4",
+    "functionalstorage:mangrove_drawer_4",
+    "functionalstorage:cherry_drawer_4",
+    "functionalstorage:framed_drawer_4",
+    "functionalstorage:fluid_drawer_4"
+  ]
+}

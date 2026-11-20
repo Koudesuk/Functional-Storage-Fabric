@@ -33,6 +33,7 @@ public class FramedColors {
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_SIMPLE_COMPACTING_DRAWER);
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_DRAWER_CONTROLLER);
         framedBlocks.add(FunctionalStorageBlocks.FRAMED_CONTROLLER_EXTENSION);
+        framedBlocks.addAll(FunctionalStorageBlocks.FRAMED_FLUID_DRAWER);
 
         ColorProviderRegistry.BLOCK.register(FramedColors::getBlockColor,
                 framedBlocks.toArray(new net.minecraft.world.level.block.Block[0]));
@@ -57,6 +58,9 @@ public class FramedColors {
                 return resolveColor(tile.getFramedDrawerModelData(), world, pos, tintIndex);
             }
             if (entity instanceof FramedControllerExtensionTile tile) {
+                return resolveColor(tile.getFramedDrawerModelData(), world, pos, tintIndex);
+            }
+            if (entity instanceof com.koudesuk.functionalstorage.block.tile.FramedFluidDrawerTile tile) {
                 return resolveColor(tile.getFramedDrawerModelData(), world, pos, tintIndex);
             }
         }

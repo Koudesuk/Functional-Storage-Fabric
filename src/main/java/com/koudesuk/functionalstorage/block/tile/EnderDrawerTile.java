@@ -32,8 +32,6 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         implements ExtendedScreenHandlerFactory {
 
     private String frequency;
-    private java.util.UUID lastClickUUID;
-    private long lastClickTime;
 
     // Client-side cached handler for rendering (synced via NBT)
     private EnderInventoryHandler cachedHandler;
@@ -103,6 +101,24 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         if (level.getGameTime() % 20 == 0) {
             syncToClients();
         }
+
+        // Like the original: every drawer of the frequency shows the shared lock, and a Void
+        // Upgrade put into any of them is used up to make the whole frequency void
+        if (level.getGameTime() % 10 == 0) {
+            EnderInventoryHandler handler = getHandler();
+            if (handler.isLocked() != isLocked()) {
+                super.setLocked(handler.isLocked());
+            }
+            if (!handler.isVoid()) {
+                for (int i = 0; i < getUtilityUpgrades().getContainerSize(); i++) {
+                    if (getUtilityUpgrades().getItem(i).is(com.koudesuk.functionalstorage.registry.FunctionalStorageItems.VOID_UPGRADE)) {
+                        handler.setVoidItems(true);
+                        getUtilityUpgrades().removeItem(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -121,38 +137,8 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
             return InteractionResult.PASS;
 
         // Handle upgrade insertion
-        if (!stack.isEmpty() && stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem) {
-            com.koudesuk.functionalstorage.item.UpgradeItem upgradeItem = (com.koudesuk.functionalstorage.item.UpgradeItem) stack
-                    .getItem();
-            if (upgradeItem instanceof com.koudesuk.functionalstorage.item.StorageUpgradeItem
-                    || upgradeItem == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.CREATIVE_UPGRADE) {
-                SimpleContainer container = getStorageUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            } else {
-                SimpleContainer container = getUtilityUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            }
-        }
+        if (installUpgrade(stack))
+            return InteractionResult.SUCCESS;
 
         EnderInventoryHandler handler = getHandler();
         if (handler == null) {
@@ -160,103 +146,19 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         }
 
         if (slot != -1 && !player.isShiftKeyDown()) {
-            long now = System.currentTimeMillis();
-            if (!stack.isEmpty()) {
-                // Insert item
-                if (handler.isItemValid(slot, ItemVariant.of(stack))) {
-                    int amount = stack.getCount();
-                    if (amount > 0) {
-                        // Handle empty locked drawer
-                        if (handler.isLocked() && handler.getStoredStacks().get(slot).getAmount() == 0
-                                && handler.getStoredStacks().get(slot).getStack().isEmpty()) {
-                            handler.setLockedItem(slot, ItemVariant.of(stack));
-                        }
-
-                        try (Transaction transaction = Transaction.openOuter()) {
-                            long inserted = handler.insertIntoSlot(slot, ItemVariant.of(stack), amount, transaction);
-                            if (inserted > 0) {
-                                stack.shrink((int) inserted);
-                                transaction.commit();
-
-                                // Double click detection - insert all matching items from inventory
-                                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                                    boolean hasVoid = this.isVoid();
-                                    ItemVariant slotVariant = handler.getResource(slot);
-
-                                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                                        ItemStack invStack = player.getInventory().getItem(i);
-                                        if (!invStack.isEmpty()) {
-                                            ItemVariant invVariant = ItemVariant.of(invStack);
-
-                                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                                continue;
-                                            }
-
-                                            if (handler.isItemValid(slot, invVariant)) {
-                                                try (Transaction invTransaction = Transaction.openOuter()) {
-                                                    long invInserted = handler.insert(invVariant, invStack.getCount(),
-                                                            invTransaction);
-                                                    if (invInserted > 0) {
-                                                        invStack.shrink((int) invInserted);
-                                                        invTransaction.commit();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                lastClickUUID = player.getUUID();
-                                lastClickTime = now;
-                                // Sync to clients after insertion
-                                syncToClients();
-                                return InteractionResult.SUCCESS;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Empty hand - Double click to deposit matching items
-                if (player.getUUID().equals(lastClickUUID) && (now - lastClickTime) < 500) {
-                    boolean hasVoid = this.isVoid();
-                    ItemVariant slotVariant = handler.getResource(slot);
-
-                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                        ItemStack invStack = player.getInventory().getItem(i);
-                        if (!invStack.isEmpty()) {
-                            ItemVariant invVariant = ItemVariant.of(invStack);
-
-                            if (hasVoid && !slotVariant.isBlank() && !invVariant.equals(slotVariant)) {
-                                continue;
-                            }
-
-                            if (handler.isItemValid(slot, invVariant)) {
-                                try (Transaction invTransaction = Transaction.openOuter()) {
-                                    long invInserted = handler.insert(invVariant, invStack.getCount(), invTransaction);
-                                    if (invInserted > 0) {
-                                        invStack.shrink((int) invInserted);
-                                        invTransaction.commit();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // Sync after batch deposit
-                    syncToClients();
-                }
-                lastClickUUID = player.getUUID();
-                lastClickTime = now;
-                return InteractionResult.SUCCESS;
-            }
-        } else if (slot == -1 || player.isShiftKeyDown()) {
-            // Open GUI
-            if (!level.isClientSide) {
-                player.openMenu(this);
-            }
-            return InteractionResult.SUCCESS;
+            // An empty slot of a locked drawer takes on whatever it is clicked with
+            if (!stack.isEmpty() && handler.isLocked() && handler.getResource(slot).isBlank())
+                handler.setLockedItem(slot, ItemVariant.of(stack));
+            useSlot(handler, player, hand, slot);
+            // The shared ender inventory does not notify this block entity by itself
+            syncToClients();
+        } else if (!level.isClientSide) {
+            player.openMenu(this);
         }
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 
+    @Override
     public void onClicked(Player player, int slot) {
         EnderInventoryHandler handler = getHandler();
         if (handler == null || slot == -1) {
@@ -311,7 +213,11 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         return super.isVoid();
     }
 
+    @Override
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         EnderInventoryHandler handler = getHandler();
         if (handler != null) {
             for (int i = 0; i < handler.getStoredStacks().size(); i++) {

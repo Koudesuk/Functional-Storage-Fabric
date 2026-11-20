@@ -6,6 +6,7 @@ import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
+import com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
@@ -62,6 +63,13 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 ((BlockItem) drawer.getItem()).getBlock() instanceof FramedControllerExtensionBlock;
     }
 
+    public static boolean matchesFluid(ItemStack first, ItemStack second, ItemStack drawer) {
+        return !first.isEmpty() && first.getItem() instanceof BlockItem &&
+                !second.isEmpty() && second.getItem() instanceof BlockItem &&
+                !drawer.isEmpty() && drawer.getItem() instanceof BlockItem &&
+                ((BlockItem) drawer.getItem()).getBlock() instanceof FramedFluidDrawerBlock;
+    }
+
     @Override
     public boolean matches(CraftingContainer inv, Level worldIn) {
         if (inv.getContainerSize() < 3)
@@ -70,7 +78,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesSimpleCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesController(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2));
+                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
+                matchesFluid(inv.getItem(0), inv.getItem(1), inv.getItem(2));
     }
 
     @Override
@@ -79,7 +88,8 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 matchesCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesSimpleCompacting(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
                 matchesController(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
-                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2))) {
+                matchesControllerExtension(inv.getItem(0), inv.getItem(1), inv.getItem(2)) ||
+                matchesFluid(inv.getItem(0), inv.getItem(1), inv.getItem(2))) {
             ItemStack drawer = inv.getItem(2);
             ItemStack first = inv.getItem(0);
             ItemStack second = inv.getItem(1);

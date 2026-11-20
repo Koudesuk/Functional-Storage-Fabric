@@ -6,13 +6,14 @@
       "item": "minecraft:hopper"
     },
     "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
       "tag": "functionalstorage:drawer"
     },
     "I": {
       "tag": "c:stones"
     },
     "R": {
-      "item": "minecraft:redstone"
+      "tag": "c:redstone_dusts"
     }
   },
   "pattern": [

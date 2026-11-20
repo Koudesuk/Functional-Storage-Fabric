@@ -41,7 +41,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                         int combinedLightIn, int combinedOverlayIn) {
                 if (Minecraft.getInstance().player != null
                                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
                         return;
                 }
                 matrixStack.pushPose();
@@ -174,6 +174,25 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
         }
 
+        /**
+         * A drawer item's contents, where a north facing drawer shows them (the item model faces north).
+         * Upgrades are left out, like the original's DrawerISTER.
+         */
+        public void renderItemContents(T tile, PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
+                        int combinedOverlayIn) {
+                matrixStack.pushPose();
+                matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
+                matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(-1, 0, 0), new Vector3f(0), 1));
+                matrixStack.translate(0, 0, -0.5 / 16D);
+                if (tile.getDrawerType() == DrawerType.X_1)
+                        render1Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_2)
+                        render2Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_4)
+                        render4Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                matrixStack.popPose();
+        }
+
         private void render1Slot(PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
                         int combinedOverlayIn, DrawerTile tile) {
                 BigInventoryHandler inventoryHandler = (BigInventoryHandler) tile.getStorage();
@@ -286,7 +305,7 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                                 Minecraft.getInstance().level, null,
                                 0);
                 if (model.isGui3d()) {
-                        float thickness = (float) FunctionalStorageClientConfig.DRAWER_RENDER_THICKNESS;
+                        float thickness = (float) FunctionalStorageClientConfig.DRAWER_RENDER_THICKNESS.get();
                         // Avoid scaling normal matrix by using mulPoseMatrix instead of scale()
                         matrixStack.mulPoseMatrix(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0),
                                         new Vector3f(.75f, .75f, thickness)));

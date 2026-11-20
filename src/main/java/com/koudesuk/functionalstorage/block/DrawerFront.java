@@ -1,0 +1,78 @@
+package com.koudesuk.functionalstorage.block;
+
+import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * A block whose front face is split into clickable drawer slots.
+ */
+public interface DrawerFront {
+
+    /**
+     * The slot under the hit, or -1 for the frame, the dividers and every other face.
+     */
+    int getHit(BlockState state, BlockPos pos, BlockHitResult hit);
+
+    /**
+     * The item breaking the block drops for this block entity: its contents, upgrades, lock (and style for
+     * framed drawers). Creative pick block uses it too, like the original's getCloneItemStack, which is why
+     * it only reads the block entity and works with the client's copy.
+     */
+    ItemStack getDropStack(BlockState state, @Nullable BlockEntity blockEntity);
+
+    static boolean isFront(BlockState state, Direction side) {
+        return state.getBlock() instanceof DrawerFront
+                && state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
+                && state.getValue(BlockStateProperties.HORIZONTAL_FACING) == side;
+    }
+
+    /**
+     * Mining makes no progress while the player looks at the front. Without this, holding the
+     * button on the front resumes a break the player started (and let go of) on another face.
+     * Only the client is asked: its view is exact and it decides when the block is broken, while
+     * the server's copy of the view lags a tick and would spoil legitimate mining from the side.
+     */
+    static boolean isMiningFront(BlockState state, Player player, BlockPos pos) {
+        return player.level().isClientSide()
+                && player.pick(20, 1.0F, false) instanceof BlockHitResult hit
+                && hit.getBlockPos().equals(pos)
+                && isFront(state, hit.getDirection());
+    }
+
+    /**
+     * Left click on a drawer front. Players send their crosshair hit through
+     * DrawerClickPayload; automation (deployer fake players) comes through
+     * AttackBlockCallback with a server side ray trace.
+     */
+    static void click(ServerPlayer player, BlockHitResult hit) {
+        BlockPos pos = hit.getBlockPos();
+        Level level = player.level();
+        // 1.20.1 has no isWithinBlockInteractionRange: the 8 block limit the server uses for other
+        // drawer messages
+        if (!level.isLoaded(pos)
+                || player.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) > 64D
+                || player.blockActionRestricted(level, pos, player.gameMode.getGameModeForPlayer()))
+            return;
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof DrawerFront drawer
+                && level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> tile) {
+            int slot = drawer.getHit(state, pos, hit);
+            // Like the original, item drawers in an FTB Chunks claim keep their items from outsiders
+            if (slot != -1 && tile instanceof com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile<?>
+                    && com.koudesuk.functionalstorage.compat.ftb.FTBChunksManager.preventInteraction(pos, player))
+                return;
+            if (slot != -1)
+                tile.onClicked(player, slot);
+        }
+    }
+}

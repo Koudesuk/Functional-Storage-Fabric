@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.inventory;
 
+import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.world.EnderSavedData;
 import net.minecraft.nbt.CompoundTag;
@@ -43,7 +44,7 @@ public class EnderInventoryHandler extends BigInventoryHandler {
 
     @Override
     public int getMultiplier() {
-        return 4; // Ender Drawers have 4x base capacity
+        return FunctionalStorageConfig.ENDER_DRAWER_MULTIPLIER.get();
     }
 
     @Override

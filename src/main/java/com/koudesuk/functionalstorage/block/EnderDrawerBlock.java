@@ -33,7 +33,27 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class EnderDrawerBlock extends Block implements EntityBlock {
+public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront {
+
+    private static final java.util.Map<String, List<ItemStack>> FREQUENCY_LOOK = new java.util.HashMap<>();
+
+    /**
+     * The icons that stand for a frequency, one vanilla non-block item per part of the UUID, picked
+     * the same way as the original so a frequency looks the same in both.
+     */
+    public static List<ItemStack> getFrequencyDisplay(String frequency) {
+        return FREQUENCY_LOOK.computeIfAbsent(frequency, key -> {
+            List<net.minecraft.world.item.Item> items = net.minecraft.core.registries.BuiltInRegistries.ITEM.stream()
+                    .filter(item -> item != net.minecraft.world.item.Items.AIR
+                            && !(item instanceof net.minecraft.world.item.BlockItem)
+                            && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getNamespace()
+                                    .equals("minecraft"))
+                    .toList();
+            return java.util.Arrays.stream(key.split("-"))
+                    .map(part -> new ItemStack(items.get(Math.abs(part.hashCode() % items.size()))))
+                    .toList();
+        });
+    }
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
@@ -86,30 +106,12 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         return InteractionResult.PASS;
     }
 
-    @Override
-    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
-        if (level.isClientSide)
-            return;
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof EnderDrawerTile tile) {
-            HitResult result = player.pick(20, 0, false);
-            if (result instanceof BlockHitResult blockHitResult) {
-                tile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
+    // Left clicks on the front go through DrawerFront.click (DrawerClickPayload), see DrawerClickHandler
 
     @Override
     public float getDestroyProgress(BlockState state, Player player,
             net.minecraft.world.level.BlockGetter level, BlockPos pos) {
-        HitResult result = player.pick(20, 0, false);
-        if (result instanceof BlockHitResult blockHitResult) {
-            Direction facing = state.getValue(FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f;
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
     /**
@@ -117,6 +119,7 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
      * Ender Drawers are X_1 type (single slot), so returns 0 for front face, -1
      * otherwise.
      */
+    @Override
     public int getHit(BlockState state, BlockPos pos, BlockHitResult blockHitResult) {
         Direction facing = state.getValue(FACING);
         Direction hitFace = blockHitResult.getDirection();
@@ -153,8 +156,13 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         NonNullList<ItemStack> stacks = NonNullList.create();
+        stacks.add(getDropStack(state, builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof EnderDrawerTile tile) {
             if (!tile.isEverythingEmpty()) {
                 stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
@@ -163,8 +171,7 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
                 stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -195,15 +202,21 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
         if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof EnderDrawerTile tile) {
-                if (tile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(tile.getControllerPos());
-                    if (controller instanceof StorageControllerTile storageControllerTile) {
-                        storageControllerTile.addConnectedDrawers(LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
-                }
+                tile.unlinkFromController();
             }
             super.onRemove(state, level, pos, newState, isMoving);
         }
+    }
+
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> tile ? tile.getComparatorSignal() : 0;
     }
 
     @Override
@@ -237,6 +250,9 @@ public class EnderDrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

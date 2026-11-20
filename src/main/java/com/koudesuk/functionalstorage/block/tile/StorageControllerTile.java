@@ -24,7 +24,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class StorageControllerTile extends ItemControllableDrawerTile<StorageControllerTile>
@@ -76,7 +78,21 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
 
     @Override
     public double getStorageDiv() {
-        return FunctionalStorageConfig.RANGE_DIVISOR;
+        return FunctionalStorageConfig.RANGE_DIVISOR.get();
+    }
+
+    /**
+     * Linking radius in blocks: the configured base plus what the storage upgrades add.
+     */
+    public int getLinkingRange() {
+        int extra = getStorageMultiplier();
+        if (extra == 1)
+            extra = 0;
+        long range = (long) FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE.get() + extra;
+        // Data-driven range upgrades (the original's controller_range_modifier) change the range further
+        double modified = com.koudesuk.functionalstorage.item.component.SizeProvider.calculate(getStorageUpgrades(),
+                com.koudesuk.functionalstorage.registry.FSAttachments.CONTROLLER_RANGE_MODIFIER, range);
+        return (int) Math.min(Integer.MAX_VALUE, (long) Math.floor(modified));
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StorageControllerTile blockEntity) {
@@ -90,6 +106,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
             blockEntity.connectedDrawers.setLevel(level);
             blockEntity.connectedDrawers.rebuild();
             blockEntity.setChanged();
+            // The original's markForUpdate: clients drop the outlines of drawers the rebuild removed
+            level.sendBlockUpdated(pos, state, state, 3);
         }
     }
 
@@ -124,19 +142,11 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
             // First priority: Try locked drawers
             for (Storage<ItemVariant> storage : this.connectedDrawers.getItemHandlers()) {
                 if (storage instanceof BigInventoryHandler handler && handler.isLocked()) {
+                    // A locked drawer only takes items its slots are already configured for.
+                    // Unconfigured slots can only be set by clicking that slot on the drawer
+                    // itself, never through the controller.
                     // Single click: Insert held item
                     if (!stack.isEmpty()) {
-                        // Logic for setting locked item if empty
-                        var storedStacks = handler.getStoredStacks();
-                        for (int i = 0; i < storedStacks.size(); i++) {
-                            if (handler.isLocked() && storedStacks.get(i).getAmount() == 0
-                                    && storedStacks.get(i).getStack().isEmpty()) {
-                                if (handler.isItemValid(i, ItemVariant.of(stack))) {
-                                    handler.setLockedItem(i, ItemVariant.of(stack));
-                                }
-                            }
-                        }
-
                         try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                                 .openOuter()) {
                             long insertedAmount = handler.insert(ItemVariant.of(stack), stack.getCount(), transaction);
@@ -152,17 +162,6 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                         for (int i = 0; i < playerIn.getInventory().getContainerSize(); i++) {
                             ItemStack invStack = playerIn.getInventory().getItem(i);
                             if (!invStack.isEmpty()) {
-                                // Same locked empty check for inventory items
-                                var storedStacks = handler.getStoredStacks();
-                                for (int s = 0; s < storedStacks.size(); s++) {
-                                    if (handler.isLocked() && storedStacks.get(s).getAmount() == 0
-                                            && storedStacks.get(s).getStack().isEmpty()) {
-                                        if (handler.isItemValid(s, ItemVariant.of(invStack))) {
-                                            handler.setLockedItem(s, ItemVariant.of(invStack));
-                                        }
-                                    }
-                                }
-
                                 try (net.fabricmc.fabric.api.transfer.v1.transaction.Transaction transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction
                                         .openOuter()) {
                                     long insertedAmount = handler.insert(ItemVariant.of(invStack),
@@ -386,23 +385,103 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         return connectedDrawers;
     }
 
+    /**
+     * Clears the controller of every linked drawer, like the original's onRemove. Called by the
+     * controller blocks while this tile can still be found.
+     */
+    public void clearLinkedDrawers() {
+        if (level == null)
+            return;
+        for (Long connectedDrawer : new ArrayList<>(connectedDrawers.getConnectedDrawers())) {
+            BlockEntity entity = level.getBlockEntity(BlockPos.of(connectedDrawer));
+            if (entity instanceof ControllableDrawerTile<?> drawer && !(entity instanceof StorageControllerTile)
+                    && getBlockPos().equals(drawer.getControllerPos()))
+                drawer.clearControllerPos();
+        }
+    }
+
+    /**
+     * Every drawer linked to this controller. Controllers and extensions are not
+     * storage themselves, so they are skipped.
+     */
+    private List<ControllableDrawerTile<?>> getConnectedDrawerTiles() {
+        List<ControllableDrawerTile<?>> drawers = new ArrayList<>();
+        if (level == null || level.isClientSide)
+            return drawers;
+        for (Long connectedDrawer : new ArrayList<>(this.connectedDrawers.getConnectedDrawers())) {
+            BlockEntity entity = level.getBlockEntity(BlockPos.of(connectedDrawer));
+            if (entity instanceof StorageControllerTile || entity instanceof ControllerExtensionTile)
+                continue;
+            if (entity instanceof ControllableDrawerTile<?> drawer)
+                drawers.add(drawer);
+        }
+        return drawers;
+    }
+
+    /** True when every connected drawer is locked. False when there are none. */
+    public boolean areAllDrawersLocked() {
+        List<ControllableDrawerTile<?>> drawers = getConnectedDrawerTiles();
+        if (drawers.isEmpty())
+            return false;
+        for (ControllableDrawerTile<?> drawer : drawers) {
+            if (!drawer.isLocked())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * The controller has no storage of its own, so locking it means locking every
+     * connected drawer. Any unlocked drawer means "lock them all", otherwise they
+     * all get unlocked.
+     */
+    @Override
+    public void toggleLocking() {
+        boolean lock = !areAllDrawersLocked();
+        for (ControllableDrawerTile<?> drawer : getConnectedDrawerTiles()) {
+            drawer.setLocked(lock);
+        }
+    }
+
+    /**
+     * The controller keeps the master value (it is what the configuration tool
+     * reports back to the player) and pushes it onto every connected drawer.
+     */
+    @Override
+    public void toggleOption(com.koudesuk.functionalstorage.item.ConfigurationToolItem.ConfigurationAction action) {
+        super.toggleOption(action);
+        for (ControllableDrawerTile<?> drawer : getConnectedDrawerTiles()) {
+            DrawerOptions options = drawer.getDrawerOptions();
+            if (action.getMax() == 1) {
+                options.setActive(action, getDrawerOptions().isActive(action));
+            } else {
+                options.setAdvancedValue(action, getDrawerOptions().getAdvancedValue(action));
+            }
+            drawer.setChanged();
+            level.sendBlockUpdated(drawer.getBlockPos(), drawer.getBlockState(), drawer.getBlockState(), 3);
+        }
+    }
+
     @Override
     public int getUtilitySlotAmount() {
         return 3; // Must be 3 to match DrawerMenu's hardcoded checkContainerSize
     }
 
+    /**
+     * Drawers whose center lies inside this box can be linked.
+     */
+    public AABB getLinkingArea() {
+        return new AABB(this.getBlockPos()).inflate(getLinkingRange());
+    }
+
     public boolean addConnectedDrawers(LinkingToolItem.ActionMode action, BlockPos... positions) {
-        var extraRange = getStorageMultiplier();
-        if (extraRange == 1) {
-            extraRange = 0;
-        }
         var didWork = false;
-        var area = new AABB(this.getBlockPos())
-                .inflate(FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE + extraRange);
+        var area = getLinkingArea();
         this.connectedDrawers.setLevel(this.getLevel());
         for (BlockPos position : positions) {
-            if (level != null && level.getBlockState(position)
-                    .getBlock() instanceof com.koudesuk.functionalstorage.block.StorageControllerBlock)
+            // Controllers are never linked, as in the original (the registered controller blocks are
+            // DrawerControllerBlocks, so the tile is what tells them apart)
+            if (level != null && level.getBlockEntity(position) instanceof StorageControllerTile)
                 continue;
             if (area.contains(Vec3.atCenterOf(position)) && this.getLevel()
                     .getBlockEntity(position) instanceof ControllableDrawerTile<?> controllableDrawerTile) {
@@ -413,15 +492,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                         didWork = true;
                     }
                 }
-            } else {
-                // Debug logging for connection failure
-                if (!area.contains(Vec3.atCenterOf(position))) {
-                    System.out.println("Failed to link: Position " + position + " is out of range. Area: " + area);
-                } else if (!(this.getLevel().getBlockEntity(position) instanceof ControllableDrawerTile)) {
-                    System.out.println("Failed to link: Block at " + position
-                            + " is not a ControllableDrawerTile. Entity: " + this.getLevel().getBlockEntity(position));
-                }
             }
+            // Drawers out of range are reported to the player by LinkingToolItem
             if (action == LinkingToolItem.ActionMode.REMOVE) {
                 this.connectedDrawers.getConnectedDrawers().removeIf(aLong -> aLong == position.asLong());
                 BlockEntity be = level.getBlockEntity(position);
@@ -461,6 +533,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         return fluidHandler;
     }
 
+    @Override
     public boolean isEverythingEmpty() {
         for (int i = 0; i < getStorageUpgrades().getContainerSize(); i++) {
             if (!getStorageUpgrades().getItem(i).isEmpty()) {

@@ -20,6 +20,9 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import com.koudesuk.functionalstorage.network.DrawerPriorityPayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -36,6 +39,9 @@ import java.util.Optional;
 public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/dispenser.png");
+
+    // Priority of the drawer, sent to the server as it is typed (DrawerPriorityPayload)
+    private EditBox priorityBox;
 
     public DrawerScreen(DrawerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -126,7 +132,41 @@ public class DrawerScreen extends AbstractContainerScreen<DrawerMenu> {
     }
 
     @Override
+    protected void init() {
+        super.init();
+        // The original's DrawerPriorityGuiAddon; controllers are never sorted, so they get none
+        if (this.menu.getTile() instanceof StorageControllerTile)
+            return;
+        priorityBox = new EditBox(this.font, leftPos + 115, topPos + 30, 50, 16,
+                Component.translatable("gui.functionalstorage.priority"));
+        priorityBox.setBordered(true);
+        priorityBox.setMaxLength(9);
+        priorityBox.setFilter(value -> value.chars().allMatch(Character::isDigit));
+        priorityBox.setValue(String.valueOf(this.menu.getTile().getPriority()));
+        priorityBox.setResponder(this::onPriorityChanged);
+        addRenderableWidget(priorityBox);
+    }
+
+    private void onPriorityChanged(String value) {
+        if (ClientPlayNetworking.canSend(DrawerPriorityPayload.TYPE))
+            ClientPlayNetworking.send(new DrawerPriorityPayload(this.menu.getTile().getBlockPos(),
+                    value.isEmpty() ? 0 : Integer.parseInt(value)));
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Typing in the priority box must not close the screen with the inventory key, like the anvil
+        if (priorityBox != null && keyCode != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+                && (priorityBox.keyPressed(keyCode, scanCode, modifiers) || priorityBox.canConsumeInput()))
+            return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        if (priorityBox != null)
+            guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.priority"), 114, 20,
+                    ChatFormatting.DARK_GRAY.getColor(), false);
         if (this.menu.getTile() instanceof StorageControllerTile) {
             guiGraphics.drawString(this.font, Component.translatable("gui.functionalstorage.storage_range"), 10, 59,
                     ChatFormatting.DARK_GRAY.getColor(), false);

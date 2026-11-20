@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 
-public class DrawerBlock extends Block implements EntityBlock {
+public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
 
     private final DrawerType type;
     private final IWoodType woodType;
@@ -57,34 +57,15 @@ public class DrawerBlock extends Block implements EntityBlock {
         return net.minecraft.world.InteractionResult.PASS;
     }
 
-    @Override
-    public void attack(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
-            net.minecraft.world.entity.player.Player player) {
-        if (level.isClientSide)
-            return;
-        net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile drawerTile) {
-            net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-            if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-                drawerTile.onClicked(player, getHit(state, pos, blockHitResult));
-            }
-        }
-    }
+    // Left clicks on the front go through DrawerFront.click (DrawerClickPayload), see DrawerClickHandler
 
     @Override
     public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.level.BlockGetter level, BlockPos pos) {
-        net.minecraft.world.phys.HitResult result = player.pick(20, 0, false);
-        if (result instanceof net.minecraft.world.phys.BlockHitResult blockHitResult) {
-            net.minecraft.core.Direction facing = state
-                    .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
-            if (blockHitResult.getDirection() == facing) {
-                return 0.0f;
-            }
-        }
-        return super.getDestroyProgress(state, player, level, pos);
+        return DrawerFront.isMiningFront(state, player, pos) ? 0 : super.getDestroyProgress(state, player, level, pos);
     }
 
+    @Override
     public int getHit(BlockState state, BlockPos pos, net.minecraft.world.phys.BlockHitResult blockHitResult) {
         net.minecraft.core.Direction facing = state
                 .getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
@@ -161,9 +142,14 @@ public class DrawerBlock extends Block implements EntityBlock {
     public java.util.List<ItemStack> getDrops(BlockState state,
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
         net.minecraft.core.NonNullList<ItemStack> stacks = net.minecraft.core.NonNullList.create();
+        stacks.add(getDropStack(state, builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile tile) {
             if (!tile.isEverythingEmpty()) {
                 stack.getOrCreateTag().put("Tile", drawerTile.saveWithoutMetadata());
@@ -172,23 +158,17 @@ public class DrawerBlock extends Block implements EntityBlock {
                 stack.getOrCreateTag().putBoolean("Locked", tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
     public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
             BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
+            // Every drawer kind this block class covers (item and fluid drawers) leaves its controller
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof DrawerTile drawerTile) {
-                if (drawerTile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(drawerTile.getControllerPos());
-                    if (controller instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile storageControllerTile) {
-                        storageControllerTile.addConnectedDrawers(
-                                com.koudesuk.functionalstorage.item.LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
-                }
+            if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawerTile) {
+                drawerTile.unlinkFromController();
             }
             super.onRemove(state, level, pos, newState, isMoving);
         }
@@ -243,6 +223,19 @@ public class DrawerBlock extends Block implements EntityBlock {
         return woodType;
     }
 
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
+    }
+
     @Override
     public boolean isSignalSource(BlockState state) {
         return true;
@@ -271,6 +264,9 @@ public class DrawerBlock extends Block implements EntityBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

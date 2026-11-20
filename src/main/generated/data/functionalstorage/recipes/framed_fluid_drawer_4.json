@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "c:empty_buckets"
+    },
+    "P": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "pattern": [
+    "CPC",
+    "PPP",
+    "CPC"
+  ],
+  "result": {
+    "count": 4,
+    "item": "functionalstorage:framed_fluid_drawer_4"
+  },
+  "show_notification": true
+}

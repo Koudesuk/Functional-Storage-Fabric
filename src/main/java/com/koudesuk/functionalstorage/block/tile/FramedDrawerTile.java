@@ -54,7 +54,11 @@ public class FramedDrawerTile extends DrawerTile implements RenderAttachmentBloc
         return framedDrawerModelData;
     }
 
+    @Override
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (StorageView<ItemVariant> view : getStorage()) {
             if (!view.isResourceBlank() && view.getAmount() > 0) {
                 return false;

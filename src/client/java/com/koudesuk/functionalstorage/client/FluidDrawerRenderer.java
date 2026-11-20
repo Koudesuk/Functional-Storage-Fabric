@@ -37,7 +37,7 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                         int combinedLightIn, int combinedOverlayIn) {
                 if (Minecraft.getInstance().player != null
                                 && !tile.getBlockPos().closerThan(Minecraft.getInstance().player.getOnPos(),
-                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE)) {
+                                                FunctionalStorageClientConfig.DRAWER_RENDER_RANGE.get())) {
                         return;
                 }
                 matrixStack.pushPose();
@@ -74,6 +74,24 @@ public class FluidDrawerRenderer implements BlockEntityRenderer<FluidDrawerTile>
                 DrawerRenderer.renderUpgrades(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
                 matrixStack.popPose();
 
+                matrixStack.popPose();
+        }
+
+        /**
+         * A fluid drawer item's tanks, where a north facing drawer shows them (the item model faces north).
+         * Upgrades are left out, like the original's FluidDrawerISTER.
+         */
+        public void renderItemContents(FluidDrawerTile tile, PoseStack matrixStack, MultiBufferSource bufferIn,
+                        int combinedLightIn, int combinedOverlayIn) {
+                matrixStack.pushPose();
+                matrixStack.mulPose(Axis.YP.rotationDegrees(-180));
+                matrixStack.translate(-1, 0, -1);
+                if (tile.getDrawerType() == DrawerType.X_1)
+                        render1Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_2)
+                        render2Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_4)
+                        render4Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
                 matrixStack.popPose();
         }
 

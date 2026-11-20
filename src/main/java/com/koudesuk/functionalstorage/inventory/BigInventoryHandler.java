@@ -2,6 +2,7 @@ package com.koudesuk.functionalstorage.inventory;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
 import com.koudesuk.functionalstorage.util.DrawerType;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
@@ -13,21 +14,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-// Actually, Fabric doesn't have INBTSerializable in the same package.
-// I should just implement the methods or use a custom interface.
-// But BigInventoryHandler stub had INBTSerializable<CompoundTag> in imports?
-// No, I removed it in the stub.
-// I'll add `implements net.fabricmc.fabric.api.util.NbtSerializable` if available, or just keep methods.
-// But I'm overriding serializeNBT/deserializeNBT which implies an interface.
-// I'll check if I imported INBTSerializable.
-// The stub had `public abstract class BigInventoryHandler implements Storage<ItemVariant> {`
-// So I'm not implementing INBTSerializable.
-// I'll just add the methods.
-// But I used `@Override` annotation.
-// I should remove `@Override` if not implementing interface.
-// Or implement a custom interface.
-
-public abstract class BigInventoryHandler implements Storage<ItemVariant> {
+public abstract class BigInventoryHandler implements Storage<ItemVariant>, SlottedItemStorage {
 
     public static String BIG_ITEMS = "BigItems";
     public static String STACK = "Stack";
@@ -47,13 +34,28 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
 
     @Override
     public long insert(ItemVariant resource, long maxAmount, TransactionContext transaction) {
+        // Denied items are not even voided, like the original
+        if (StorageTags.isDrawerDenied(resource.getItem()))
+            return 0;
         long amount = maxAmount;
         for (BigStackStorage slot : slots) {
             amount -= slot.insert(resource, amount, transaction);
             if (amount == 0)
                 break;
         }
+        if (amount > 0 && isVoid() && isVoidValid(resource)) {
+            return maxAmount;
+        }
         return maxAmount - amount;
+    }
+
+    private boolean isVoidValid(ItemVariant resource) {
+        for (BigStackStorage slot : slots) {
+            if (!slot.getResource().isBlank() && slot.getResource().equals(resource)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -87,12 +89,12 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
 
         @Override
         protected long getCapacity(ItemVariant variant) {
-            return getSlotLimit(slotIndex);
+            return getSlotLimit(slotIndex, variant);
         }
 
         @Override
         public long insert(ItemVariant resource, long maxAmount, TransactionContext transaction) {
-            if (isLocked() && variant.isBlank()) {
+            if (isLocked() && variant.isBlank() || StorageTags.isDrawerDenied(resource.getItem())) {
                 return 0;
             }
             if (isVoid() && isResourceValid(resource) && getAmount() >= getCapacity(resource)) {
@@ -121,6 +123,8 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
 
         // Helper to check validity
         private boolean isResourceValid(ItemVariant resource) {
+            if (StorageTags.isDrawerDenied(resource.getItem()))
+                return false;
             if (!getResource().isBlank() && !getResource().equals(resource))
                 return false;
             if (isLocked() && !getResource().isBlank() && !getResource().equals(resource))
@@ -152,10 +156,27 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
     }
 
     public int getSlotLimit(int slot) {
+        return getSlotLimit(slot, slot >= 0 && slot < slots.size() ? slots.get(slot).getResource() : ItemVariant.blank());
+    }
+
+    /**
+     * Like the original, a slot holds a number of stacks, so an item that stacks to 16 fits a quarter as
+     * many and an unstackable one a 64th. An empty slot counts full stacks of 64.
+     */
+    public int getSlotLimit(int slot, ItemVariant resource) {
         long capacity = type.getSlotAmount();
         if (hasDowngrade())
             capacity = 64;
-        return (int) Math.min(Integer.MAX_VALUE, capacity * getMultiplier());
+        double stackSize = resource.isBlank() ? 1 : resource.getItem().getMaxStackSize() / 64D;
+        return (int) Math.min(Integer.MAX_VALUE,
+                Math.floor((double) capacity * getMultiplier() * getSizeFactor() * stackSize));
+    }
+
+    /**
+     * Data-driven size upgrades (the original's item_storage_modifier), as a factor; 1 without any.
+     */
+    public double getSizeFactor() {
+        return 1;
     }
 
     public List<BigStack> getStoredStacks() {
@@ -209,6 +230,7 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
         return slots.get(slot).isResourceValid(resource);
     }
 
+    @Override
     public ItemVariant getResource(int slot) {
         if (slot < 0 || slot >= slots.size())
             return ItemVariant.blank();
@@ -225,6 +247,7 @@ public abstract class BigInventoryHandler implements Storage<ItemVariant> {
      * @param transaction The transaction context
      * @return The amount actually inserted
      */
+    @Override
     public long insertIntoSlot(int slot, ItemVariant resource, long maxAmount, TransactionContext transaction) {
         if (slot < 0 || slot >= slots.size())
             return 0;

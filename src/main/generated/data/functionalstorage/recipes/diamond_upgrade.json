@@ -12,7 +12,7 @@
       "item": "functionalstorage:gold_upgrade"
     },
     "I": {
-      "item": "minecraft:diamond"
+      "tag": "c:diamonds"
     }
   },
   "pattern": [

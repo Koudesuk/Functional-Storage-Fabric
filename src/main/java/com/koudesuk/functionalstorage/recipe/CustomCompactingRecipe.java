@@ -21,12 +21,26 @@ public class CustomCompactingRecipe implements Recipe<Container> {
     private final Ingredient lowerInput;
     private final ItemStack higherOutput;
     private final int needed;
+    // Set when the recipe uses the original's functionalstorage:custom_compacting format
+    private final ItemStack lowerTemplate;
 
     public CustomCompactingRecipe(ResourceLocation id, Ingredient lowerInput, ItemStack higherOutput, int needed) {
         this.id = id;
         this.lowerInput = lowerInput;
         this.higherOutput = higherOutput;
         this.needed = needed;
+        this.lowerTemplate = null;
+    }
+
+    /**
+     * The original's format: {@code lower_input} items (with their count) compact into one {@code higher_input}.
+     */
+    public CustomCompactingRecipe(ResourceLocation id, ItemStack lowerInput, ItemStack higherInput) {
+        this.id = id;
+        this.lowerInput = Ingredient.of(lowerInput.getItem());
+        this.higherOutput = higherInput.copyWithCount(1);
+        this.needed = Math.max(1, lowerInput.getCount());
+        this.lowerTemplate = lowerInput.copy();
     }
 
     @Override
@@ -56,7 +70,7 @@ public class CustomCompactingRecipe implements Recipe<Container> {
 
     @Override
     public RecipeSerializer<?> getSerializer() {
-        return Serializer.INSTANCE;
+        return lowerTemplate != null ? Serializer.CUSTOM_INSTANCE : Serializer.INSTANCE;
     }
 
     @Override
@@ -84,9 +98,36 @@ public class CustomCompactingRecipe implements Recipe<Container> {
         public static final String ID = "compacting";
     }
 
+    /**
+     * The original's {@code functionalstorage:custom_compacting}, same id and fields, so its data packs load
+     * here too: {@code {"lower_input": {"item": ..., "count": 4}, "higher_input": {"item": ...}}}.
+     */
+    public static class CustomSerializer implements RecipeSerializer<CustomCompactingRecipe> {
+        @Override
+        public CustomCompactingRecipe fromJson(ResourceLocation id, JsonObject json) {
+            return new CustomCompactingRecipe(id,
+                    ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "lower_input")),
+                    ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "higher_input")));
+        }
+
+        @Override
+        public CustomCompactingRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
+            return new CustomCompactingRecipe(id, buf.readItem(), buf.readItem());
+        }
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf, CustomCompactingRecipe recipe) {
+            buf.writeItem(recipe.lowerTemplate);
+            buf.writeItem(recipe.higherOutput);
+        }
+    }
+
     public static class Serializer implements RecipeSerializer<CustomCompactingRecipe> {
         public static final Serializer INSTANCE = new Serializer();
         public static final ResourceLocation ID = new ResourceLocation(FunctionalStorage.MOD_ID, "compacting");
+        public static final CustomSerializer CUSTOM_INSTANCE = new CustomSerializer();
+        public static final ResourceLocation CUSTOM_ID = new ResourceLocation(FunctionalStorage.MOD_ID,
+                "custom_compacting");
 
         @Override
         public CustomCompactingRecipe fromJson(ResourceLocation id, JsonObject json) {

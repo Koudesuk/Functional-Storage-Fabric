@@ -4,17 +4,22 @@ import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
+import com.koudesuk.functionalstorage.client.DrawerItemContentsRenderer;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -67,13 +72,28 @@ public class ItemRendererMixin {
     }
 
     /**
+     * Draws a drawer item's contents on its front, like the original's DrawerISTER. Right after the model is
+     * drawn the pose is still the model's block space.
+     */
+    @Inject(method = "render(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IILnet/minecraft/client/resources/model/BakedModel;)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/entity/ItemRenderer;renderModelLists(Lnet/minecraft/client/resources/model/BakedModel;Lnet/minecraft/world/item/ItemStack;IILcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;)V",
+                    shift = At.Shift.AFTER))
+    private void functionalstorage$renderDrawerContents(ItemStack stack, ItemDisplayContext displayContext,
+            boolean leftHand, PoseStack poseStack, MultiBufferSource buffer, int light, int overlay, BakedModel model,
+            CallbackInfo ci) {
+        DrawerItemContentsRenderer.render(stack, poseStack, buffer, light, overlay);
+    }
+
+    /**
      * Checks if the given block is a framed drawer type.
      */
     private boolean isFramedDrawerBlock(Block block) {
         return block instanceof FramedDrawerBlock
                 || block instanceof FramedCompactingDrawerBlock
                 || block instanceof FramedSimpleCompactingDrawerBlock
-                || block instanceof FramedDrawerControllerBlock;
+                || block instanceof FramedDrawerControllerBlock
+                || block instanceof com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock;
     }
 
     /**

@@ -1,0 +1,36 @@
+{
+  "type": "functionalstorage:copy_components",
+  "category": "misc",
+  "copyIndex": 4,
+  "key": {
+    "C": {
+      "fabric:type": "fabric:difference",
+      "base": {
+        "tag": "functionalstorage:drawer_1x1"
+      },
+      "subtracted": [
+        {
+          "item": "functionalstorage:framed_drawer_1"
+        },
+        {
+          "item": "functionalstorage:fluid_drawer_1"
+        }
+      ]
+    },
+    "P": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "nbt": [
+    "Tile"
+  ],
+  "pattern": [
+    "PPP",
+    "PCP",
+    "PPP"
+  ],
+  "result": {
+    "item": "functionalstorage:framed_drawer_1"
+  },
+  "show_notification": true
+}

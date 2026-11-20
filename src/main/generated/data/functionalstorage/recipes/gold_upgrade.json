@@ -12,7 +12,7 @@
       "item": "functionalstorage:copper_upgrade"
     },
     "I": {
-      "item": "minecraft:gold_ingot"
+      "tag": "c:gold_ingots"
     }
   },
   "pattern": [
