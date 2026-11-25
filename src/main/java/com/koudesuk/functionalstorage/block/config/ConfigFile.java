@@ -2,6 +2,7 @@ package com.koudesuk.functionalstorage.block.config;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -10,9 +11,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A commented key = value file in the config folder. The part of a key before the first
@@ -38,6 +42,12 @@ public class ConfigFile {
 
     public DoubleValue defineDouble(String key, String comment, double def, double min, double max) {
         DoubleValue value = new DoubleValue(key, comment, def, min, max);
+        values.add(value);
+        return value;
+    }
+
+    public IdListValue defineIdList(String key, String comment) {
+        IdListValue value = new IdListValue(key, comment);
         values.add(value);
         return value;
     }
@@ -96,24 +106,36 @@ public class ConfigFile {
         }
     }
 
-    public abstract static class Value<T extends Number & Comparable<T>> {
+    public abstract static class Value<T> {
         private final String key;
         private final String comment;
-        private final T def;
-        private final T min;
-        private final T max;
+        protected final T def;
         protected T value;
 
-        private Value(String key, String comment, T def, T min, T max) {
+        private Value(String key, String comment, T def) {
             this.key = key;
             this.comment = comment;
             this.def = def;
-            this.min = min;
-            this.max = max;
             this.value = def;
         }
 
+        /**
+         * Reads the text, throwing IllegalArgumentException when it is not a value at all.
+         */
         protected abstract T parse(String raw);
+
+        /**
+         * The value actually used for a parsed one, e.g. clamped into its range.
+         */
+        protected T fit(T parsed) {
+            return parsed;
+        }
+
+        protected String format(T value) {
+            return value.toString();
+        }
+
+        public abstract String rangeLine();
 
         public String key() {
             return key;
@@ -130,18 +152,14 @@ public class ConfigFile {
             return key.substring(0, key.indexOf('.'));
         }
 
-        public String rangeLine() {
-            return "Range: " + min + " ~ " + max + "    Default: " + def;
-        }
-
         /**
-         * Whether the text is a number inside the range, i.e. would be used as is.
+         * Whether the text would be used as is: valid, and for numbers inside the range.
          */
         public boolean accepts(String raw) {
             try {
                 T parsed = parse(raw.trim());
-                return parsed.compareTo(min) >= 0 && parsed.compareTo(max) <= 0;
-            } catch (NumberFormatException e) {
+                return fit(parsed).equals(parsed);
+            } catch (IllegalArgumentException e) {
                 return false;
             }
         }
@@ -153,23 +171,84 @@ public class ConfigFile {
             }
             try {
                 T parsed = parse(raw.toString().trim());
-                value = parsed.compareTo(min) < 0 ? min : parsed.compareTo(max) > 0 ? max : parsed;
+                value = fit(parsed);
                 if (!value.equals(parsed))
-                    FunctionalStorage.LOGGER.warn("Config {} = {} is outside {} ~ {}, using {}", key, raw, min, max,
-                            value);
-            } catch (NumberFormatException e) {
-                FunctionalStorage.LOGGER.warn("Config {} = {} is not a valid number, using {}", key, raw, def);
+                    FunctionalStorage.LOGGER.warn("Config {} = {} is outside the {}, using {}", key, raw, rangeLine(),
+                            format(value));
+            } catch (IllegalArgumentException e) {
+                FunctionalStorage.LOGGER.warn("Config {} = {} is not valid, using {}", key, raw, format(def));
                 value = def;
             }
         }
 
         @Override
         public String toString() {
-            return value.toString();
+            return format(value);
         }
     }
 
-    public static final class IntValue extends Value<Integer> {
+    public abstract static class NumberValue<T extends Number & Comparable<T>> extends Value<T> {
+        private final T min;
+        private final T max;
+
+        private NumberValue(String key, String comment, T def, T min, T max) {
+            super(key, comment, def);
+            this.min = min;
+            this.max = max;
+        }
+
+        @Override
+        protected T fit(T parsed) {
+            return parsed.compareTo(min) < 0 ? min : parsed.compareTo(max) > 0 ? max : parsed;
+        }
+
+        @Override
+        public String rangeLine() {
+            return "Range: " + min + " ~ " + max + "    Default: " + def;
+        }
+    }
+
+    /**
+     * Registry ids separated by commas, like "minecraft:stone, minecraft:dirt"; a missing
+     * namespace means minecraft. Only the form is checked: other mods may not have registered
+     * their content yet when the file is loaded.
+     */
+    public static final class IdListValue extends Value<Set<ResourceLocation>> {
+        private IdListValue(String key, String comment) {
+            super(key, comment, Set.of());
+        }
+
+        public boolean contains(ResourceLocation id) {
+            return value.contains(id);
+        }
+
+        @Override
+        protected Set<ResourceLocation> parse(String raw) {
+            Set<ResourceLocation> ids = new LinkedHashSet<>();
+            for (String part : raw.split(",")) {
+                String text = part.trim();
+                if (text.isEmpty())
+                    continue;
+                ResourceLocation id = ResourceLocation.tryParse(text);
+                if (id == null)
+                    throw new IllegalArgumentException("Not an id: " + text);
+                ids.add(id);
+            }
+            return ids;
+        }
+
+        @Override
+        protected String format(Set<ResourceLocation> ids) {
+            return ids.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "));
+        }
+
+        @Override
+        public String rangeLine() {
+            return "Comma separated ids, like minecraft:stone    Default: none";
+        }
+    }
+
+    public static final class IntValue extends NumberValue<Integer> {
         private IntValue(String key, String comment, int def, int min, int max) {
             super(key, comment, def, min, max);
         }
@@ -184,7 +263,7 @@ public class ConfigFile {
         }
     }
 
-    public static final class DoubleValue extends Value<Double> {
+    public static final class DoubleValue extends NumberValue<Double> {
         private DoubleValue(String key, String comment, double def, double min, double max) {
             super(key, comment, def, min, max);
         }

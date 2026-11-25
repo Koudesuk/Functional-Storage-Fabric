@@ -24,9 +24,11 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -150,6 +152,10 @@ public class LinkingToolItem extends Item {
                                         true);
                             }
                         }
+                        if (linkingAction == ActionMode.ADD) {
+                            reportOutOfRange(context.getPlayer(), level, (StorageControllerTile) controller,
+                                    "linkingtool.single_drawer.out_of_range", pos);
+                        }
                     } else {
                         if (stack.has(FSAttachments.FIRST_POSITION)) {
                             BlockPos firstPos = stack.get(FSAttachments.FIRST_POSITION);
@@ -158,8 +164,8 @@ public class LinkingToolItem extends Item {
                                     Math.max(firstPos.getX(), pos.getX()) + 1,
                                     Math.max(firstPos.getY(), pos.getY()) + 1,
                                     Math.max(firstPos.getZ(), pos.getZ()) + 1);
-                            if (((StorageControllerTile) controller).addConnectedDrawers(linkingAction,
-                                    getBlockPosInAABB(aabb).toArray(BlockPos[]::new))) {
+                            BlockPos[] positions = getBlockPosInAABB(aabb).toArray(BlockPos[]::new);
+                            if (((StorageControllerTile) controller).addConnectedDrawers(linkingAction, positions)) {
                                 if (linkingAction == ActionMode.ADD) {
                                     context.getPlayer().displayClientMessage(
                                             Component.translatable("linkingtool.multiple_drawer.linked")
@@ -171,6 +177,10 @@ public class LinkingToolItem extends Item {
                                                     .setStyle(Style.EMPTY.withColor(linkingMode.color)),
                                             true);
                                 }
+                            }
+                            if (linkingAction == ActionMode.ADD) {
+                                reportOutOfRange(context.getPlayer(), level, (StorageControllerTile) controller,
+                                        "linkingtool.multiple_drawer.out_of_range", positions);
                             }
                             stack.remove(FSAttachments.FIRST_POSITION);
                         } else {
@@ -291,6 +301,26 @@ public class LinkingToolItem extends Item {
                     tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
                 }
             }
+        }
+    }
+
+    /**
+     * Tells the player how many of the drawers they tried to link lie outside the controller's
+     * range, so they are not left wondering why nothing happened. The overlay holds one line,
+     * so this replaces the linked message when only part of a selection was in range.
+     */
+    private static void reportOutOfRange(Player player, Level level, StorageControllerTile controller, String key,
+            BlockPos... positions) {
+        if (player == null)
+            return;
+        AABB area = controller.getLinkingArea();
+        long outOfRange = Arrays.stream(positions)
+                .filter(position -> !area.contains(Vec3.atCenterOf(position)))
+                .filter(position -> level.getBlockEntity(position) instanceof ControllableDrawerTile<?> drawer
+                        && !(drawer instanceof StorageControllerTile))
+                .count();
+        if (outOfRange > 0) {
+            player.displayClientMessage(Component.translatable(key, outOfRange).withStyle(ChatFormatting.RED), true);
         }
     }
 

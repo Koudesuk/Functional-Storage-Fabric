@@ -89,8 +89,11 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         int extra = getStorageMultiplier();
         if (extra == 1)
             extra = 0;
-        return (int) Math.min(Integer.MAX_VALUE,
-                (long) FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE.get() + extra);
+        long range = (long) FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE.get() + extra;
+        // Data-driven range upgrades (the original's controller_range_modifier) change the range further
+        double modified = com.koudesuk.functionalstorage.item.component.SizeProvider.calculate(getStorageUpgrades(),
+                com.koudesuk.functionalstorage.registry.FSAttachments.CONTROLLER_RANGE_MODIFIER, range);
+        return (int) Math.min(Integer.MAX_VALUE, (long) Math.floor(modified));
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StorageControllerTile blockEntity) {
@@ -104,6 +107,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
             blockEntity.connectedDrawers.setLevel(level);
             blockEntity.connectedDrawers.rebuild();
             blockEntity.setChanged();
+            // The original's markForUpdate: clients drop the outlines of drawers the rebuild removed
+            level.sendBlockUpdated(pos, state, state, 3);
         }
     }
 
@@ -381,6 +386,21 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
     }
 
     /**
+     * Clears the controller of every linked drawer, like the original's onRemove. Called by the
+     * controller blocks while this tile can still be found.
+     */
+    public void clearLinkedDrawers() {
+        if (level == null)
+            return;
+        for (Long connectedDrawer : new ArrayList<>(connectedDrawers.getConnectedDrawers())) {
+            BlockEntity entity = level.getBlockEntity(BlockPos.of(connectedDrawer));
+            if (entity instanceof ControllableDrawerTile<?> drawer && !(entity instanceof StorageControllerTile)
+                    && getBlockPos().equals(drawer.getControllerPos()))
+                drawer.clearControllerPos();
+        }
+    }
+
+    /**
      * Every drawer linked to this controller. Controllers and extensions are not
      * storage themselves, so they are skipped.
      */
@@ -447,13 +467,21 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         return 3; // Must be 3 to match DrawerMenu's hardcoded checkContainerSize
     }
 
+    /**
+     * Drawers whose center lies inside this box can be linked.
+     */
+    public AABB getLinkingArea() {
+        return new AABB(this.getBlockPos()).inflate(getLinkingRange());
+    }
+
     public boolean addConnectedDrawers(LinkingToolItem.ActionMode action, BlockPos... positions) {
         var didWork = false;
-        var area = new AABB(this.getBlockPos()).inflate(getLinkingRange());
+        var area = getLinkingArea();
         this.connectedDrawers.setLevel(this.getLevel());
         for (BlockPos position : positions) {
-            if (level != null && level.getBlockState(position)
-                    .getBlock() instanceof com.koudesuk.functionalstorage.block.StorageControllerBlock)
+            // Controllers are never linked, as in the original (the registered controller blocks are
+            // DrawerControllerBlocks, so the tile is what tells them apart)
+            if (level != null && level.getBlockEntity(position) instanceof StorageControllerTile)
                 continue;
             if (area.contains(Vec3.atCenterOf(position)) && this.getLevel()
                     .getBlockEntity(position) instanceof ControllableDrawerTile<?> controllableDrawerTile) {
@@ -464,15 +492,8 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
                         didWork = true;
                     }
                 }
-            } else {
-                // Debug logging for connection failure
-                if (!area.contains(Vec3.atCenterOf(position))) {
-                    System.out.println("Failed to link: Position " + position + " is out of range. Area: " + area);
-                } else if (!(this.getLevel().getBlockEntity(position) instanceof ControllableDrawerTile)) {
-                    System.out.println("Failed to link: Block at " + position
-                            + " is not a ControllableDrawerTile. Entity: " + this.getLevel().getBlockEntity(position));
-                }
             }
+            // Drawers out of range are reported to the player by LinkingToolItem
             if (action == LinkingToolItem.ActionMode.REMOVE) {
                 this.connectedDrawers.getConnectedDrawers().removeIf(aLong -> aLong == position.asLong());
                 BlockEntity be = level.getBlockEntity(position);
@@ -512,6 +533,7 @@ public class StorageControllerTile extends ItemControllableDrawerTile<StorageCon
         return fluidHandler;
     }
 
+    @Override
     public boolean isEverythingEmpty() {
         for (int i = 0; i < getStorageUpgrades().getContainerSize(); i++) {
             if (!getStorageUpgrades().getItem(i).isEmpty()) {

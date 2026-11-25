@@ -87,9 +87,14 @@ public class FluidDrawerBlock extends DrawerBlock {
     public java.util.List<ItemStack> getDrops(BlockState state,
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
         net.minecraft.core.NonNullList<ItemStack> stacks = net.minecraft.core.NonNullList.create();
+        stacks.add(getDropStack(state, builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @org.jetbrains.annotations.Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FluidDrawerTile tile) {
             if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
                 stack.set(FSAttachments.TILE,
@@ -99,8 +104,7 @@ public class FluidDrawerBlock extends DrawerBlock {
                 stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -148,6 +152,9 @@ public class FluidDrawerBlock extends DrawerBlock {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

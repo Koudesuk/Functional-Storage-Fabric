@@ -1,10 +1,13 @@
 package com.koudesuk.functionalstorage.item;
 
+import com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile;
+import com.koudesuk.functionalstorage.block.tile.FluidDrawerTile;
 import com.koudesuk.functionalstorage.registry.FSAttachments;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
@@ -46,6 +49,49 @@ public class UpgradeItem extends Item {
             return stack.get(FSAttachments.DIRECTION);
         }
         return Direction.NORTH;
+    }
+
+    public static boolean isDirectionUpgrade(Item item) {
+        return item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PULLING_UPGRADE
+                || item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PUSHING_UPGRADE
+                || item == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.COLLECTOR_UPGRADE;
+    }
+
+    /**
+     * Where a side lies for someone looking at the drawer's front, like Titanium's FacingUtil.getFacingRelative
+     * the original uses.
+     */
+    public static MutableComponent getRelativeDirection(Direction facing, Direction side) {
+        String name = side == Direction.UP ? "up"
+                : side == Direction.DOWN ? "down"
+                : side == facing ? "front"
+                : side == facing.getOpposite() ? "back"
+                : side == facing.getClockWise() ? "left" : "right";
+        return Component.translatable("drawer_upgrade.functionalstorage.sides." + name).withStyle(ChatFormatting.WHITE);
+    }
+
+    /**
+     * What the upgrade does in this drawer, for Jade, like the original's getDescription.
+     */
+    @Nullable
+    public Component getDescription(ItemStack stack, ControllableDrawerTile<?> tile) {
+        String type = tile instanceof FluidDrawerTile ? "fluid" : "item";
+        if (isDirectionUpgrade(this)) {
+            String action = this == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PUSHING_UPGRADE ? "push"
+                    : this == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.PULLING_UPGRADE ? "pull"
+                    : "collect";
+            return Component.translatable("drawer_upgrade.functionalstorage." + action + "." + type,
+                    getRelativeDirection(tile.getFacingDirection(), getDirection(stack)).withStyle(ChatFormatting.GOLD));
+        }
+        if (this == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.VOID_UPGRADE) {
+            return Component.translatable("drawer_upgrade.functionalstorage.void." + type);
+        }
+        if (this == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.REDSTONE_UPGRADE) {
+            return Component.translatable("drawer_upgrade.functionalstorage.redstone",
+                    Component.literal(String.valueOf(stack.getOrDefault(FSAttachments.SLOT, 0)))
+                            .withStyle(ChatFormatting.RED));
+        }
+        return null;
     }
 
     @Override

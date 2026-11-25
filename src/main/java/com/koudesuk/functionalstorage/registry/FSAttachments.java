@@ -1,14 +1,20 @@
 package com.koudesuk.functionalstorage.registry;
 
 import com.koudesuk.functionalstorage.FunctionalStorage;
+import com.koudesuk.functionalstorage.item.component.FunctionalUpgradeBehavior;
+import com.koudesuk.functionalstorage.item.component.SizeProvider;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 import java.util.function.UnaryOperator;
 
@@ -63,6 +69,23 @@ public class FSAttachments {
         // Storage modifiers (for upgrades)
         public static final DataComponentType<Integer> STORAGE_MULTIPLIER = register("storage_multiplier",
                         builder -> builder.persistent(Codec.INT));
+
+        // Data-driven size upgrades like the original: any item with one goes into a storage upgrade slot
+        public static final DataComponentType<SizeProvider> ITEM_STORAGE_MODIFIER = register("item_storage_modifier",
+                        builder -> builder.persistent(SizeProvider.CODEC));
+
+        public static final DataComponentType<SizeProvider> FLUID_STORAGE_MODIFIER = register(
+                        "fluid_storage_modifier", builder -> builder.persistent(SizeProvider.CODEC));
+
+        public static final DataComponentType<SizeProvider> CONTROLLER_RANGE_MODIFIER = register(
+                        "controller_range_modifier", builder -> builder.persistent(SizeProvider.CODEC));
+
+        // What an item does in a utility upgrade slot, and the upgrades it never shares the slots with
+        public static final DataComponentType<FunctionalUpgradeBehavior> FUNCTIONAL_BEHAVIOR = register(
+                        "functional_upgrade_behavior", builder -> builder.persistent(FunctionalUpgradeBehavior.CODEC));
+
+        public static final DataComponentType<HolderSet<Item>> INCOMPATIBLE_UPGRADES = register("incompatible_upgrades",
+                        builder -> builder.persistent(RegistryCodecs.homogeneousList(Registries.ITEM)));
 
         private static <T> DataComponentType<T> register(String name,
                         UnaryOperator<DataComponentType.Builder<T>> builder) {

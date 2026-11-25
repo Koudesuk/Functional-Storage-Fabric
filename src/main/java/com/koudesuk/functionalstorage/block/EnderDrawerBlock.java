@@ -36,6 +36,26 @@ import java.util.List;
 
 public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront {
 
+    private static final java.util.Map<String, List<ItemStack>> FREQUENCY_LOOK = new java.util.HashMap<>();
+
+    /**
+     * The icons that stand for a frequency, one vanilla non-block item per part of the UUID, picked
+     * the same way as the original so a frequency looks the same in both.
+     */
+    public static List<ItemStack> getFrequencyDisplay(String frequency) {
+        return FREQUENCY_LOOK.computeIfAbsent(frequency, key -> {
+            List<net.minecraft.world.item.Item> items = net.minecraft.core.registries.BuiltInRegistries.ITEM.stream()
+                    .filter(item -> item != net.minecraft.world.item.Items.AIR
+                            && !(item instanceof net.minecraft.world.item.BlockItem)
+                            && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getNamespace()
+                                    .equals("minecraft"))
+                    .toList();
+            return java.util.Arrays.stream(key.split("-"))
+                    .map(part -> new ItemStack(items.get(Math.abs(part.hashCode() % items.size()))))
+                    .toList();
+        });
+    }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty LOCKED = BooleanProperty.create("locked");
 
@@ -149,8 +169,13 @@ public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront 
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         NonNullList<ItemStack> stacks = NonNullList.create();
+        stacks.add(getDropStack(state, builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof EnderDrawerTile tile) {
             if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
                 stack.set(FSAttachments.TILE,
@@ -160,8 +185,7 @@ public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront 
                 stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -202,6 +226,17 @@ public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront 
         }
     }
 
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> tile ? tile.getComparatorSignal() : 0;
+    }
+
     @Override
     public boolean isSignalSource(BlockState state) {
         return true;
@@ -233,6 +268,9 @@ public class EnderDrawerBlock extends Block implements EntityBlock, DrawerFront 
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

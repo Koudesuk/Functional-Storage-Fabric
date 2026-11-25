@@ -10,6 +10,7 @@ import net.minecraft.world.inventory.MenuType;
 public class FunctionalStorageMenus {
 
         public static MenuType<DrawerMenu> DRAWER;
+        public static MenuType<com.koudesuk.functionalstorage.inventory.ArmoryCabinetMenu> ARMORY_CABINET;
 
         public static void register() {
                 DRAWER = Registry.register(BuiltInRegistries.MENU,
@@ -18,5 +19,10 @@ public class FunctionalStorageMenus {
                                                 (syncId, inventory, payload) -> new DrawerMenu(syncId, inventory,
                                                                 payload.pos()),
                                                 com.koudesuk.functionalstorage.network.BlockPosPayload.STREAM_CODEC));
+                ARMORY_CABINET = Registry.register(BuiltInRegistries.MENU,
+                                ResourceLocation.fromNamespaceAndPath(FunctionalStorage.MOD_ID, "armory_cabinet"),
+                                new net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType<>(
+                                                com.koudesuk.functionalstorage.inventory.ArmoryCabinetMenu::new,
+                                                com.koudesuk.functionalstorage.inventory.ArmoryCabinetMenu.OpenData.STREAM_CODEC));
         }
 }

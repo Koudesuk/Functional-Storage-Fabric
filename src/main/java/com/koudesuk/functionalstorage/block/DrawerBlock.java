@@ -80,6 +80,8 @@ public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
         return net.minecraft.world.InteractionResult.PASS;
     }
 
+    // Left clicks on the front go through DrawerFront.click (DrawerClickPayload), see DrawerClickHandler
+
     @Override
     public float getDestroyProgress(BlockState state, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.level.BlockGetter level, BlockPos pos) {
@@ -172,9 +174,14 @@ public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
     public java.util.List<ItemStack> getDrops(BlockState state,
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
         net.minecraft.core.NonNullList<ItemStack> stacks = net.minecraft.core.NonNullList.create();
+        stacks.add(getDropStack(state, builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof com.koudesuk.functionalstorage.block.tile.DrawerTile tile) {
             if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
                 stack.set(FSAttachments.TILE, tile.saveWithoutMetadata(tile.getLevel().registryAccess()));
@@ -183,23 +190,17 @@ public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
                 stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
     public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
             BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
+            // Every drawer kind this block class covers (item and fluid drawers) leaves its controller
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof DrawerTile drawerTile) {
-                if (drawerTile.getControllerPos() != null) {
-                    BlockEntity controller = level.getBlockEntity(drawerTile.getControllerPos());
-                    if (controller instanceof com.koudesuk.functionalstorage.block.tile.StorageControllerTile storageControllerTile) {
-                        storageControllerTile.addConnectedDrawers(
-                                com.koudesuk.functionalstorage.item.LinkingToolItem.ActionMode.REMOVE, pos);
-                    }
-                }
+            if (blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawerTile) {
+                drawerTile.unlinkFromController();
             }
             super.onRemove(state, level, pos, newState, isMoving);
         }
@@ -255,6 +256,19 @@ public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
         return woodType;
     }
 
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
+    }
+
     @Override
     public boolean isSignalSource(BlockState state) {
         return true;
@@ -283,6 +297,9 @@ public class DrawerBlock extends Block implements EntityBlock, DrawerFront {
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

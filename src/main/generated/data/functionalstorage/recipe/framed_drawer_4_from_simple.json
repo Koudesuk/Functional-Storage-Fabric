@@ -1,0 +1,34 @@
+{
+  "type": "functionalstorage:copy_components",
+  "category": "misc",
+  "components": [
+    "functionalstorage:tile"
+  ],
+  "copyIndex": 1,
+  "key": {
+    "C": {
+      "fabric:type": "fabric:difference",
+      "base": {
+        "tag": "functionalstorage:drawer_2x2"
+      },
+      "subtracted": [
+        {
+          "item": "functionalstorage:framed_drawer_4"
+        },
+        {
+          "item": "functionalstorage:fluid_drawer_4"
+        }
+      ]
+    },
+    "P": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "pattern": [
+    "PCP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "functionalstorage:framed_drawer_4"
+  }
+}

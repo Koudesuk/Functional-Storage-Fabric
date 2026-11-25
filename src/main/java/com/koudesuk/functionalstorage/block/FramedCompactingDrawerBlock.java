@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
+public class FramedCompactingDrawerBlock extends CompactingDrawerBlock implements FramedBlock {
 
     public FramedCompactingDrawerBlock(Properties properties) {
         super(properties);
@@ -80,10 +80,8 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        NonNullList<ItemStack> stacks = NonNullList.create();
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FramedCompactingDrawerTile framedDrawerTile) {
             if (!framedDrawerTile.isEverythingEmpty() && framedDrawerTile.getLevel() != null) {
                 stack.set(FSAttachments.TILE,
@@ -97,8 +95,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
                 stack.set(FSAttachments.LOCKED, framedDrawerTile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -118,12 +115,7 @@ public class FramedCompactingDrawerBlock extends CompactingDrawerBlock {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
-            }
-        }
+        FramedBlock.appendTooltip(tooltip);
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

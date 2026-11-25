@@ -1,6 +1,7 @@
 package com.koudesuk.functionalstorage.inventory;
 
 import com.koudesuk.functionalstorage.util.DrawerType;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
@@ -94,50 +95,34 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
 
         @Override
         public long insert(FluidVariant resource, long maxAmount, TransactionContext transaction) {
-            if (isVoid() && isResourceValid(resource) && getAmount() >= getCapacity(resource)) {
+            // Only fluid this slot would take is voided, never another fluid that should go elsewhere
+            if (isVoid() && canInsert(resource) && getAmount() >= getCapacity(resource)) {
                 return maxAmount; // Void excess
             }
             return super.insert(resource, maxAmount, transaction);
         }
 
-        // Helper to check validity - use filterStack when locked
+        /**
+         * Whether the slot takes this fluid at all, like the original's isFluidValid: never a denied
+         * fluid, and while the drawer is locked only the slot's filter. A locked slot without a
+         * filter takes nothing; right clicking it with a fluid container sets one (FluidDrawerTile).
+         */
         private boolean isResourceValid(FluidVariant resource) {
-            if (isLocked()) {
-                FluidVariant filter = filterStack[slotIndex];
-                if (!filter.isBlank() && !filter.equals(resource)) {
-                    return false;
-                }
-            }
-            return true;
+            if (StorageTags.isFluidDrawerDenied(resource.getFluid()))
+                return false;
+            return !isLocked() || resource.equals(filterStack[slotIndex]);
         }
 
         /**
-         * Override canInsert to implement locking validation.
-         * This is called by SingleVariantStorage.insert() before inserting.
+         * Called by SingleVariantStorage.insert() before inserting.
          */
         @Override
         protected boolean canInsert(FluidVariant variant) {
-            // When locked, only allow the locked fluid type
-            if (isLocked()) {
-                FluidVariant filter = filterStack[slotIndex];
-                if (!filter.isBlank() && !filter.equals(variant)) {
-                    return false;
-                }
-            }
-            // Also check if slot already has a different fluid (same as base behavior)
-            if (!getResource().isBlank() && !getResource().equals(variant)) {
-                return false;
-            }
-            return true;
+            return isResourceValid(variant) && (getResource().isBlank() || getResource().equals(variant));
         }
 
         @Override
         protected void onFinalCommit() {
-            // If locked and filterStack is blank but we now have fluid, lock in this fluid
-            // type
-            if (isLocked() && filterStack[slotIndex].isBlank() && !getResource().isBlank()) {
-                filterStack[slotIndex] = getResource();
-            }
             onChange();
         }
     }
@@ -150,7 +135,16 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
             baseBuckets = 1; // 1 bucket when downgraded
 
         long totalBuckets = baseBuckets * getMultiplier();
-        return totalBuckets * 81000; // droplets per bucket
+        long droplets = totalBuckets * 81000; // droplets per bucket
+        double factor = getSizeFactor();
+        return factor == 1 ? droplets : (long) Math.floor(droplets * factor);
+    }
+
+    /**
+     * Data-driven size upgrades (the original's fluid_storage_modifier), as a factor; 1 without any.
+     */
+    public double getSizeFactor() {
+        return 1;
     }
 
     public CompoundTag serializeNBT(net.minecraft.core.HolderLookup.Provider registries) {
@@ -239,5 +233,13 @@ public abstract class FluidInventoryHandler implements Storage<FluidVariant> {
         if (slot < 0 || slot >= filterStack.length)
             return FluidVariant.blank();
         return filterStack[slot];
+    }
+
+    /**
+     * Sets the only fluid a slot takes while the drawer is locked, like the original's setFilterResource.
+     */
+    public void setFilterStack(int slot, FluidVariant fluid) {
+        if (slot >= 0 && slot < filterStack.length)
+            filterStack[slot] = fluid;
     }
 }

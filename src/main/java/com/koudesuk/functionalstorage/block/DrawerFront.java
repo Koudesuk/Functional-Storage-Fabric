@@ -5,10 +5,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A block whose front face is split into clickable drawer slots.
@@ -20,8 +23,16 @@ public interface DrawerFront {
      */
     int getHit(BlockState state, BlockPos pos, BlockHitResult hit);
 
+    /**
+     * The item breaking the block drops for this block entity: its contents, upgrades, lock (and style for
+     * framed drawers). Creative pick block uses it too, like the original's getCloneItemStack, which is why
+     * it only reads the block entity and works with the client's copy.
+     */
+    ItemStack getDropStack(BlockState state, @Nullable BlockEntity blockEntity);
+
     static boolean isFront(BlockState state, Direction side) {
         return state.getBlock() instanceof DrawerFront
+                && state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
                 && state.getValue(BlockStateProperties.HORIZONTAL_FACING) == side;
     }
 
@@ -53,6 +64,10 @@ public interface DrawerFront {
         if (state.getBlock() instanceof DrawerFront drawer
                 && level.getBlockEntity(pos) instanceof ControllableDrawerTile<?> tile) {
             int slot = drawer.getHit(state, pos, hit);
+            // Like the original, item drawers in an FTB Chunks claim keep their items from outsiders
+            if (slot != -1 && tile instanceof com.koudesuk.functionalstorage.block.tile.ItemControllableDrawerTile<?>
+                    && com.koudesuk.functionalstorage.compat.ftb.FTBChunksManager.preventInteraction(pos, player))
+                return;
             if (slot != -1)
                 tile.onClicked(player, slot);
         }

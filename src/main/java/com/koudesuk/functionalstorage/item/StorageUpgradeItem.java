@@ -48,7 +48,11 @@ public class StorageUpgradeItem extends UpgradeItem {
     private final StorageTier storageTier;
 
     public StorageUpgradeItem(StorageTier tier) {
-        super(new Properties(), Type.STORAGE);
+        this(tier, new Properties());
+    }
+
+    public StorageUpgradeItem(StorageTier tier, Properties properties) {
+        super(properties, Type.STORAGE);
         this.storageTier = tier;
     }
 

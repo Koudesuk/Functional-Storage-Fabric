@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.block.config;
 
+import com.koudesuk.functionalstorage.block.config.ConfigFile.IdListValue;
 import com.koudesuk.functionalstorage.block.config.ConfigFile.IntValue;
 
 /**
@@ -54,6 +55,13 @@ public final class FunctionalStorageConfig {
             "An Ender Drawer holds this many times the base capacity of a 1x1 drawer. Storage upgrades do not apply.",
             4, 1, 1_000_000);
 
+    public static final IdListValue DRAWER_DENIED_ITEMS = FILE.defineIdList("storage.denied_items", """
+            Items that cannot be stored in drawers, compacting drawers or through a controller,
+            in addition to the functionalstorage:drawer_storage_denylist item tag.""");
+
+    public static final IdListValue FLUID_DRAWER_DENIED_FLUIDS = FILE.defineIdList("storage.denied_fluids",
+            "Fluids that cannot be stored in fluid drawers, in addition to the functionalstorage:fluid_drawer_storage_denylist fluid tag.");
+
     // Storage upgrades
 
     public static final IntValue COPPER_MULTIPLIER = FILE.defineInt("upgrades.copper_multiplier",
@@ -76,6 +84,11 @@ public final class FunctionalStorageConfig {
             "Fluid drawers divide every storage upgrade multiplier by this (rounded down, never below 1).",
             1, 1, Integer.MAX_VALUE);
 
+    public static final IdListValue CREATIVE_INCOMPATIBLE_UPGRADES = FILE.defineIdList(
+            "upgrades.creative_incompatible", """
+            Upgrades that cannot share a drawer's storage upgrade slots with the Creative Vending Upgrade,
+            in addition to the functionalstorage:creative_vending_upgrade_incompatible item tag.""");
+
     // Utility upgrades
 
     public static final IntValue UPGRADE_TICK = FILE.defineInt("upgrades.tick_interval",
@@ -86,9 +99,19 @@ public final class FunctionalStorageConfig {
             "Items a Pulling Upgrade moves each time it runs.",
             4, 0, Integer.MAX_VALUE);
 
+    public static final IntValue UPGRADE_PULL_FLUID = FILE.defineInt("upgrades.pulling_fluid", """
+            Fluid, in millibuckets, a Pulling Upgrade moves into a fluid drawer each time it runs.
+            If that moves nothing because the other side only gives whole buckets (a lava cauldron), one bucket is moved.""",
+            500, 0, Integer.MAX_VALUE);
+
     public static final IntValue UPGRADE_PUSH_ITEMS = FILE.defineInt("upgrades.pushing_items",
             "Items a Pushing Upgrade moves each time it runs.",
             4, 0, Integer.MAX_VALUE);
+
+    public static final IntValue UPGRADE_PUSH_FLUID = FILE.defineInt("upgrades.pushing_fluid", """
+            Fluid, in millibuckets, a Pushing Upgrade moves out of a fluid drawer each time it runs.
+            If that moves nothing because the other side only takes whole buckets (a lava cauldron), one bucket is moved.""",
+            500, 0, Integer.MAX_VALUE);
 
     public static final IntValue UPGRADE_COLLECTOR_ITEMS = FILE.defineInt("upgrades.collector_items",
             "Items a Collector Upgrade takes from each dropped item entity each time it runs.",
@@ -99,6 +122,10 @@ public final class FunctionalStorageConfig {
     public static final IntValue ARMORY_CABINET_SIZE = FILE.defineInt("armory.cabinet_size",
             "Number of slots in an Armory Cabinet. Lowering it deletes whatever is stored in the removed slots.",
             4096, 1, 65536);
+
+    public static final IdListValue ARMORY_INSERTABLE_ITEMS = FILE.defineIdList("armory.insertable_items", """
+            Items the Armory Cabinet accepts even if they would not pass its usual checks (stackable items, for example),
+            in addition to the functionalstorage:armory_cabinet_insertable item tag.""");
 
     private FunctionalStorageConfig() {
     }

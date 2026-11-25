@@ -61,23 +61,20 @@ public class FunctionalStorage implements ModInitializer {
                 FluidStorage.combinedItemApiProvider(Items.MILK_BUCKET).register(ctx -> new FullItemFluidStorage(ctx,
                                 Items.BUCKET, FluidVariant.of(MILK), FluidConstants.BUCKET));
 
-                // Register empty bucket to accept fluids (enables extraction from drawers)
-                // Water bucket
-                FluidStorage.combinedItemApiProvider(Items.BUCKET).register(ctx -> new EmptyItemFluidStorage(ctx,
-                                Items.WATER_BUCKET, Fluids.WATER, FluidConstants.BUCKET));
-                // Lava bucket
-                FluidStorage.combinedItemApiProvider(Items.BUCKET).register(ctx -> new EmptyItemFluidStorage(ctx,
-                                Items.LAVA_BUCKET, Fluids.LAVA, FluidConstants.BUCKET));
-                // Milk bucket
+                // Empty bucket accepts milk too. Water and lava are left to Fabric's own EmptyBucketStorage:
+                // a second provider for them made one insert fill two buckets from a stack
                 FluidStorage.combinedItemApiProvider(Items.BUCKET).register(
                                 ctx -> new EmptyItemFluidStorage(ctx, Items.MILK_BUCKET, MILK, FluidConstants.BUCKET));
 
                 LOGGER.info("Registered fluid handlers for bucket interactions");
 
-                FunctionalStorageBlocks.register();
-                com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
+                // The original's data-driven upgrade behaviors, before any item that carries one
+                com.koudesuk.functionalstorage.item.component.FunctionalUpgradeBehavior.registerTypes();
                 // Register Data Component Types first
                 com.koudesuk.functionalstorage.registry.FSAttachments.register();
+
+                FunctionalStorageBlocks.register();
+                com.koudesuk.functionalstorage.registry.FunctionalStorageGroup.register();
 
                 com.koudesuk.functionalstorage.registry.FunctionalStorageRecipes.register();
                 FunctionalStorageBlockEntities.register();
@@ -132,6 +129,12 @@ public class FunctionalStorage implements ModInitializer {
                 net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
                                 (drawer, direction) -> drawer.getHandler(),
                                 com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FLUID_DRAWER_4);
+                net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerForBlockEntity(
+                                (drawer, direction) -> drawer.getHandler(),
+                                com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities.FRAMED_FLUID_DRAWER);
+
+                // Drawer items, like the original's item capabilities
+                com.koudesuk.functionalstorage.inventory.DrawerItemStorage.register();
 
                 // Register FluidStorage for Storage Controllers (enables AE2 and other mods to
                 // access fluid drawers via controller)

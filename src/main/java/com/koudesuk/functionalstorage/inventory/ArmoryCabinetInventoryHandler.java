@@ -1,5 +1,6 @@
 package com.koudesuk.functionalstorage.inventory;
 
+import com.koudesuk.functionalstorage.util.StorageTags;
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
@@ -205,7 +206,17 @@ public abstract class ArmoryCabinetInventoryHandler extends SnapshotParticipant<
 
     public abstract void onChange();
 
+    /**
+     * Whether the cabinet takes the item at all, like the original's isValid.
+     */
+    public boolean isItemValid(ItemStack stack) {
+        return !stack.isEmpty() && isCertifiedStack(stack);
+    }
+
     private boolean isCertifiedStack(ItemStack stack) {
+        // Checked before the stack size, like the original, so the tag can add stackable items
+        if (StorageTags.isArmoryInsertable(stack.getItem()))
+            return true;
         if (stack.getMaxStackSize() > 1)
             return false;
         // In 1.21, use Component API to check for custom data instead of hasTag()

@@ -65,6 +65,16 @@ public class ArmoryCabinetBlock extends Block implements EntityBlock {
         }
     }
 
+    // Right click opens the cabinet's screen, with or without an item in hand, like the original.
+    // useItemOn keeps vanilla's PASS_TO_DEFAULT_BLOCK_INTERACTION, which comes here for a held item too
+    @Override
+    protected net.minecraft.world.InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+            net.minecraft.world.entity.player.Player player, net.minecraft.world.phys.BlockHitResult hitResult) {
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof ArmoryCabinetTile tile)
+            player.openMenu(tile);
+        return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         BlockEntity blockEntity = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);

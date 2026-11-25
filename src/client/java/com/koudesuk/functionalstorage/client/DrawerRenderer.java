@@ -167,6 +167,27 @@ public class DrawerRenderer<T extends DrawerTile> implements BlockEntityRenderer
                 }
         }
 
+        /**
+         * A drawer item's contents, where a north facing drawer shows them (the item model faces north).
+         * Upgrades are left out, like the original's DrawerISTER.
+         */
+        public void renderItemContents(T tile, PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
+                        int combinedOverlayIn) {
+                matrixStack.pushPose();
+                matrixStack.last().pose()
+                                .mul(MathUtils.createTransformMatrix(new Vector3f(0), new Vector3f(0, 180, 0), 1));
+                matrixStack.last().pose()
+                                .mul(MathUtils.createTransformMatrix(new Vector3f(-1, 0, 0), new Vector3f(0), 1));
+                matrixStack.translate(0, 0, -0.5 / 16D);
+                if (tile.getDrawerType() == DrawerType.X_1)
+                        render1Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_2)
+                        render2Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                if (tile.getDrawerType() == DrawerType.X_4)
+                        render4Slot(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                matrixStack.popPose();
+        }
+
         private void render1Slot(PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
                         int combinedOverlayIn, DrawerTile tile) {
                 BigInventoryHandler inventoryHandler = (BigInventoryHandler) tile.getStorage();

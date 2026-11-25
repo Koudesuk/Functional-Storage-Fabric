@@ -23,7 +23,7 @@ import java.util.List;
  * Framed variant of the Controller Access Point that supports custom textures.
  * Extends ControllerExtensionBlock and adds support for FramedDrawerModelData.
  */
-public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
+public class FramedControllerExtensionBlock extends ControllerExtensionBlock implements FramedBlock {
 
     public FramedControllerExtensionBlock(Properties properties) {
         super(properties);
@@ -81,12 +81,7 @@ public class FramedControllerExtensionBlock extends ControllerExtensionBlock {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
-            }
-        }
+        FramedBlock.appendTooltip(tooltip);
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

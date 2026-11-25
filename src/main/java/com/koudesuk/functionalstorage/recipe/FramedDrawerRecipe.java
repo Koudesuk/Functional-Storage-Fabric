@@ -3,6 +3,7 @@ package com.koudesuk.functionalstorage.recipe;
 import com.koudesuk.functionalstorage.block.FramedCompactingDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedControllerExtensionBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerBlock;
+import com.koudesuk.functionalstorage.block.FramedFluidDrawerBlock;
 import com.koudesuk.functionalstorage.block.FramedDrawerControllerBlock;
 import com.koudesuk.functionalstorage.block.FramedSimpleCompactingDrawerBlock;
 import net.minecraft.core.HolderLookup;
@@ -69,6 +70,23 @@ public class FramedDrawerRecipe extends CustomRecipe {
                 ((BlockItem) drawer.getItem()).getBlock() instanceof FramedControllerExtensionBlock;
     }
 
+    public static boolean matchesFluid(ItemStack first, ItemStack second, ItemStack drawer) {
+        return !first.isEmpty() && first.getItem() instanceof BlockItem &&
+                !second.isEmpty() && second.getItem() instanceof BlockItem &&
+                !drawer.isEmpty() && drawer.getItem() instanceof BlockItem &&
+                ((BlockItem) drawer.getItem()).getBlock() instanceof FramedFluidDrawerBlock;
+    }
+
+    // Every framed block this recipe can retexture
+    private static boolean matchesAny(Ingredients ingredients) {
+        ItemStack first = ingredients.first();
+        ItemStack second = ingredients.second();
+        ItemStack drawer = ingredients.drawer();
+        return matches(first, second, drawer) || matchesCompacting(first, second, drawer)
+                || matchesSimpleCompacting(first, second, drawer) || matchesController(first, second, drawer)
+                || matchesControllerExtension(first, second, drawer) || matchesFluid(first, second, drawer);
+    }
+
     private static Ingredients getIngredients(CraftingInput inv) {
         List<ItemStack> nonEmpty = new ArrayList<>();
         for (int i = 0; i < inv.size(); i++) {
@@ -103,34 +121,17 @@ public class FramedDrawerRecipe extends CustomRecipe {
     @Override
     public boolean matches(CraftingInput inv, Level worldIn) {
         Ingredients ingredients = getIngredients(inv);
-        if (ingredients == null) {
-            return false;
-        }
-
-        return matches(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer());
+        return ingredients != null && matchesAny(ingredients);
     }
 
     @Override
     public ItemStack assemble(CraftingInput inv, HolderLookup.Provider registryAccess) {
         Ingredients ingredients = getIngredients(inv);
-        if (ingredients == null) {
+        if (ingredients == null || !matchesAny(ingredients)) {
             return ItemStack.EMPTY;
         }
-
-        if (matches(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesSimpleCompacting(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesController(ingredients.first(), ingredients.second(), ingredients.drawer()) ||
-                matchesControllerExtension(ingredients.first(), ingredients.second(), ingredients.drawer())) {
-            return FramedDrawerBlock.fill(ingredients.first(), ingredients.second(), ingredients.drawer(),
-                    ingredients.divider());
-        }
-
-        return ItemStack.EMPTY;
+        return FramedDrawerBlock.fill(ingredients.first(), ingredients.second(), ingredients.drawer(),
+                ingredients.divider());
     }
 
     @Override

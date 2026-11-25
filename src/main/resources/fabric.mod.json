@@ -31,6 +31,12 @@
 		],
 		"modmenu": [
 			"com.koudesuk.functionalstorage.client.ModMenuIntegration"
+		],
+		"jade": [
+			"com.koudesuk.functionalstorage.compat.jade.FSJadePlugin"
+		],
+		"jei_mod_plugin": [
+			"com.koudesuk.functionalstorage.compat.jei.JEIPlugin"
 		]
 	},
 	"mixins": [

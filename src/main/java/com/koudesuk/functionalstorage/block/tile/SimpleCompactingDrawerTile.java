@@ -2,6 +2,8 @@ package com.koudesuk.functionalstorage.block.tile;
 
 import com.koudesuk.functionalstorage.block.config.FunctionalStorageConfig;
 import com.koudesuk.functionalstorage.network.BlockPosPayload;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
+import com.koudesuk.functionalstorage.util.StorageTags;
 import com.koudesuk.functionalstorage.inventory.CompactingInventoryHandler;
 import com.koudesuk.functionalstorage.registry.FunctionalStorageBlockEntities;
 import com.koudesuk.functionalstorage.util.CompactingUtil;
@@ -34,6 +36,7 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
             @Override
             public void onChange() {
                 SimpleCompactingDrawerTile.this.setChanged();
+                SimpleCompactingDrawerTile.this.updateComparatorOutput();
                 if (level != null && !level.isClientSide) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
@@ -42,6 +45,12 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
             @Override
             public int getMultiplier() {
                 return getStorageMultiplier();
+            }
+
+            @Override
+            public double getSizeFactor() {
+                return SimpleCompactingDrawerTile.this.getSizeFactor(FSAttachments.ITEM_STORAGE_MODIFIER,
+                        FunctionalStorageConfig.SIMPLE_COMPACTING_DRAWER_STACKS.get());
             }
 
             @Override
@@ -88,8 +97,8 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
                 || stack.getItem().equals(com.koudesuk.functionalstorage.registry.FunctionalStorageItems.LINKING_TOOL))
             return InteractionResult.PASS;
 
-        // Setup compacting if not already setup
-        if (!handler.isSetup() && slot != -1 && !stack.isEmpty()) {
+        // Setup compacting if not already setup; a denied item never becomes the drawer's item
+        if (!handler.isSetup() && slot != -1 && !stack.isEmpty() && !StorageTags.isDrawerDenied(stack.getItem())) {
             ItemStack setupStack = stack.copy();
             setupStack.setCount(1);
             CompactingUtil compactingUtil = new CompactingUtil(this.level, 2);
@@ -173,7 +182,11 @@ public class SimpleCompactingDrawerTile extends ItemControllableDrawerTile<Simpl
         tag.put("Handler", handler.serializeNBT(registries));
     }
 
+    @Override
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (net.fabricmc.fabric.api.transfer.v1.storage.StorageView<ItemVariant> view : getStorage()) {
             if (!view.isResourceBlank()) {
                 return false;

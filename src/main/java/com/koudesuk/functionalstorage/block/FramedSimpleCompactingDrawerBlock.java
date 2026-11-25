@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlock {
+public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlock implements FramedBlock {
 
     public FramedSimpleCompactingDrawerBlock(Properties properties) {
         super(properties);
@@ -42,10 +42,8 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        NonNullList<ItemStack> stacks = NonNullList.create();
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof FramedSimpleCompactingDrawerTile framedDrawerTile) {
             if (!framedDrawerTile.isEverythingEmpty() && framedDrawerTile.getLevel() != null) {
                 stack.set(FSAttachments.TILE,
@@ -59,8 +57,7 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
                 stack.set(FSAttachments.LOCKED, framedDrawerTile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
     }
 
     @Override
@@ -80,12 +77,7 @@ public class FramedSimpleCompactingDrawerBlock extends SimpleCompactingDrawerBlo
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(ChatFormatting.GRAY));
-            }
-        }
+        FramedBlock.appendTooltip(tooltip);
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

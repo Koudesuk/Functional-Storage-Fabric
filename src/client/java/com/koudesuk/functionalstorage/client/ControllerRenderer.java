@@ -124,7 +124,8 @@ public class ControllerRenderer<T extends StorageControllerTile> implements Bloc
             }
 
             // Render controller linking range as green translucent box
-            var area = new AABB(tile.getBlockPos()).inflate(tile.getLinkingRange());
+            // Same box the controller links in: configured range, upgrades and data-driven range modifiers
+            var area = tile.getLinkingArea();
             renderShape(matrixStack, bufferIn.getBuffer(TYPE), Shapes.create(area), -tile.getBlockPos().getX(),
                     -tile.getBlockPos().getY(), -tile.getBlockPos().getZ(), 0.5f, 1, 0.5f, 1.0F);
             renderFaces(matrixStack, bufferIn, area, -tile.getBlockPos().getX(), -tile.getBlockPos().getY(),

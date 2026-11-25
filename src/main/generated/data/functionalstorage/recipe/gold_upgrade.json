@@ -3,7 +3,7 @@
   "category": "misc",
   "key": {
     "B": {
-      "item": "minecraft:gold_block"
+      "tag": "c:storage_blocks/gold"
     },
     "C": {
       "tag": "c:chests/wooden"
@@ -12,7 +12,7 @@
       "item": "functionalstorage:copper_upgrade"
     },
     "I": {
-      "item": "minecraft:gold_ingot"
+      "tag": "c:ingots/gold"
     }
   },
   "pattern": [

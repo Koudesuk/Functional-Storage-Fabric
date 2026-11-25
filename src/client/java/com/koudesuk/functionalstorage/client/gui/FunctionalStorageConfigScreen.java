@@ -86,7 +86,8 @@ public class FunctionalStorageConfigScreen extends Screen {
             Row row = new Row(font, file, value, editable);
             row.box.setResponder(text -> {
                 row.box.setTextColor(row.isValid() ? VALID_COLOR : INVALID_COLOR);
-                done.active = fields.stream().allMatch(Row::isValid);
+                if (done != null)
+                    done.active = fields.stream().allMatch(Row::isValid);
             });
             fields.add(row);
             list.add(row);
@@ -126,6 +127,8 @@ public class FunctionalStorageConfigScreen extends Screen {
     private static String pretty(String id) {
         StringBuilder out = new StringBuilder();
         for (String word : id.split("_")) {
+            if (word.isEmpty())
+                continue;
             if (!out.isEmpty())
                 out.append(' ');
             out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
@@ -179,6 +182,9 @@ public class FunctionalStorageConfigScreen extends Screen {
             this.value = value;
             this.editable = editable;
             this.box = new EditBox(font, 0, 0, 100, 18, label);
+            // An EditBox keeps 32 characters by default, too few for the id lists; this is what
+            // ConfigSyncPayload can carry. Set before the value, which would be cut otherwise
+            box.setMaxLength(Short.MAX_VALUE);
             box.setValue(value.toString());
             box.setEditable(editable);
             box.setTooltip(Tooltip.create(Component.translatableWithFallback(key + ".tooltip", value.comment())

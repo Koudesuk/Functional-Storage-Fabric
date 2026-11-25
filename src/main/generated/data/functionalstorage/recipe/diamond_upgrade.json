@@ -3,7 +3,7 @@
   "category": "misc",
   "key": {
     "B": {
-      "item": "minecraft:diamond_block"
+      "tag": "c:storage_blocks/diamond"
     },
     "C": {
       "tag": "c:chests/wooden"
@@ -12,7 +12,7 @@
       "item": "functionalstorage:gold_upgrade"
     },
     "I": {
-      "item": "minecraft:diamond"
+      "tag": "c:gems/diamond"
     }
   },
   "pattern": [

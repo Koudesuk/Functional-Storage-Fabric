@@ -59,6 +59,22 @@ public class SimpleCompactingDrawerRenderer<T extends SimpleCompactingDrawerTile
                 matrixStack.popPose();
         }
 
+        /**
+         * A simple compacting drawer item's contents, where a north facing drawer shows them (the item model
+         * faces north). Upgrades are left out, like the original's CompactingDrawerISTER.
+         */
+        public void renderItemContents(T tile, PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
+                        int combinedOverlayIn) {
+                matrixStack.pushPose();
+                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
+                                new org.joml.Vector3f(0), new org.joml.Vector3f(0, 180, 0), 1));
+                matrixStack.last().pose().mul(com.koudesuk.functionalstorage.util.MathUtils.createTransformMatrix(
+                                new org.joml.Vector3f(-1, 0, 0), new org.joml.Vector3f(0), 1));
+                matrixStack.translate(0, 0, -0.5 / 16D);
+                renderSlots(matrixStack, bufferIn, combinedLightIn, combinedOverlayIn, tile);
+                matrixStack.popPose();
+        }
+
         private void renderSlots(PoseStack matrixStack, MultiBufferSource bufferIn, int combinedLightIn,
                         int combinedOverlayIn, T tile) {
                 var inventoryHandler = tile.handler;

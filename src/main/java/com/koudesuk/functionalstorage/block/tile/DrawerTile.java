@@ -3,6 +3,7 @@ package com.koudesuk.functionalstorage.block.tile;
 import com.koudesuk.functionalstorage.network.BlockPosPayload;
 import com.koudesuk.functionalstorage.inventory.BigInventoryHandler;
 import com.koudesuk.functionalstorage.inventory.DrawerMenu;
+import com.koudesuk.functionalstorage.registry.FSAttachments;
 import com.koudesuk.functionalstorage.util.DrawerType;
 import com.koudesuk.functionalstorage.util.IWoodType;
 import net.minecraft.core.BlockPos;
@@ -40,6 +41,7 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             @Override
             public void onChange() {
                 DrawerTile.this.setChanged();
+                DrawerTile.this.updateComparatorOutput();
                 if (level != null && !level.isClientSide) {
                     level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
@@ -48,6 +50,13 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
             @Override
             public int getMultiplier() {
                 return DrawerTile.this.getStorageMultiplier();
+            }
+
+            @Override
+            public double getSizeFactor() {
+                // The original's base is the drawer's stacks, one stack with the Iron Downgrade
+                return DrawerTile.this.getSizeFactor(FSAttachments.ITEM_STORAGE_MODIFIER,
+                        hasDowngrade() ? 1 : DrawerTile.this.type.getSlotAmount() / 64D);
             }
 
             @Override
@@ -99,38 +108,8 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
                 || stack.getItem() instanceof com.koudesuk.functionalstorage.item.LinkingToolItem)
             return net.minecraft.world.InteractionResult.PASS;
 
-        if (!stack.isEmpty() && stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem) {
-            com.koudesuk.functionalstorage.item.UpgradeItem upgradeItem = (com.koudesuk.functionalstorage.item.UpgradeItem) stack
-                    .getItem();
-            if (upgradeItem instanceof com.koudesuk.functionalstorage.item.StorageUpgradeItem
-                    || upgradeItem == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.CREATIVE_UPGRADE) {
-                net.minecraft.world.SimpleContainer container = getStorageUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        net.minecraft.world.item.ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return net.minecraft.world.InteractionResult.SUCCESS;
-                    }
-                }
-            } else {
-                net.minecraft.world.SimpleContainer container = getUtilityUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        net.minecraft.world.item.ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return net.minecraft.world.InteractionResult.SUCCESS;
-                    }
-                }
-            }
-        }
+        if (installUpgrade(stack))
+            return net.minecraft.world.InteractionResult.SUCCESS;
 
         if (slot != -1 && !player.isShiftKeyDown()) {
             // An empty slot of a locked drawer takes on whatever it is clicked with
@@ -206,7 +185,11 @@ public class DrawerTile extends ItemControllableDrawerTile<DrawerTile>
         return new BlockPosPayload(this.getBlockPos());
     }
 
+    @Override
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         for (int i = 0; i < getHandler().getStoredStacks().size(); i++) {
             if (!getHandler().getStoredStacks().get(i).getStack().isEmpty()) {
                 return false;

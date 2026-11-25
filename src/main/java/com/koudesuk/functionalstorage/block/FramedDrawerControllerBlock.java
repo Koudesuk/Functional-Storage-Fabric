@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class FramedDrawerControllerBlock extends DrawerControllerBlock {
+public class FramedDrawerControllerBlock extends DrawerControllerBlock implements FramedBlock {
 
     public FramedDrawerControllerBlock(Properties properties) {
         super(properties);
@@ -98,12 +98,7 @@ public class FramedDrawerControllerBlock extends DrawerControllerBlock {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip,
             TooltipFlag flag) {
-        String useText = Component.translatable("frameddrawer.use").getString();
-        for (String line : useText.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                tooltip.add(Component.literal(line.trim()).withStyle(net.minecraft.ChatFormatting.GRAY));
-            }
-        }
+        FramedBlock.appendTooltip(tooltip);
         super.appendHoverText(stack, context, tooltip, flag);
     }
 }

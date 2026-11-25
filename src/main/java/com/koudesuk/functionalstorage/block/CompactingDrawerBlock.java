@@ -206,9 +206,14 @@ public class CompactingDrawerBlock extends Block implements EntityBlock, DrawerF
     public java.util.List<ItemStack> getDrops(BlockState state,
             net.minecraft.world.level.storage.loot.LootParams.Builder builder) {
         net.minecraft.core.NonNullList<ItemStack> stacks = net.minecraft.core.NonNullList.create();
+        stacks.add(getDropStack(state, builder
+                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY)));
+        return stacks;
+    }
+
+    @Override
+    public ItemStack getDropStack(BlockState state, @Nullable BlockEntity drawerTile) {
         ItemStack stack = new ItemStack(this);
-        BlockEntity drawerTile = builder
-                .getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (drawerTile instanceof CompactingDrawerTile tile) {
             if (!tile.isEverythingEmpty() && tile.getLevel() != null) {
                 stack.set(FSAttachments.TILE,
@@ -218,8 +223,20 @@ public class CompactingDrawerBlock extends Block implements EntityBlock, DrawerF
                 stack.set(FSAttachments.LOCKED, tile.isLocked());
             }
         }
-        stacks.add(stack);
-        return stacks;
+        return stack;
+    }
+
+    // Comparators read how full the drawer is, like the original
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> tile
+                ? tile.getComparatorSignal()
+                : 0;
     }
 
     @Override
@@ -250,6 +267,9 @@ public class CompactingDrawerBlock extends Block implements EntityBlock, DrawerF
                 }
             }
         }
-        return 0;
+        // Items with a data-driven behavior (the original's emit_redstone) give their own signal
+        return blockEntity instanceof com.koudesuk.functionalstorage.block.tile.ControllableDrawerTile<?> drawer
+                ? Math.max(0, drawer.getBehaviorSignal(state, direction))
+                : 0;
     }
 }

@@ -17,4 +17,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Note to Contributors:** This mod migration is not yet complete, and many bugs still exist. If you are a contributor interested in improving this migration, please feel free to contact me at `koudesuk105@gmail.com`.
+**Note to Contributors:** This mod migration is now largely complete and has reached a relatively stable state. However, a few minor bugs or overlooked issues may still remain. If you encounter any issues or are interested in contributing further improvements, please feel free to contact me at `koudesuk105@gmail.com`.

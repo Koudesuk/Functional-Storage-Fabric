@@ -3,13 +3,14 @@
   "category": "equipment",
   "key": {
     "D": {
+      "fabric:type": "functionalstorage:tag_without_component",
       "tag": "functionalstorage:drawer"
     },
     "E": {
       "item": "minecraft:diamond"
     },
     "G": {
-      "item": "minecraft:gold_ingot"
+      "tag": "c:ingots/gold"
     },
     "P": {
       "item": "minecraft:paper"

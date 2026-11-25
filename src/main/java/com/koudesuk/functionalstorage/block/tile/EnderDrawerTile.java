@@ -102,6 +102,24 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         if (level.getGameTime() % 20 == 0) {
             syncToClients();
         }
+
+        // Like the original: every drawer of the frequency shows the shared lock, and a Void
+        // Upgrade put into any of them is used up to make the whole frequency void
+        if (level.getGameTime() % 10 == 0) {
+            EnderInventoryHandler handler = getHandler();
+            if (handler.isLocked() != isLocked()) {
+                super.setLocked(handler.isLocked());
+            }
+            if (!handler.isVoid()) {
+                for (int i = 0; i < getUtilityUpgrades().getContainerSize(); i++) {
+                    if (getUtilityUpgrades().getItem(i).is(com.koudesuk.functionalstorage.registry.FunctionalStorageItems.VOID_UPGRADE)) {
+                        handler.setVoidItems(true);
+                        getUtilityUpgrades().removeItem(i, 1);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -120,38 +138,8 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
             return InteractionResult.PASS;
 
         // Handle upgrade insertion
-        if (!stack.isEmpty() && stack.getItem() instanceof com.koudesuk.functionalstorage.item.UpgradeItem) {
-            com.koudesuk.functionalstorage.item.UpgradeItem upgradeItem = (com.koudesuk.functionalstorage.item.UpgradeItem) stack
-                    .getItem();
-            if (upgradeItem instanceof com.koudesuk.functionalstorage.item.StorageUpgradeItem
-                    || upgradeItem == com.koudesuk.functionalstorage.registry.FunctionalStorageItems.CREATIVE_UPGRADE) {
-                SimpleContainer container = getStorageUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            } else {
-                SimpleContainer container = getUtilityUpgrades();
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    if (container.getItem(i).isEmpty()) {
-                        ItemStack temp = stack.split(1);
-                        container.setItem(i, temp);
-                        this.setChanged();
-                        if (level != null && !level.isClientSide) {
-                            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-                        }
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            }
-        }
+        if (installUpgrade(stack))
+            return InteractionResult.SUCCESS;
 
         EnderInventoryHandler handler = getHandler();
         if (handler == null) {
@@ -226,7 +214,11 @@ public class EnderDrawerTile extends ItemControllableDrawerTile<EnderDrawerTile>
         return super.isVoid();
     }
 
+    @Override
     public boolean isEverythingEmpty() {
+        // A broken drawer keeps its priority, like the original
+        if (getPriority() != 0)
+            return false;
         EnderInventoryHandler handler = getHandler();
         if (handler != null) {
             for (int i = 0; i < handler.getStoredStacks().size(); i++) {
